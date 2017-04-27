@@ -36,6 +36,7 @@ getImportanceScores <- function(train.set=NULL,
 #'
 #' @param data.sets A list of train, holdout and test data frames
 #' @param n An integer for the number of samples
+#' @param d An integer for the number of variables
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param bias A numeric for ?
 #' @param type A character vector of the type of simulation: sva|er|inte
@@ -60,6 +61,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @export
 privateEC <- function(data.sets=NULL,
                       n=100,
+                      d=100,
                       shortname="paramstring",
                       bias=0.4,
                       type="sva",
@@ -226,8 +228,11 @@ privateEC <- function(data.sets=NULL,
 #' @param type A character vector of the type of simulation: sva|er|inte
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
-#' @param verbose A flag indicating whether verbose output be sent to stdout
+#' @param start.temp A numeric for EC starting temperature
+#' @param final.temp A numeric for EC final temperature
+#' @param tau.param A numeric for tau to control reduction schedule
 #' @param save.file A character vector for results filename or NULL to skip
+#' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @note inbix must be instaled in the path
 #' @return A list containing:
 #' \describe{
@@ -244,8 +249,11 @@ privateECinbix <- function(data.sets=NULL,
                            type="sva",
                            myrun="001",
                            update.freq=50,
-                           verbose=FALSE,
-                           save.file=NULL) {
+                           start.temp=0.1,
+                           final.temp=10 ^ (-5),
+                           tau.param=100,
+                           save.file=NULL,
+                           verbose=FALSE) {
   # ---------------------------------------------------------------------------
   if(is.null(data.sets)) {
     stop("privateECinbix: No data sets provided as first argument")
@@ -314,9 +322,9 @@ privateECinbix <- function(data.sets=NULL,
     if(verbose) {
       cat("saving results to ", save.file, "\n")
     }
-    save(fxplots, melted.fx, correct.detect.inbix, n, d, bias, shortname,
-         type, data.sets$train, data.sets$holdout, data.sets$test, signal.names,
-         file=paste("privateECinbixresult", shortname, "_", type, ".Rdata", sep=""))
+    save(fxplots, melted.fx, correct.detect.inbix, n, bias, shortname,
+         type, data.sets$train, data.sets$holdout, data.sets$test,
+         file=save.file)
   }
   # ---------------------------------------------------------------------------
   cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")
@@ -335,7 +343,11 @@ privateECinbix <- function(data.sets=NULL,
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param type A character vector of the type of simulation: sva|er|inte
 #' @param myrun A character vector of a unique run identifier
+#' @param update.freq A integer for the number of steps before update
 #' @param pec.file A character vector filename of privateEC results
+#' @param threshold A numeric ?
+#' @param tolerance A numeric ?
+#' @param signal.names A character vector of signal names in simulated data
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -352,11 +364,18 @@ originalPrivacy <- function(data.sets=NULL,
                             shortname="paramstring",
                             type="sva",
                             myrun="001",
+                            update.freq=50,
                             pec.file=NULL,
+                            threshold=4 / sqrt(n),
+                            tolerance=1 / sqrt(n),
+                            signal.names=NULL,
                             save.file=NULL,
                             verbose=FALSE) {
   if(is.null(data.sets)) {
     stop("originalPrivacy: No data sets provided as data.sets argument")
+  }
+  if(is.null(signal.names)) {
+    stop("originalPrivacy: No signal names provided")
   }
   if(is.null(pec.file)) {
     stop("originalPrivacy: No previous privateEC results file in pec.file argument")
@@ -381,12 +400,10 @@ originalPrivacy <- function(data.sets=NULL,
   holdo.pheno <- as.numeric(levels(holdo.pheno))[holdo.pheno]
   test.pheno <- as.numeric(levels(test.pheno))[test.pheno]
 
-  tolerance <- 1 / sqrt(n) # tau
-  threshold <- 4 / sqrt(n) # T
   trainanswers <- (t(predictors.train) %*% train.pheno)/nrow(data.sets$train)
   holdoanswers <- (t(predictors.holdo) %*% holdo.pheno)/nrow(data.sets$holdout)
   diffs <- abs(trainanswers - holdoanswers)
-  noise <- rnorm(d-1, 0, tolerance)
+  noise <- rnorm(d - 1, 0, tolerance)
   abovethr <- diffs > threshold + noise
   holdoanswers[!abovethr] <- trainanswers[!abovethr]
   holdoanswers[abovethr] <- (holdoanswers +
@@ -400,6 +417,7 @@ originalPrivacy <- function(data.sets=NULL,
   trainanswers[!selected] <- 0
   sortanswers <- order(abs(trainanswers))
   # num.atts <- c(0,10,20,30,45,70,100,150,200,250,300,400,500)
+  alg.steps <- seq(d + 1, 1, -update.freq)[-1]
   num.atts <- alg.steps
   numks <- length(num.atts)
   noisy_vals <- matrix(-1, numks, 3)
@@ -460,7 +478,12 @@ originalPrivacy <- function(data.sets=NULL,
 #' @param d An integer for the number of variables
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param type A character vector of the type of simulation: sva|er|inte
+#' @param rf.importance.measure A character vector for the random forest importance measure
 #' @param pec.file A character vector filename of privateEC results
+#' @param update.freq A integer for the number of steps before update
+#' @param threshold A numeric ?
+#' @param tolerance A numeric ?
+#' @param signal.names A character vector of signal names in simulated data
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -476,17 +499,25 @@ privateRF <- function(data.sets=NULL,
                       d=100,
                       shortname="paramstring",
                       type="sva",
+                      rf.importance.measure="MeanDecreaseGini",
                       pec.file=NULL,
+                      update.freq=50,
+                      threshold=4 / sqrt(n),
+                      tolerance=1 / sqrt(n),
+                      signal.names=NULL,
                       save.file=NULL,
                       verbose=FALSE) {
   if(is.null(data.sets)) {
     stop("privateRF: No data sets provided as first argument")
   }
+  if(is.null(signal.names)) {
+    stop("privateRF: No signal names provided")
+  }
   if(is.null(pec.file)) {
-    stop("originalPrivacy: No previous privateEC results file in pec.file argument")
+    stop("privateRF: No previous privateEC results file in pec.file argument")
   }
   if(!file.exists(pec.file)) {
-    stop("originalPrivacy: Previous privateEC results file in pec.file argument:", pec.file)
+    stop("privateRF: Previous privateEC results file in pec.file argument:", pec.file)
   }
 
   ptm <- proc.time()
@@ -502,11 +533,13 @@ privateRF <- function(data.sets=NULL,
   # tolerance <- 1/sqrt(n) # tau
   # threshold <- 0.2/sqrt(n) # T
 
-  train.rf <- randomForest(x=predictors.train, y=data.sets$train$pheno,
-                           importance=T)
+  train.rf <- randomForest::randomForest(x=predictors.train,
+                                         y=data.sets$train$pheno,
+                                         importance=T)
   train.imp <- train.rf$importance[, rf.importance.measure]
-  holdo.rf <- randomForest(x=predictors.holdo, y=data.sets$holdout$pheno,
-                           importance=T)
+  holdo.rf <- randomForest::randomForest(x=predictors.holdo,
+                                         y=data.sets$holdout$pheno,
+                                         importance=T)
   # holdo.rf <- ranger(pheno ~ ., data=data.sets$holdout, importance='impurity')
   holdo.imp <- holdo.rf$importance[, rf.importance.measure]
   trainanswers <- train.imp
@@ -526,6 +559,7 @@ privateRF <- function(data.sets=NULL,
   trainanswers[!selected] <- 0
   sortanswers <- order(abs(trainanswers))
   # num.atts <- c(0,10,20,30,45,70,100,150,200,250,300,400,500)
+  alg.steps <- seq(d + 1, 1, -update.freq)[-1]
   num.atts <- alg.steps
   numks <- length(num.atts)
   noisy_vals <- matrix(-1, numks, 3)
@@ -545,7 +579,8 @@ privateRF <- function(data.sets=NULL,
       var.names[[i]] <- colnames(data.sets$train)[topk]
       # rf classifier:
       data.k <- data.sets$train[, topk, drop=F]
-      rf.model.k <- randomForest(x=data.k, y=data.sets$train$pheno)
+      rf.model.k <- randomForest::randomForest(x=data.k,
+                                               y=data.sets$train$pheno)
       # rf.model.k <- ranger(pheno ~ ., data=data.k, write.forest=T)
       # ytrain.pred <- predict(rf.model.k, newdata=data.sets$train)
       yholdo.pred <- predict(rf.model.k, newdata=data.sets$holdout)
@@ -608,8 +643,9 @@ privateRF <- function(data.sets=NULL,
 #' @param data.sets A list of train, holdout and test data frames
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param type A character vector of the type of simulation: sva|er|inte
-#' @param verbose A flag indicating whether verbose output be sent to stdout
+#' @param signal.names A character vector of signal names in simulated data
 #' @param save.file A character vector for results filename or NULL to skip
+#' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
 #' \describe{
 #'   \item{plots.data}{data frame of results, a row for each update}
@@ -621,10 +657,14 @@ privateRF <- function(data.sets=NULL,
 standardRF <- function(data.sets=NULL,
                        shortname="paramstring",
                        type="sva",
-                       verbose=FALSE,
-                       save.file=NULL) {
+                       signal.names=NULL,
+                       save.file=NULL,
+                       verbose=FALSE) {
   if(is.null(data.sets)) {
     stop("regularRF: No data sets provided as first argument")
+  }
+  if(is.null(signal.names)) {
+    stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
   # myfilename <- paste("results/privateECresult", shortname, "_",
@@ -644,7 +684,7 @@ standardRF <- function(data.sets=NULL,
     save(rf.test.accu, rf.holdo.accu, file=save.file)
   }
 
-  rRaplots <- data.frame(num.atts=alg.steps,
+  rRaplots <- data.frame(num.atts=ncol(data.sets$train),
                          ftrain=1,
                          fholdo=rf.holdo.accu,
                          ftest=rf.test.accu,
@@ -655,52 +695,6 @@ standardRF <- function(data.sets=NULL,
 
   list(plots.data=rRaplots,
        melted.data=melted.rra,
-       correct=rep(num.sigs, num.steps),
+       correct=ncol(data.sets$train),
        elasped=(proc.time() - ptm)[3])
-}
-
-#' Compile the results of a simulation + classifier methods run
-#'
-#' @param run.results A list of run results
-#' @param myrun A character vector of a unique run identifier
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param type A character vector of the type of simulation: sva|er|inte
-#' @param verbose A flag indicating whether verbose output be sent to stdout
-#' @param save.file A character vector for results filename or NULL to skip
-#' @return A list with:
-#' \describe{
-#'   \item{plots.data}{data frame of results, a row for each update}
-#'   \item{melted.data}{melted results data frame for plotting}
-#'   \item{correct}{number of variables detected correctly in each data set}
-#' }
-#' @export
-compileResults <- function(run.results=NULL,
-                           myrun="001",
-                           shortname="paramstring",
-                           type="sva",
-                           verbose=FALSE,
-                           save.file=NULL) {
-  if(is.null(run.results)) {
-    stop("compileResults: No results list provided as first argument")
-  }
-  if(verbose) cat("compiling results for plotting\n")
-  plots.dfs <- lapply(run.results, FUN=function(method.results) {
-    method.results$plots.data
-  })
-  fp.plots <- do.call(rbind, plots.dfs)
-  melted.dfs <- lapply(run.results, FUN=function(method.results) {
-    method.results$melted.data
-  })
-  fp.melted <- do.call(rbind, melted.dfs)
-  correct.dfs <- lapply(run.results, FUN=function(method.results) {
-    method.results$correct
-  })
-  # ---------------------------------------------------------------------------
-  if(!is.null(save.file)) {
-    if(verbose) cat("saving accuracy and correct found", save.file, "\n")
-    save(accuracy.ls, correct.vars.ls, file=save.file)
-  }
-  list(plots.data=fp.plots,
-       melted.data=fp.melted,
-       correct=correct.dfs)
 }

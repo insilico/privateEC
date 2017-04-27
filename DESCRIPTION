@@ -2,11 +2,18 @@ Package: privateEC
 Type: Package
 Title: Privacy Preserving Evaporative Cooling
 Version: 0.1.0
-Author: Trang Le
+Authors@R: person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut", "cre"))
 Maintainer: Bill White <bill-white@utulsa.edu>
 Description: Privacy preserving evaporative cooling algorithm along
     with other comparison algorithms used in the XXX paper.
-License: GPL3
+License: GPL-3
+Depends: R (>= 3.1.0)
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
+Imports: 
+    randomForest,
+    CORElearn,
+    reshape2,
+    igraph
+Suggests: testthat

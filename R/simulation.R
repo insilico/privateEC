@@ -266,7 +266,7 @@ createSimulation <- function(n=100,
                              verbose=FALSE,
                              save.file=FALSE) {
   ptm <- proc.time()
-
+  nbias <- pb * d
   if(type == "sva"){
     # new simulation:
     # sd.b sort of determines how large the signals are
@@ -315,7 +315,7 @@ createSimulation <- function(n=100,
   if(save.file) {
     myfile <- paste("data/", type, "_", shortname, "_data.Rdata", sep="")
     if(verbose) cat("saving to data/", myfile, ".Rdata\n", sep="")
-    save(n, d, pb, X_train, X_holdo, X_test, signal.names, bias, type,
+    save(n, d, pb, X_train, X_holdo, X_test, bias, type,
          shortname, file=myfile)
   }
 
@@ -327,14 +327,19 @@ createSimulation <- function(n=100,
 
 #' Write inbix numeric and phenotype files (PLINK format)
 #'
+#' @param data.sets A list of train, holdout and test data frames
 #' @param base.sim.prefix A character vector for the input and saved file prefixes
 #' @param verbose A flag for sending berbose output to stdout
 #' @return NULL
-saveSimAsInbixNative <- function(base.sim.prefix, verbose=FALSE) {
-  # load compressed simulation data Rdata file
-  sim.filename <- paste("data/", base.sim.prefix, "_data.Rdata", sep="")
-  if(verbose) cat("loading simulated data set", sim.filename, "\n")
-  load(sim.filename)
+saveSimAsInbixNative <- function(data.sets=NULL,
+                                 base.sim.prefix,
+                                 verbose=FALSE) {
+  if(is.null(data.sets)) {
+    stop("privateEC: No data sets provided as first argument")
+  }
+  X_train <- data.sets$train
+  X_holdo <- data.sets$holdout
+  X_test <- data.sets$test
 
   # train
   train.expr.matrix <- X_train[, 1:(ncol(X_train)-1)]
