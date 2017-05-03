@@ -11,8 +11,8 @@
 #' @docType data
 #' @keywords datasets
 #' @name fullfMRI2
-#' @usage data(fullMRI2)
-#' @format Data frame with 80 rows and 3003 variables plus "Class" column.
+#' @usage data(fullfMRI2)
+#' @format Data frame with 80 rows and 3003 all-pairs variables.
 NULL
 
 #' An MRI data set phenotypes..
@@ -24,5 +24,5 @@ NULL
 #' @keywords datasets
 #' @name phenos
 #' @usage data(phenos)
-#' @format Vector of phenotype values +/- 1.
+#' @format Vector of phenotype values as a factor.
 NULL

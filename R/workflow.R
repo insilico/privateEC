@@ -23,7 +23,7 @@ paperSimWorkflow <- function(myrun="001",
                              update.freq=50,
                              verbose=FALSE) {
   ptm <- proc.time()
-  cat("run ID:", myrun, "\n")
+  if(verbose) cat("run ID:", myrun, "\n")
   types <- c("sva", "er", "inte")
   biases <- c(0.4, 0.4, 0.4)
   alg.steps <- seq(d + 1, 1, -update.freq)[-1]
@@ -107,7 +107,7 @@ paperSimWorkflow <- function(myrun="001",
   }) # end simtype.num loop 1:3 for sva. er, inte
 
   elapsed <- (proc.time() - ptm)[3]
-  cat("Total elapsed time:", elapsed, "\n")
+  if(verbose) cat("Total elapsed time:", elapsed, "\n")
 
   list(run.results=all.run.results, elapsed=elapsed)
 }
@@ -244,7 +244,7 @@ paperRealWorkflow <- function(corr.mat=NULL,
                                 verbose=verbose)
 
   elapsed <- (proc.time() - ptm)[3]
-  cat("Total elapsed time:", elapsed, "\n")
+  if(verbose) cat("Total elapsed time:", elapsed, "\n")
 
   list(run.results=run.results, elapsed=elapsed)
 }

@@ -320,7 +320,7 @@ createSimulation <- function(n=100,
   }
 
   elapsed <- (proc.time() - ptm)[3]
-  cat("createSimulation elapsed time:", elapsed, "\n")
+  if(verbose) cat("createSimulation elapsed time:", elapsed, "\n")
 
   list(train=X_train, holdout=X_holdo, test=X_test, elapsed=elapsed)
 }

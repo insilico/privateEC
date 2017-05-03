@@ -75,7 +75,6 @@ privateEC <- function(data.sets=NULL,
                       myrun="001",
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
-                      ntree=100,
                       start.temp=0.1,
                       final.temp=10 ^ (-5),
                       tau.param=100,
@@ -217,7 +216,8 @@ privateEC <- function(data.sets=NULL,
     save(fplots, melted.fs, correct.detect.ec, n, d, signal.names,
          bias, shortname, threshold, tolerance, bias, file=save.file)
   }
-  cat("privateEC elapsed time:", (proc.time() - ptm)[3], "\n")
+
+  if(verbose) cat("privateEC elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=fplots,
        melted.data=melted.fs,
@@ -363,7 +363,8 @@ originalPrivacy <- function(data.sets=NULL,
     if(verbose) cat("saving to", save.file, "\n")
     save(pplots, melted.ps, correct.detect.ori, file=save.file)
   }
-  cat("originalPrivacy elapsed time:", (proc.time() - ptm)[3], "\n")
+
+  if(verbose) cat("originalPrivacy elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=pplots,
        melted.data=melted.ps,
@@ -524,7 +525,7 @@ privateRF <- function(data.sets=NULL,
     save(rfplots, melted.rfs, correct.detect.rf, file=save.file)
   }
 
-  cat("privateRF elasped time:", (proc.time() - ptm)[3], "\n")
+  if(verbose) cat("privateRF elasped time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=rfplots,
        melted.data=melted.rfs,
@@ -588,7 +589,7 @@ standardRF <- function(data.sets=NULL,
                          alg=4)
   melted.rra <- reshape2::melt(rRaplots, id=c("num.atts", "alg"))
 
-  cat("regularRF elapsed time:", (proc.time() - ptm)[3], "\n")
+  if(verbose) cat("regularRF elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=rRaplots,
        melted.data=melted.rra,
@@ -710,7 +711,7 @@ privateECinbix <- function(data.sets=NULL,
          file=save.file)
   }
   # ---------------------------------------------------------------------------
-  cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")
+  if(verbose) cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=fxplots,
        melted.data=melted.fx,
