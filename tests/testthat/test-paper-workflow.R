@@ -3,7 +3,7 @@
 # Test replicating the Bioinformatics paper simulated and real data analysis.
 
 library(privateEC)
-context("Private EC Simulated Data Analysis")
+context("Paper Workflows")
 
 test_that("run one workflow of a simulation plus an analysis step", {
   num.samples <- 100

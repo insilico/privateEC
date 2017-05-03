@@ -601,6 +601,7 @@ standardRF <- function(data.sets=NULL,
 #' Assumes the inbix executable is in the PATH.
 #'
 #' @param data.sets A list of train, holdout and test data frames
+#' @param is.simulated Is the data simulated (or real?)
 #' @param n An integer for the number of samples
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param bias A numeric for ?
@@ -622,6 +623,7 @@ standardRF <- function(data.sets=NULL,
 #' }
 #' @export
 privateECinbix <- function(data.sets=NULL,
+                           is.simulated=TRUE,
                            n=100,
                            shortname="paramstring",
                            bias=0.4,
