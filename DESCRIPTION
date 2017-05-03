@@ -1,7 +1,7 @@
 Package: privateEC
 Type: Package
 Title: Privacy Preserving Evaporative Cooling
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut", "cre"))
 Maintainer: Bill White <bill-white@utulsa.edu>
 Description: Privacy preserving evaporative cooling algorithm along
