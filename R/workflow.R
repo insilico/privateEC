@@ -15,6 +15,22 @@
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @note Default parameter values match those from the Bioinformatics paper.
+#' @family workflows
+#' @examples
+#'   num.samples <- 100
+#'   num.variables <- 100
+#'   pb <- 0.1
+#'   bias <- 0.4
+#'   one.step.result <- paperSimWorkflow(myrun="001", n=100, d=100, pb=0.1,
+#'   update.freq=50, verbose=FALSE)
+#' @seealso The workflow consists of the sequence:
+#' \code{\link{createSimulation}}
+#' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
+#' \code{\link{originalPrivacy}}
+#' \code{\link{privateRF}}
+#' \code{\link{standardRF}} and
+#' \code{\link{compileResults}}. A comparison analysis with real data (fMRI)
+#' is in \code{\link{paperRealWorkflow}}.
 #' @export
 paperSimWorkflow <- function(myrun="001",
                              n=100,
@@ -123,6 +139,7 @@ paperSimWorkflow <- function(myrun="001",
 #'   \item{melted.data}{melted results data frame for plotting}
 #'   \item{correct}{number of variables detected correctly in each data set}
 #' }
+#' @family workflows
 #' @export
 compileResults <- function(run.results=NULL,
                            save.file=NULL,
@@ -164,6 +181,22 @@ compileResults <- function(run.results=NULL,
 #'   \item{run.results}{data frame of run results of each sim type}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#'   data(fullfMRI2)
+#'   data(phenos)
+#'   only 100 variables for a test
+#'   real.result <- paperRealWorkflow(corr.mat=fullfMRI2[, 2900:ncol(fullfMRI2)],
+#'                                    phenos=phenos,
+#'                                    update.freq=50,
+#'                                    verbose=FALSE)
+#' @seealso The workflow consists of the sequence:
+#' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
+#' \code{\link{originalPrivacy}}
+#' \code{\link{privateRF}}
+#' \code{\link{standardRF}} and
+#' \code{\link{compileResults}}. A comparison analysis with simulated data
+#' is in \code{\link{paperSimWorkflow}}.
+#' @family workflows
 #' @export
 paperRealWorkflow <- function(corr.mat=NULL,
                               phenos=NULL,

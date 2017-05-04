@@ -34,6 +34,8 @@ getImportanceScores <- function(train.set=NULL,
 
 #' Private Evaporative Cooling feature selection and classification
 #'
+#' \cite{}
+#'
 #' @param data.sets A list of train, holdout and test data frames
 #' @param is.simulated Is the data simulated (or real?)
 #' @param n An integer for the number of samples
@@ -64,6 +66,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @note Within thresholdout, we choose a threshold of 4 / sqrt(n) and
 #' tolerance of 1 / sqrt(n) as suggested in the thresholdout’s supplementary
 #' material (Dwork, et al., 2015).
+#' @family classification
 #' @export
 privateEC <- function(data.sets=NULL,
                       is.simulated=TRUE,
@@ -253,6 +256,7 @@ privateEC <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @family classification
 #' @export
 originalPrivacy <- function(data.sets=NULL,
                             is.simulated=TRUE,
@@ -401,6 +405,7 @@ originalPrivacy <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @family classification
 #' @export
 privateRF <- function(data.sets=NULL,
                       is.simulated=TRUE,
@@ -550,6 +555,7 @@ privateRF <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @family classification
 #' @export
 standardRF <- function(data.sets=NULL,
                        is.simulated=TRUE,
@@ -622,6 +628,7 @@ standardRF <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @family classification
 #' @export
 privateECinbix <- function(data.sets=NULL,
                            is.simulated=TRUE,
