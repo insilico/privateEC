@@ -29,6 +29,7 @@ getImportanceScores <- function(train.set=NULL,
   if(verbose) cat("\tholdout\n")
   holdo.relief <- CORElearn::attrEval("pheno", data=holdo.set,
                                       estimator=imp.estimator)
+
   list(data.frame(train.relief), data.frame(holdo.relief))
 }
 
@@ -66,6 +67,16 @@ getImportanceScores <- function(train.set=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' sim.data <- createSimulation(d=num.variables, n=num.samples,
+#'                              type="sva", verbose=FALSE)
+#' ec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE,
+#'                         n=num.samples, signal.names=signals, verbose=FALSE)
 #' @note Within thresholdout, we choose a threshold of 4 / sqrt(n) and
 #' tolerance of 1 / sqrt(n) as suggested in the thresholdout’s supplementary
 #' material (Dwork, et al., 2015).
@@ -259,6 +270,33 @@ privateEC <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
+#'
+#' data.sets <- createSimulation(d=num.variables,
+#'                               n=num.samples,
+#'                               type="sva",
+#'                               verbose=FALSE)
+#' pec.results <- privateEC(data.sets=data.sets,
+#'                          is.simulated=TRUE,
+#'                          n=num.samples,
+#'                          d=num.variables,
+#'                          signal.names=signals,
+#'                          save.file=temp.pec.file,
+#'                          verbose=FALSE)
+#' por.results <- originalPrivacy(data.sets=data.sets,
+#'                                is.simulated=TRUE,
+#'                                n=num.samples,
+#'                                d=num.variables,
+#'                                signal.names=signals,
+#'                                pec.file=temp.pec.file,
+#'                                verbose=FALSE)
+#' file.remove(temp.pec.file)
 #' @family classification
 #' @export
 originalPrivacy <- function(data.sets=NULL,
@@ -408,7 +446,33 @@ originalPrivacy <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
-#' @family classification
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
+#'
+#' data.sets <- createSimulation(d=num.variables,
+#'                               n=num.samples,
+#'                               type="sva",
+#'                               verbose=FALSE)
+#' pec.results <- privateEC(data.sets=data.sets,
+#'                          is.simulated=TRUE,
+#'                          n=num.samples,
+#'                          d=num.variables,
+#'                          signal.names=signals,
+#'                          save.file=temp.pec.file,
+#'                          verbose=FALSE)
+#' prf.results <- privateRF(data.sets=data.sets,
+#'                          is.simulated=TRUE,
+#'                          n=num.samples,
+#'                          d=num.variables,
+#'                          signal.names=signals,
+#'                          pec.file=temp.pec.file,
+#'                          verbose=FALSE)
+#' file.remove(temp.pec.file)
 #' @export
 privateRF <- function(data.sets=NULL,
                       is.simulated=TRUE,
@@ -558,6 +622,19 @@ privateRF <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' data.sets <- createSimulation(d=num.variables, n=num.samples,
+#'                               type="sva", verbose=FALSE)
+#' rra.results <- standardRF(data.sets=data.sets,
+#'                           is.simulated=TRUE,
+#'                           type=type,
+#'                           verbose=FALSE,
+#'                           signal.names=signals)
 #' @family classification
 #' @export
 standardRF <- function(data.sets=NULL,
@@ -631,6 +708,17 @@ standardRF <- function(data.sets=NULL,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' sim.data <- createSimulation(d=num.variables, n=num.samples,
+#'                              type="sva", verbose=FALSE)
+#' pec.results <- privateECinbix(data.sets=sim.data,
+#'                               n=num.samples,
+#'                               verbose=FALSE)
 #' @family classification
 #' @export
 privateECinbix <- function(data.sets=NULL,

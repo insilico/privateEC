@@ -140,7 +140,6 @@ paperSimWorkflow <- function(myrun="001",
 #'   \item{correct}{number of variables detected correctly in each data set}
 #' }
 #' @family workflows
-#' @export
 compileResults <- function(run.results=NULL,
                            save.file=NULL,
                            verbose=FALSE) {

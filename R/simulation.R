@@ -257,6 +257,16 @@ simulateData <- function(n.e=1000,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @examples
+#' sim.type <- "sva"
+#' num.samples <- 100
+#' num.variables <- 100
+#' pb <- 0.1
+#' bias <- 0.4
+#' nbias <- pb * num.variables
+#' signals <- sprintf("gene%04d", 1:nbias)
+#' sim.data <- createSimulation(d=num.variables, n=num.samples, pb=pb,
+#'                              bias=bias, type=sim.type, verbose=FALSE)
 #' @family simulation
 #' @export
 createSimulation <- function(n=100,
