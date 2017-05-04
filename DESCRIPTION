@@ -14,9 +14,10 @@ Authors@R: c(person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut")),
 Maintainer: Bill White <bill-white@utulsa.edu>
 Description: Privacy preserving evaporative cooling algorithm along
     with other comparison algorithms used in the Bioinformatics paper referenced 
-    below:\cite{Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and 
+    below: 
+    Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and 
     B. A. McKinney. “Privacy preserving evaporative cooling feature selection and 
-    classification with Relief-F and Random Forests,”  Bioinformatics. Accepted. 2017.}
+    classification with Relief-F and Random Forests,”  Bioinformatics. Accepted. 2017.
 License: GPL-3
 Depends: R (>= 3.1.0)
 Encoding: UTF-8

@@ -34,7 +34,10 @@ getImportanceScores <- function(train.set=NULL,
 
 #' Private Evaporative Cooling feature selection and classification
 #'
-#' \cite{}
+#' Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
+#' and B. A. McKinney. “Privacy preserving evaporative cooling feature
+#' selection and classification with Relief-F and Random Forests,”
+#' Bioinformatics. Accepted. 2017.
 #'
 #' @param data.sets A list of train, holdout and test data frames
 #' @param is.simulated Is the data simulated (or real?)

@@ -14,6 +14,7 @@
 #' @param sdNoise A numeric for the noise in the differential expression
 #' @param sampleIndicesInteraction A vector of integers of significant variables
 #' @param verbose A flag for sending verbose output to stdout
+#' @family simulation
 #' @return A matrix representing the new new data set.
 createDiffCoexpMatrixNoME <- function(M=100,
                                       N=100,
@@ -112,6 +113,7 @@ createDiffCoexpMatrixNoME <- function(M=100,
 #'   \item{new}{?}
 #'   \item{varst}{?}
 #' }
+#' @family simulation
 simulateData <- function(n.e=1000,
                          n.db=70,
                          n.ns=30,
@@ -255,6 +257,7 @@ simulateData <- function(n.e=1000,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #'   \item{elapsed}{total elapsed time}
 #' }
+#' @family simulation
 #' @export
 createSimulation <- function(n=100,
                              d=100,
