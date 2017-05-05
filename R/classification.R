@@ -35,10 +35,6 @@ getImportanceScores <- function(train.set=NULL,
 
 #' Private Evaporative Cooling feature selection and classification
 #'
-#' Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
-#' and B. A. McKinney. “Privacy preserving evaporative cooling feature
-#' selection and classification with Relief-F and Random Forests,”
-#' Bioinformatics. Accepted. 2017.
 #'
 #' @param data.sets A list of train, holdout and test data frames
 #' @param is.simulated Is the data simulated (or real?)
@@ -80,6 +76,11 @@ getImportanceScores <- function(train.set=NULL,
 #' @note Within thresholdout, we choose a threshold of 4 / sqrt(n) and
 #' tolerance of 1 / sqrt(n) as suggested in the thresholdout’s supplementary
 #' material (Dwork, et al., 2015).
+#' @references
+#' Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
+#' and B. A. McKinney. “Privacy preserving evaporative cooling feature
+#' selection and classification with Relief-F and Random Forests,”
+#' Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
 #' @family classification
 #' @export
 privateEC <- function(data.sets=NULL,
@@ -195,9 +196,9 @@ privateEC <- function(data.sets=NULL,
         fholdo <- fholdo + rnorm(1, 0, tolerance)
       }
 
+      ftrains <- c(ftrains, ftrain)
       fholds <- c(fholds, fholdo)
       ftests <- c(ftests, ftest)
-      ftrains <- c(ftrains, ftrain)
 
       if(verbose) cat("\tadjusting temperature\n")
       myT <- myT * exp(-1 / tau) # dropping T
