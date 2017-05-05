@@ -1,7 +1,5 @@
-## ---- echo=FALSE---------------------------------------------------------
-library(privateEC)
-
 ## ------------------------------------------------------------------------
+library(privateEC)
 num.samples <- 100
 num.variables <- 100
 pb <- 0.1
@@ -13,7 +11,8 @@ pec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE, n=num.samples,
                          signal.names=signals, verbose=FALSE, update.freq=5)
 
 ## ---- echo=FALSE---------------------------------------------------------
-knitr::kable(pec.results$plots.data, caption="Algorithm Iterations")
+knitr::kable(pec.results$plots.data, caption="Algorithm Iterations",
+             row.names=FALSE)
 
 ## ---- echo=FALSE, fig.width=6, fig.align='center'------------------------
 library(ggplot2)
