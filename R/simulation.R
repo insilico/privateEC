@@ -1,8 +1,5 @@
-# -----------------------------------------------------------------------------
 # simulation.R - Trang Le and Bill White - Fall 2016/Spring 2017
-#
 # Simulated data for comparison of classification algorithms.
-# -----------------------------------------------------------------------------
 
 #' Create a differentially coexpressed data set without main effects
 #'
@@ -312,7 +309,6 @@ createSimulation <- function(n=100,
                                       1:nbias)
   }
 
-  # ---------------------------------------------------------------------------
   ind.case <- sample(3, n * 3, replace=T)[1:floor(n * 3 / 2)]
   ind.ctrl <- sample(ind.case, floor(n * 3 / 2))
   data <- data.frame(data)

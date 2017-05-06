@@ -1,0 +1,23 @@
+citHeader("To cite the privateEC algorithm and/or fMRI data in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Privacy preserving evaporative cooling feature selection and classification with Relief-F and Random Forests",
+  author       = personList(
+                   as.person("Trang Le"),
+                   as.person("W. K. Simmons"),
+                   as.person("M. Misaki"),
+                   as.person("B.C. White"),
+                   as.person("J. Savitz"),
+                   as.person("J. Bodurka"),
+                   as.person("B. A. McKinney")),
+  journal      = "Bioinformatics",
+  year         = "2017",
+  url          = "https://doi.org/10.1093/bioinformatics/btx298",
+
+  textVersion  =
+        paste("Trang T. Le, W. Kyle Simmons, Masaya Misaki, Jerzy Bodurka, ",
+        "Bill C. White, Jonathan Savitz, Brett A. McKinney; ",
+        "Privacy preserving Evaporative Cooling feature selection and ",
+        "classification with Relief-F and Random Forests. Bioinformatics ",
+        "2017 btx298. doi: 10.1093/bioinformatics/btx298")
+)

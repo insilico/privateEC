@@ -158,7 +158,6 @@ compileResults <- function(run.results=NULL,
   correct.dfs <- lapply(run.results, FUN=function(method.results) {
     method.results$correct
   })
-  # ---------------------------------------------------------------------------
   if(!is.null(save.file)) {
     if(verbose) cat("saving compiled results", save.file, "\n")
     save(fp.plots, plots.dfs, fp.melted, file=save.file)
@@ -183,7 +182,6 @@ compileResults <- function(run.results=NULL,
 #' @examples
 #'   data(fullfMRI2)
 #'   data(phenos)
-#'   only 100 variables for a test
 #'   real.result <- paperRealWorkflow(corr.mat=fullfMRI2[, 2900:ncol(fullfMRI2)],
 #'                                    phenos=phenos,
 #'                                    update.freq=50,

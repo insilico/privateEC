@@ -1,9 +1,6 @@
-# -----------------------------------------------------------------------------
 # classification.R - Trang Le and Bill White - Fall 2016/Spring 2017
-#
 # Privacy preserving evaporative cooling and comparison classification
-# algorithms used in the paper XXXXX.
-# -----------------------------------------------------------------------------
+# algorithms used in the Bioinformatics paper.
 
 #' Compute and return importance scores (Relief-F scores)
 #'
@@ -418,7 +415,6 @@ originalPrivacy <- function(data.sets=NULL,
        elasped=(proc.time() - ptm)[3])
 }
 
-# -----------------------------------------------------------------------------
 #' Private random forests algorithm
 #'
 #' Random Forest Thresholdout, which is TO with the feature selection
@@ -606,7 +602,6 @@ privateRF <- function(data.sets=NULL,
        elasped=(proc.time() - ptm)[3])
 }
 
-# -----------------------------------------------------------------------------
 #' Standard random forests algorithm serves as a baseline model
 #'
 #' @param data.sets A list of train, holdout and test data frames
@@ -735,7 +730,6 @@ privateECinbix <- function(data.sets=NULL,
                            tau.param=100,
                            save.file=NULL,
                            verbose=FALSE) {
-  # ---------------------------------------------------------------------------
   if(is.null(data.sets)) {
     stop("privateECinbix: No data sets provided as first argument")
   }
@@ -743,7 +737,6 @@ privateECinbix <- function(data.sets=NULL,
   if(Sys.which("inbix") == "") {
     stop("inbix is not installed or not in the PATH")
   }
-  # ---------------------------------------------------------------------------
   ptm <- proc.time()
   base.sim.prefix <- paste(type, "_", shortname, sep="")
   unique.sim.prefix <- paste(type, "_", shortname, sep="")
@@ -756,7 +749,6 @@ privateECinbix <- function(data.sets=NULL,
               row.names=FALSE, col.names=TRUE, quote=FALSE)
   write.table(data.sets$test, paste(unique.sim.prefix, ".sim.test.tab", sep=""), sep="\t",
               row.names=FALSE, col.names=TRUE, quote=FALSE)
-  # ---------------------------------------------------------------------------
   if(verbose) cat("Running inbix privacy EC on saved simulation data sets\n")
   system.command <- paste("OMP_NUM_THREADS=4 inbix ",
                           "--ec-privacy ",
@@ -771,17 +763,15 @@ privateECinbix <- function(data.sets=NULL,
                           "--out ", unique.sim.prefix, ".privateec", sep="")
   if(verbose) cat(system.command, "\n")
   system(system.command, intern=FALSE, ignore.stdout=TRUE, ignore.stderr=TRUE)
-  # ---------------------------------------------------------------------------
   # if(verbose) cat("Reading inbix privacy EC attributes used results\n")
   # attrs.file <- paste(unique.sim.prefix, ".privateec.selected.attributes.tab", sep="")
   # if(verbose) cat(attrs.file, "\n")
   # attrs.table <- read.table(attrs.file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
-  # ---------------------------------------------------------------------------
+
   if(verbose) cat("Reading inbix privacy EC algorithm run details\n")
   iters.file <- paste(unique.sim.prefix, ".privateec.privacy.iterations.tab", sep="")
   if(verbose) cat(iters.file, "\n")
   iters.table <- read.table(iters.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-  #correct.detect.inbix <- iters.table[, 9]
   if(is.simulated) {
     correct.detect.inbix <- as.integer(iters.table$Correct)
   }
@@ -791,7 +781,6 @@ privateECinbix <- function(data.sets=NULL,
                         ftest=iters.table$TestAcc,
                         alg=5)
   melted.fx <- reshape2::melt(fxplots, id=c("num.atts", "alg"))
-  # ---------------------------------------------------------------------------
   if(verbose) cat("Cleaning up inbix private EC results files\n")
   inbix.temp.files <- c(paste(unique.sim.prefix, ".sim.train.tab", sep=""),
                         paste(unique.sim.prefix, ".sim.holdo.tab", sep=""),
@@ -800,7 +789,6 @@ privateECinbix <- function(data.sets=NULL,
                         paste(unique.sim.prefix, ".privateec.log", sep=""))
   #file.remove(c(inbix.conv.files, rf.files, attrs.file, iters.file))
   file.remove(inbix.temp.files)
-  # ---------------------------------------------------------------------------
   if(!is.null(save.file)) {
     if(verbose) {
       cat("saving results to ", save.file, "\n")
@@ -809,7 +797,6 @@ privateECinbix <- function(data.sets=NULL,
          type, data.sets$train, data.sets$holdout, data.sets$test,
          file=save.file)
   }
-  # ---------------------------------------------------------------------------
   if(verbose) cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=fxplots,
