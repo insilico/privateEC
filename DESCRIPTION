@@ -2,7 +2,7 @@ Package: privateEC
 Type: Package
 Title: Privacy preserving evaporative cooling feature selection and 
     classification with Relief-F and Random Forests
-Version: 0.2.0
+Version: 0.3.0
 Date: May 2017
 Authors@R: c(person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut")), 
   person("W. K.", "Simmons", role=c("aut")),
