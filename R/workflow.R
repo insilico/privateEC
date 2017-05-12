@@ -1,12 +1,12 @@
 #' Workflow for running one simulation of the Bioinformatics paper workflow
 #'
-#' Creates one simulation of train/holdout/test data sets, then runs the
+#' Creates one simulation of train/holdout/validation data sets, then runs the
 #' four algorithms on that data. Returns a data frame of run results for each.
 #'
 #' @param myrun A character vector identifying the run
 #' @param n An integer for the number of samples
-#' @param d An integer for the number of variables
-#' @param pb A numeric for the significant variable bias
+#' @param num.vars An integer for the number of variables
+#' @param pct.signals A numeric for the significant variable bias
 #' @param update.freq A integer for the number of steps before update
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -19,9 +19,9 @@
 #' @examples
 #'   num.samples <- 100
 #'   num.variables <- 100
-#'   pb <- 0.1
+#'   pct.signals <- 0.1
 #'   bias <- 0.4
-#'   one.step.result <- paperSimWorkflow(myrun="001", n=100, d=100, pb=0.1,
+#'   one.step.result <- paperSimWorkflow(myrun="001", n=100, num.vars=100, pct.signals=0.1,
 #'   update.freq=50, verbose=FALSE)
 #' @seealso The workflow consists of the sequence:
 #' \code{\link{createSimulation}}
@@ -34,35 +34,35 @@
 #' @export
 paperSimWorkflow <- function(myrun="001",
                              n=100,
-                             d=100,
-                             pb=0.1,
+                             num.vars=100,
+                             pct.signals=0.1,
                              update.freq=50,
                              verbose=FALSE) {
   ptm <- proc.time()
   if(verbose) cat("run ID:", myrun, "\n")
-  types <- c("sva", "er", "inte")
+  types <- c("mainEffect", "interactionErdos", "interactionScalefree")
   biases <- c(0.4, 0.4, 0.4)
-  alg.steps <- seq(d + 1, 1, -update.freq)[-1]
+  alg.steps <- seq(num.vars + 1, 1, -update.freq)[-1]
   num.steps <- length(alg.steps)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
-  nbias <- pb * d
-  num.sigs <- pb * d
+  nbias <- pct.signals * num.vars
+  num.sigs <- pct.signals * num.vars
   signal.names <- sprintf("gene%04d", 1:nbias)
 
   all.run.results <- lapply(1:length(types), FUN=function(simtype.num) {
     type <- types[[simtype.num]]
     bias <- biases[[simtype.num]]
     if(verbose) cat("begin type/sim/classification loop for type/bias",
-                    type, bias, "\n")
-    if(verbose) cat("running simulation with n d pb", n, d, pb, "\n")
-    shortname <- paste(round(bias, digits=1), pb, d, n, myrun, sep="_")
+                    sim.type, bias, "\n")
+    if(verbose) cat("running simulation with n num.vars pct.signals", n, num.vars, pct.signals, "\n")
+    shortname <- paste(round(bias, digits=1), pct.signals, num.vars, n, myrun, sep="_")
     if(verbose) cat("--------------------------------------------\n")
     data.sets <- createSimulation(n=n,
-                                  d=d,
-                                  pb=pb,
+                                  num.vars=num.vars,
+                                  pct.signals=pct.signals,
                                   bias=bias,
                                   shortname=shortname,
-                                  type=type,
+                                  sim.type=type,
                                   myrun=myrun,
                                   verbose=verbose,
                                   save.file=FALSE)
@@ -70,32 +70,27 @@ paperSimWorkflow <- function(myrun="001",
     if(verbose) cat("\nrunning privateEC\n")
     pec.result <- privateEC(data.sets=data.sets,
                             is.simulated=TRUE,
-                            n=n,
                             shortname=shortname,
                             bias=bias,
-                            type=type,
+                            sim.type=type,
                             myrun=myrun,
                             update.freq=update.freq,
                             save.file=temp.pec.file,
                             verbose=verbose,
                             signal.names=signal.names)
     if(verbose) cat("\nrunning originalprivacy.R\n")
-    por.result <- originalPrivacy(data.sets=data.sets,
+    por.result <- originalThresholout(data.sets=data.sets,
                                   is.simulated=TRUE,
-                                  n=n,
-                                  d=d,
                                   shortname=shortname,
-                                  type=type,
+                                  sim.type=type,
                                   myrun=myrun,
                                   verbose=verbose,
                                   signal.names=signal.names,
                                   pec.file=temp.pec.file)
     if(verbose) cat("\nrunning privaterf.R\n")
     pra.result <- privateRF(data.sets=data.sets,
-                            n=n,
-                            d=d,
                             shortname=shortname,
-                            type=type,
+                            sim.type=type,
                             verbose=verbose,
                             signal.names=signal.names,
                             pec.file=temp.pec.file)
@@ -103,7 +98,7 @@ paperSimWorkflow <- function(myrun="001",
     rra.result <- standardRF(data.sets=data.sets,
                              is.simulated=TRUE,
                              shortname=shortname,
-                             type=type,
+                             sim.type=type,
                              verbose=verbose,
                              signal.names=signal.names)
 
@@ -167,11 +162,11 @@ compileResults <- function(run.results=NULL,
        correct=correct.dfs)
 }
 
-#' Runs the four comparison algorithms on passed data set.
+#' Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
 #' Returns a data frame of run results for each.
 #'
-#' @param corr.mat A matrix subject by region-pair correlations
-#' @param phenos A vector of factors representing phenotypes for subjects
+#' @param real.data A matrix subject by region-pair correlations augmented with class label
+#' @param label A character vector class label from columns of corr,mat
 #' @param update.freq A integer for the number of steps before update
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -181,9 +176,8 @@ compileResults <- function(run.results=NULL,
 #' }
 #' @examples
 #'   data(fullfMRI2)
-#'   data(phenos)
-#'   real.result <- paperRealWorkflow(corr.mat=fullfMRI2[, 2900:ncol(fullfMRI2)],
-#'                                    phenos=phenos,
+#'   real.result <- paperRealWorkflow(real.data=fullfMRI2[, 2900:ncol(fullfMRI2)],
+#'                                    label="phenos",
 #'                                    update.freq=50,
 #'                                    verbose=FALSE)
 #' @seealso The workflow consists of the sequence:
@@ -195,72 +189,62 @@ compileResults <- function(run.results=NULL,
 #' is in \code{\link{paperSimWorkflow}}.
 #' @family workflows
 #' @export
-paperRealWorkflow <- function(corr.mat=NULL,
-                              phenos=NULL,
+paperRealWorkflow <- function(real.data=NULL,
+                              label=NULL,
                               update.freq=50,
                               verbose=FALSE) {
-  if(is.null(corr.mat)) {
-    stop("paperRealWorkflow: No subject by correlation matrix provided")
-  }
-  if(is.null(phenos)) {
-    stop("paperRealWorkflow: No phenos provided")
+  if(is.null(real.data)) {
+    stop("No subject by correlation matrix provided")
   }
   ptm <- proc.time()
 
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
   # transform the data to fit the workflow expectations
-  data <- data.frame(corr.mat, pheno=phenos)
-  n <- nrow(data)
-  d <- ncol(data)
+  n <- nrow(real.data)
+  num.vars <- ncol(real.data) - 1
   ind <- sample(2, n, replace=T)
   ind.case <- sample(2, n, replace=T)[1:floor(n / 2)]
   ind.ctrl <- sample(ind.case, floor(n / 2))
   ind.case <- c(ind.case, 2)
-  data <- data.frame(data)
-  data[,d] <- factor(data[, d])
-  levels(data[,d]) <- c(-1, 1)
-  data.case <- data[data[d]==1, ]
-  data.ctrl <- data[data[d]==-1, ]
-  X_train <- rbind(data.case[ind.case == 1, ], data.ctrl[ind.ctrl == 1, ])
-  X_holdo <- rbind(data.case[ind.case == 2, ], data.ctrl[ind.ctrl == 2, ])
-  data.sets <- list(train=X_train, holdout=X_holdo)
+  real.data <- data.frame(real.data)
+  real.data[, label] <- factor(real.data[, label])
+  levels(real.data[, label]) <- c(-1, 1)
+  real.data.case <- real.data[real.data[num.vars] == 1, ]
+  real.data.ctrl <- real.data[real.data[num.vars] == -1, ]
+  X_train <- rbind(real.data.case[ind.case == 1, ], real.data.ctrl[ind.ctrl == 1, ])
+  X_holdo <- rbind(real.data.case[ind.case == 2, ], real.data.ctrl[ind.ctrl == 2, ])
+  real.data.sets <- list(train=X_train, holdout=X_holdo)
 
   if(verbose) cat("\nrunning privateEC\n")
-  pec.result <- privateEC(data.sets=data.sets,
+  pec.result <- privateEC(data.sets=real.data.sets,
                           is.simulated=FALSE,
-                          n=n,
-                          d=d,
                           shortname="fmri",
-                          type="REAL",
+                          sim.type="REAL",
                           myrun="000",
                           update.freq=update.freq,
                           save.file=temp.pec.file,
                           verbose=verbose)
   if(verbose) cat("\nrunning originalprivacy.R\n")
-  por.result <- originalPrivacy(data.sets=data.sets,
+  por.result <- originalPrivacy(data.sets=real.data.sets,
                                 is.simulated=FALSE,
-                                n=n,
-                                d=d,
                                 shortname="fmri",
-                                type="REAL",
+                                sim.type="REAL",
                                 myrun="000",
                                 verbose=verbose,
                                 pec.file=temp.pec.file)
   if(verbose) cat("\nrunning privaterf.R\n")
-  pra.result <- privateRF(data.sets=data.sets,
-                          n=n,
-                          d=d,
+  pra.result <- privateRF(data.sets=real.data.sets,
                           shortname="fmri",
-                          type="REAL",
+                          sim.type="REAL",
                           is.simulated=FALSE,
                           pec.file=temp.pec.file,
                           verbose=verbose)
   if(verbose) cat("\nrunning regularRF\n")
-  rra.result <- standardRF(data.sets=data.sets,
+  rra.result <- standardRF(data.sets=real.data.sets,
                            is.simulated=FALSE,
                            shortname="fmri",
-                           type="REAL",
+                           sim.type="REAL",
                            verbose=verbose)
 
   file.remove(temp.pec.file)

@@ -8,44 +8,40 @@ context("Classification")
 test_that("privateEC returns sane results", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
-  nbias <- pb * num.variables
+  pct.signals <- 0.1
+  nbias <- pct.signals * num.variables
   signals <- sprintf("gene%04d", 1:nbias)
-  sim.data <- createSimulation(d=num.variables, n=num.samples,
-                               type="sva", verbose=FALSE)
-  pec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE, n=num.samples,
-                           signal.names=signals, verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
+                               sim.type="mainEffect", verbose=FALSE)
+  pec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE, signal.names=signals,
+                           verbose=FALSE)
   expect_equal(ncol(pec.results$plots.data), 5)
   expect_equal(ncol(pec.results$melted.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))
 })
 
-test_that("originalPrivacy returns sane results", {
+test_that("originalThresholout returns sane results", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
-  nbias <- pb * num.variables
+  pct.signals <- 0.1
+  nbias <- pct.signals * num.variables
   signals <- sprintf("gene%04d", 1:nbias)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
-  data.sets <- createSimulation(d=num.variables,
+  data.sets <- createSimulation(num.vars=num.variables,
                                 n=num.samples,
-                                type="sva",
+                                sim.type="mainEffect",
                                 verbose=FALSE)
   pec.results <- privateEC(data.sets=data.sets,
                            is.simulated=TRUE,
-                           n=num.samples,
-                           d=num.variables,
                            signal.names=signals,
                            save.file=temp.pec.file,
                            verbose=FALSE)
-  por.results <- originalPrivacy(data.sets=data.sets,
-                                 is.simulated=TRUE,
-                                 n=num.samples,
-                                 d=num.variables,
-                                 signal.names=signals,
-                                 pec.file=temp.pec.file,
-                                 verbose=FALSE)
+  por.results <- originalThresholout(data.sets=data.sets,
+                                     is.simulated=TRUE,
+                                     signal.names=signals,
+                                     pec.file=temp.pec.file,
+                                     verbose=FALSE)
   file.remove(temp.pec.file)
 
   expect_equal(ncol(pec.results$plots.data), 5)
@@ -60,26 +56,22 @@ test_that("originalPrivacy returns sane results", {
 test_that("privateRF returns sane results", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
-  nbias <- pb * num.variables
+  pct.signals <- 0.1
+  nbias <- pct.signals * num.variables
   signals <- sprintf("gene%04d", 1:nbias)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
-  data.sets <- createSimulation(d=num.variables,
+  data.sets <- createSimulation(num.vars=num.variables,
                                 n=num.samples,
-                                type="sva",
+                                sim.type="mainEffect",
                                 verbose=FALSE)
   pec.results <- privateEC(data.sets=data.sets,
                            is.simulated=TRUE,
-                           n=num.samples,
-                           d=num.variables,
                            signal.names=signals,
                            save.file=temp.pec.file,
                            verbose=FALSE)
   prf.results <- privateRF(data.sets=data.sets,
                            is.simulated=TRUE,
-                           n=num.samples,
-                           d=num.variables,
                            signal.names=signals,
                            pec.file=temp.pec.file,
                            verbose=FALSE)
@@ -97,14 +89,14 @@ test_that("privateRF returns sane results", {
 test_that("standard random forest returns sane results", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
-  nbias <- pb * num.variables
+  pct.signals <- 0.1
+  nbias <- pct.signals * num.variables
   signals <- sprintf("gene%04d", 1:nbias)
-  data.sets <- createSimulation(d=num.variables, n=num.samples,
-                                type="sva", verbose=FALSE)
+  data.sets <- createSimulation(num.vars=num.variables, n=num.samples,
+                                sim.type="mainEffect", verbose=FALSE)
   rra.results <- standardRF(data.sets=data.sets,
                             is.simulated=TRUE,
-                            type=type,
+                            sim.type=type,
                             verbose=FALSE,
                             signal.names=signals)
 
@@ -116,14 +108,12 @@ test_that("standard random forest returns sane results", {
 test_that("privateECinbix returns sane results", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
-  nbias <- pb * num.variables
+  pct.signals <- 0.1
+  nbias <- pct.signals * num.variables
   signals <- sprintf("gene%04d", 1:nbias)
-  sim.data <- createSimulation(d=num.variables, n=num.samples,
-                               type="sva", verbose=FALSE)
-  pec.results <- privateECinbix(data.sets=sim.data,
-                                n=num.samples,
-                                verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
+                               sim.type="mainEffect", verbose=FALSE)
+  pec.results <- privateECinbix(data.sets=sim.data, verbose=FALSE)
   expect_equal(ncol(pec.results$plots.data), 5)
   expect_equal(ncol(pec.results$melted.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))

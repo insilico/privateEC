@@ -1,10 +1,90 @@
 # simulation.R - Trang Le and Bill White - Fall 2016/Spring 2017
 # Simulated data for comparison of classification algorithms.
 
+#' Split a data set for machine learning classification
+#'
+#' Return data.sets as a list of training set, holdout set and validation set
+#' according to the predefined percentage of each partition
+#' default is a 50-50 split into training and holdout, no testing set
+#' code class/label/phenotypes as 1 and -1.
+#'
+#' @param all.data A data frame of n rows by d colums of data plus a label column
+#' @param pct.train A numeric percentage of samples to use for traning
+#' @param pct.holdout A numeric percentage of samples to use for holdout
+#' @param pct.validation A numeric percentage of samples to use for testing
+#' @param class.label A character vector of the data column name for the class label
+#' @return A list containing:
+#' \describe{
+#'   \item{train}{traing data set}
+#'   \item{holdout}{holdout data set}
+#'   \item{validation}{validation data set}
+#' }
+#' @examples
+#' data("fullfMRI2")
+#' data.sets <- splitDataset(fullfMRI2)
+#' @family simulation
+#' @export
+splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdo=0.5, pct.validation=0,
+                         class.label="phenos") {
+  if(is.null(all.data)) {
+    # stop or warning and return list of length 0?
+    stop("No data passed")
+  }
+  if(pct.train + pct.holdo + pct.validation != 1) {
+    stop("Proportions of training, holdout and testing have to sum to 1")
+  }
+  if(!(class.label %in% colnames(all.data))) {
+    stop("Class label is not in the column names or used more than once in data set column names")
+  }
+  if(!is.factor(all.data[, class.label])) {
+    all.data[, class.label] <- factor(all.data[, class.label])
+  }
+  if(nlevels(all.data[, class.label]) != 2) {
+    stop("Cannot split data set with more than or less than 2 factor levels in the class label")
+  }
+
+  class.levels <- levels(all.data[, class.label])
+  ind.case <- rownames(all.data)[all.data[, class.label] == class.levels[1]]
+  ind.ctrl <- rownames(all.data)[all.data[, class.label] == class.levels[2]]
+
+  n.case <- length(ind.case)
+  n.ctrl <- length(ind.ctrl)
+
+  n.validation.case <- floor(pct.validation * n.case)
+  n.holdo.case <- floor(pct.holdo * n.case)
+  n.train.case <- n.case - n.validation.case - n.holdo.case
+  partition.case <- sample(c(rep(3, n.validation.case), rep(2, n.holdo.case),
+                             rep(1, n.train.case)), n.case)
+
+  n.validation.ctrl <- floor(pct.validation * n.ctrl)
+  n.holdo.ctrl <- floor(pct.holdo * n.ctrl)
+  n.train.ctrl <- n.ctrl - n.validation.ctrl - n.holdo.ctrl
+  partition.ctrl <- sample(c(rep(3, n.validation.ctrl),
+                             rep(2, n.holdo.ctrl),
+                             rep(1, n.train.ctrl)), n.ctrl)
+
+  all.data <- data.frame(all.data)
+  all.data[, class.label] <- factor(all.data[, class.label])
+  levels(all.data[, class.label]) <- c(-1, 1)
+  data.case <- all.data[ind.case, ]
+  data.ctrl <- all.data[ind.ctrl, ]
+  X_train <- rbind(data.case[partition.case == 1, ], data.ctrl[partition.ctrl == 1, ])
+  X_holdo <- rbind(data.case[partition.case == 2, ], data.ctrl[partition.ctrl == 2, ])
+  X_validation <- rbind(data.case[partition.case == 3, ], data.ctrl[partition.ctrl == 3, ])
+
+  if(nrow(X_validation) == 0) {
+    data.sets <- list(train = X_train, holdout = X_holdo)
+  } else {
+    data.sets <- list(train = X_train, holdout = X_holdo, validation = X_validation)
+  }
+  data.sets
+}
+
 #' Create a differentially coexpressed data set without main effects
 #'
 #' @param M An integer for the number of samples (rows)
 #' @param N An integer for the number of variables (columns)
+#' @param class.label A character vector for the name of the class column
 #' @param meanExpression A numeric for the mean expression levels
 #' @param A A matrix representing a weighted, undirected network (adjacency)
 #' @param randSdNoise Random noise for the background expression levels
@@ -15,6 +95,7 @@
 #' @return A matrix representing the new new data set.
 createDiffCoexpMatrixNoME <- function(M=100,
                                       N=100,
+                                      class.label="class",
                                       meanExpression=7,
                                       A=NULL,
                                       randSdNoise=1,
@@ -74,9 +155,9 @@ createDiffCoexpMatrixNoME <- function(M=100,
   subIds <- c(paste("case", 1:n1, sep=""), paste("ctrl", 1:n2, sep=""))
   phenos <- c(rep(1, n1), rep(0, n2))
   newD <- cbind(t(D), phenos)
-  colnames(newD) <- c(paste("gene", sprintf("%04d", 1:M), sep=""), "Class")
+  colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep=""), class.label)
   rownames(newD) <- subIds
-  newD
+  data.frame(newD)
 }
 
 #' Create a simulated data set
@@ -236,14 +317,16 @@ simulateData <- function(n.e=1000,
   return(list(db=db, new=new, vars=vars))
 }
 
-#' Create a data simulation and return train/holdout/test data sets.
+#' Create a data simulation and return train/holdout/validation data sets.
 #'
 #' @param n An integer for the number of samples
-#' @param d An integer for the number of variables
-#' @param pb A numeric for proportion of functional variables
+#' @param num.vars An integer for the number of variables
+#' @param pct.signals A numeric for proportion of functional variables
 #' @param bias A numeric for bias in data simulation
+#' @param class.label A character vector for the name of the class column
 #' @param shortname A character vector of a parameters separated by '_'
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @param save.file A flag indicating whther to save the results to file
@@ -255,88 +338,94 @@ simulateData <- function(n.e=1000,
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
-#' sim.type <- "sva"
+#' sim.type <- "mainEffect"
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
+#' pct.signals <- 0.1
 #' bias <- 0.4
-#' nbias <- pb * num.variables
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
-#' sim.data <- createSimulation(d=num.variables, n=num.samples, pb=pb,
-#'                              bias=bias, type=sim.type, verbose=FALSE)
+#' sim.data <- createSimulation(d=num.variables, n=num.samples, pct.signals=pct.signals,
+#'                              bias=bias, sim.type=sim.type, verbose=FALSE)
 #' @family simulation
 #' @export
 createSimulation <- function(n=100,
-                             d=100,
-                             pb=0.1,
+                             num.vars=100,
+                             pct.signals=0.1,
                              bias=0.4,
+                             class.label="class",
                              shortname="paramstring",
-                             type="sva",
+                             sim.type="mainEffect",
                              myrun="001",
                              verbose=FALSE,
                              save.file=FALSE) {
   ptm <- proc.time()
-  nbias <- pb * d
-  if(type == "sva"){
+  nbias <- pct.signals * num.vars
+  if(sim.type == "mainEffect") {
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- simulateData(n.e=d - 1, n.db=3 * n, sd.b=bias, p.b=pb)$db
-    data <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
-  } else if(type == "pri"){
-    # old simulation:
-    data <- rnorm(n * d * 3, 0, 1)
-    data <- matrix(data, n * 3, d)
-    data[ , d] <- sign(data[ , d])
-    data[, 1:nbias] <- data[, 1:nbias] + bias * data[, d]
-  } else if(type == "inte"){
+    my.sim.data <- simulateData(n.e=num.vars,
+                                n.db=3 * n,
+                                sd.b=bias,
+                                p.b=pct.signals)$db
+    dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
+  } else if(sim.type == "interactionScalefree") {
     # interaction simulation: scale-free
-    g <- igraph::barabasi.game(d - 1, directed=F)
+    g <- igraph::barabasi.game(num.vars, directed=F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    data <- createDiffCoexpMatrixNoME(M=d - 1,  N=n * 3, meanExpression=7,
-                                      A=myA, randSdNoise=1, sdNoise=bias,
-                                      1:nbias)
-  } else if(type == "er"){
-    p <- 0.1
-    g <- igraph::erdos.renyi.game(d - 1, p)
+    dataset <- createDiffCoexpMatrixNoME(M=num.vars,
+                                         N=3 * n,
+                                         meanExpression=7,
+                                         A=myA,
+                                         randSdNoise=1,
+                                         sdNoise=bias,
+                                         sampleIndicesInteraction=1:nbias)
+  } else if(sim.type == "interactionErdos") {
+    attach.prob <- 0.1
+    g <- igraph::erdos.renyi.game(num.vars, attach.prob)
     #   foo <- printIGraphStats(g)
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    data <- createDiffCoexpMatrixNoME(M=d - 1,  N=n * 3, meanExpression=7,
-                                      A=myA, randSdNoise=1, sdNoise=bias,
-                                      1:nbias)
+    dataset <- createDiffCoexpMatrixNoME(M=num.vars,
+                                         N=3 * n,
+                                         meanExpression=7,
+                                         A=myA,
+                                         randSdNoise=1,
+                                         sdNoise=bias,
+                                         sampleIndicesInteraction=1:nbias)
   }
-
-  ind.case <- sample(3, n * 3, replace=T)[1:floor(n * 3 / 2)]
-  ind.ctrl <- sample(ind.case, floor(n * 3 / 2))
-  data <- data.frame(data)
-  data[, d] <- factor(data[, d])
-  levels(data[, d]) <- c(-1, 1)
-  colnames(data) <- c(paste("gene", sprintf("%04d", 1:(d - 1)), sep=""), "pheno")
-  data.case <- data[data[d] == 1, ]
-  data.ctrl <- data[data[d] == -1, ]
-  X_train <- rbind(data.case[ind.case == 1,], data.ctrl[ind.ctrl == 1,])
-  X_holdo <- rbind(data.case[ind.case == 2,], data.ctrl[ind.ctrl == 2,])
-  X_test  <- rbind(data.case[ind.case == 3,], data.ctrl[ind.ctrl == 3,])
+  # make numeric matrix into a data frame for splitting and subsequent ML algorithms
+  dataset <- as.data.frame(dataset)
+  signal.names <- paste("sig.var", 1:nbias, sep="")
+  background.names <- paste("var", 1:(num.vars - nbias), sep="")
+  var.names <- c(signal.names, background.names, class.label)
+  colnames(dataset) <- var.names
+  split.data <- splitDataset(dataset,
+                             pct.train=1 / 3,
+                             pct.holdo=1 / 3,
+                             pct.validation=1 / 3,
+                             class.label=class.label)
 
   if(save.file) {
-    myfile <- paste("data/", type, "_", shortname, "_data.Rdata", sep="")
+    myfile <- paste("data/", sim.type, "_", shortname, "_data.Rdata", sep="")
     if(verbose) cat("saving to data/", myfile, ".Rdata\n", sep="")
-    save(n, d, pb, X_train, X_holdo, X_test, bias, type,
-         shortname, file=myfile)
+    save(n, num.vars, pct.signals, split.data$train, split.data$holdout, split.data$validation,
+         bias, sim.type, shortname, file=myfile)
   }
 
   elapsed <- (proc.time() - ptm)[3]
   if(verbose) cat("createSimulation elapsed time:", elapsed, "\n")
 
-  list(train=X_train, holdout=X_holdo, test=X_test, elapsed=elapsed)
+  list(train=split.data$train, holdout=split.data$holdout, validation=split.data$validation,
+       class.label=class.label, elapsed=elapsed, signal.names=signal.names)
 }
 
 #' Write inbix numeric and phenotype files (PLINK format)
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
 #' @param base.sim.prefix A character vector for the input and saved file prefixes
 #' @param verbose A flag for sending berbose output to stdout
 #' @return NULL
@@ -348,7 +437,7 @@ saveSimAsInbixNative <- function(data.sets=NULL,
   }
   X_train <- data.sets$train
   X_holdo <- data.sets$holdout
-  X_test <- data.sets$test
+  X_test <- data.sets$validation
 
   # train
   train.expr.matrix <- X_train[, 1:(ncol(X_train)-1)]
@@ -376,17 +465,17 @@ saveSimAsInbixNative <- function(data.sets=NULL,
   holdo.inbix.pheno <- cbind(holdo.subj.names, holdo.subj.names, holdo.phenotype)
   write.table(holdo.inbix.pheno, file=paste(base.sim.prefix, ".holdo.sim.pheno", sep=""),
               quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
-  # test
-  test.expr.matrix <- X_test[, 1:(ncol(X_test)-1)]
-  var.names <- colnames(test.expr.matrix)
-  test.num.subj <- nrow(test.expr.matrix)
-  test.subj.names <- paste("subj", 1:test.num.subj, sep="")
-  test.phenotype <- ifelse(X_test[, ncol(X_test)] == -1, 0, 1)
-  test.inbix <- cbind(test.subj.names, test.subj.names, test.expr.matrix)
-  colnames(test.inbix) <- c("FID", "IID", var.names)
-  write.table(test.inbix, file=paste(base.sim.prefix, ".test.sim.num", sep=""),
+  # validation
+  validation.expr.matrix <- X_test[, 1:(ncol(X_test)-1)]
+  var.names <- colnames(validation.expr.matrix)
+  validation.num.subj <- nrow(validation.expr.matrix)
+  validation.subj.names <- paste("subj", 1:validation.num.subj, sep="")
+  validation.phenotype <- ifelse(X_test[, ncol(X_test)] == -1, 0, 1)
+  validation.inbix <- cbind(validation.subj.names, validation.subj.names, validation.expr.matrix)
+  colnames(validation.inbix) <- c("FID", "IID", var.names)
+  write.table(validation.inbix, file=paste(base.sim.prefix, ".validation.sim.num", sep=""),
               quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
-  test.inbix.pheno <- cbind(test.subj.names, test.subj.names, test.phenotype)
-  write.table(test.inbix.pheno, file=paste(base.sim.prefix, ".test.sim.pheno", sep=""),
+  validation.inbix.pheno <- cbind(validation.subj.names, validation.subj.names, validation.phenotype)
+  write.table(validation.inbix.pheno, file=paste(base.sim.prefix, ".validation.sim.pheno", sep=""),
               quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
 }

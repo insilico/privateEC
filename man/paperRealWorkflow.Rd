@@ -2,16 +2,16 @@
 % Please edit documentation in R/workflow.R
 \name{paperRealWorkflow}
 \alias{paperRealWorkflow}
-\title{Runs the four comparison algorithms on passed data set.
+\title{Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
 Returns a data frame of run results for each.}
 \usage{
-paperRealWorkflow(corr.mat = NULL, phenos = NULL, update.freq = 50,
+paperRealWorkflow(real.data = NULL, label = NULL, update.freq = 50,
   verbose = FALSE)
 }
 \arguments{
-\item{corr.mat}{A matrix subject by region-pair correlations}
+\item{real.data}{A matrix subject by region-pair correlations augmented with class label}
 
-\item{phenos}{A vector of factors representing phenotypes for subjects}
+\item{label}{A character vector class label from columns of corr,mat}
 
 \item{update.freq}{A integer for the number of steps before update}
 
@@ -25,14 +25,13 @@ A list containing:
 }
 }
 \description{
-Runs the four comparison algorithms on passed data set.
+Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
 Returns a data frame of run results for each.
 }
 \examples{
   data(fullfMRI2)
-  data(phenos)
-  real.result <- paperRealWorkflow(corr.mat=fullfMRI2[, 2900:ncol(fullfMRI2)],
-                                   phenos=phenos,
+  real.result <- paperRealWorkflow(real.data=fullfMRI2[, 2900:ncol(fullfMRI2)],
+                                   label="phenos",
                                    update.freq=50,
                                    verbose=FALSE)
 }

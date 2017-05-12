@@ -2,24 +2,28 @@
 % Please edit documentation in R/simulation.R
 \name{createSimulation}
 \alias{createSimulation}
-\title{Create a data simulation and return train/holdout/test data sets.}
+\title{Create a data simulation and return train/holdout/validation data sets.}
 \usage{
-createSimulation(n = 100, d = 100, pb = 0.1, bias = 0.4,
-  shortname = "paramstring", type = "sva", myrun = "001",
-  verbose = FALSE, save.file = FALSE)
+createSimulation(n = 100, num.vars = 100, pct.signals = 0.1, bias = 0.4,
+  class.label = "class", shortname = "paramstring",
+  sim.type = "mainEffect", myrun = "001", verbose = FALSE,
+  save.file = FALSE)
 }
 \arguments{
 \item{n}{An integer for the number of samples}
 
-\item{d}{An integer for the number of variables}
+\item{num.vars}{An integer for the number of variables}
 
-\item{pb}{A numeric for proportion of functional variables}
+\item{pct.signals}{A numeric for proportion of functional variables}
 
 \item{bias}{A numeric for bias in data simulation}
 
+\item{class.label}{A character vector for the name of the class column}
+
 \item{shortname}{A character vector of a parameters separated by '_'}
 
-\item{type}{A character vector of the type of simulation: sva|er|inte}
+\item{sim.type}{A character vector of the type of simulation:
+mainEffect/interactionErdos/interactionScalefree}
 
 \item{myrun}{A character vector of a unique run identifier}
 
@@ -37,20 +41,20 @@ A list with:
 }
 }
 \description{
-Create a data simulation and return train/holdout/test data sets.
+Create a data simulation and return train/holdout/validation data sets.
 }
 \examples{
-sim.type <- "sva"
+sim.type <- "mainEffect"
 num.samples <- 100
 num.variables <- 100
-pb <- 0.1
+pct.signals <- 0.1
 bias <- 0.4
-nbias <- pb * num.variables
+nbias <- pct.signals * num.variables
 signals <- sprintf("gene\%04d", 1:nbias)
-sim.data <- createSimulation(d=num.variables, n=num.samples, pb=pb,
-                             bias=bias, type=sim.type, verbose=FALSE)
+sim.data <- createSimulation(d=num.variables, n=num.samples, pct.signals=pct.signals,
+                             bias=bias, sim.type=sim.type, verbose=FALSE)
 }
 \seealso{
 Other simulation: \code{\link{createDiffCoexpMatrixNoME}},
-  \code{\link{simulateData}}
+  \code{\link{simulateData}}, \code{\link{splitDataset}}
 }

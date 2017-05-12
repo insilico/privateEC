@@ -6,12 +6,14 @@
 #'
 #' @param train.set A training data frame with last column as class
 #' @param holdo.set A holdout data frame with last column as class
+#' @param label A character vector of the class variable column name
 #' @param imp.estimator A character vector CORElearn attribute importance estimator
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
 #' (Relief-F scores) for the train and holdout data sets.
 getImportanceScores <- function(train.set=NULL,
                                 holdo.set=NULL,
+                                label="phenos",
                                 imp.estimator="ReliefFbestK",
                                 verbose=FALSE) {
   if(is.null(train.set)) {
@@ -21,11 +23,9 @@ getImportanceScores <- function(train.set=NULL,
     stop("getImportanceScores: No holdout data set provided")
   }
   if(verbose) cat("\ttrain\n")
-  train.relief <- CORElearn::attrEval("pheno", data=train.set,
-                                      estimator=imp.estimator)
+  train.relief <- CORElearn::attrEval(label, data=train.set, estimator=imp.estimator)
   if(verbose) cat("\tholdout\n")
-  holdo.relief <- CORElearn::attrEval("pheno", data=holdo.set,
-                                      estimator=imp.estimator)
+  holdo.relief <- CORElearn::attrEval(label, data=holdo.set, estimator=imp.estimator)
 
   list(data.frame(train.relief), data.frame(holdo.relief))
 }
@@ -33,13 +33,12 @@ getImportanceScores <- function(train.set=NULL,
 #' Private Evaporative Cooling feature selection and classification
 #'
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
+#' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param n An integer for the number of samples
-#' @param d An integer for the number of variables
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param bias A numeric for bias in signal variables simulation
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param bias A numeric for effect size in simulated signal variables
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq An integer the number of steps before update
 #' @param corelearn.estimator CORElearn Relief-F estimator
@@ -51,6 +50,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
+#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with:
@@ -63,13 +63,13 @@ getImportanceScores <- function(train.set=NULL,
 #' @examples
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
-#' nbias <- pb * num.variables
+#' pct.signals <- 0.1
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
 #' sim.data <- createSimulation(d=num.variables, n=num.samples,
-#'                              type="sva", verbose=FALSE)
+#'                              sim.type="mainEffect", verbose=FALSE)
 #' ec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE,
-#'                         n=num.samples, signal.names=signals, verbose=FALSE)
+#'                         signal.names=signals, verbose=FALSE)
 #' @note Within thresholdout, we choose a threshold of 4 / sqrt(n) and
 #' tolerance of 1 / sqrt(n) as suggested in the thresholdout’s supplementary
 #' material (Dwork, et al., 2015).
@@ -81,37 +81,40 @@ getImportanceScores <- function(train.set=NULL,
 #' @family classification
 #' @export
 privateEC <- function(data.sets=NULL,
+                      label="phenos",
                       is.simulated=TRUE,
-                      n=100,
-                      d=100,
-                      shortname="paramstring",
                       bias=0.4,
-                      type="sva",
+                      sim.type="mainEffect",
                       myrun="001",
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
                       start.temp=0.1,
                       final.temp=10 ^ (-5),
                       tau.param=100,
-                      threshold=4 / sqrt(n),
-                      tolerance=1 / sqrt(n),
+                      threshold=4 / sqrt(nrow(data.sets$holdout)),
+                      tolerance=1 / sqrt(nrow(data.sets$holdout)),
                       signal.names=NULL,
+                      shortname="paramstring",
                       save.file=NULL,
                       verbose=FALSE) {
-  if(is.null(data.sets)) {
-    stop("privateEC: No data sets provided as first argument")
+  if(is.null(data.sets) | (length(data.sets) < 2)) {
+    stop("At least two data sets provided as first argument")
   }
   if(is.simulated & is.null(signal.names)) {
-    stop("privateEC: No signal names provided")
+    warning("No signal names provided")
   }
   ptm <- proc.time()
   if(verbose) cat("running Relief-F importance for training and holdout sets\n")
   important.scores <- getImportanceScores(train.set=data.sets$train,
                                           holdo.set=data.sets$holdout,
+                                          label=label,
                                           imp.estimator=corelearn.estimator,
                                           verbose=verbose)
   if(verbose) cat("private EC importance:", corelearn.estimator,
                   "elapsed time:", (proc.time() - ptm)[3], "\n")
+
+  n <- nrow(data.sets[[1]])
+  d <- ncol(data.sets[[1]]) - 1
 
   q1.scores <- important.scores[[1]]
   q2.scores <- important.scores[[2]]
@@ -128,7 +131,7 @@ privateEC <- function(data.sets=NULL,
   myT <- T0
 
   fholds <- 0.5
-  ftests <- 0.5
+  fvalidations <- 0.5
   ftrains <- 0.5
   correct.detect.ec <- vector(mode="numeric")
   oldAccuracy <- 0.5
@@ -166,25 +169,25 @@ privateEC <- function(data.sets=NULL,
       if(verbose) cat("step", i, "update", num.updates, "myT > Tmin",
                       myT, Tmin, "?\n")
       if(verbose) cat("\trecomputing scores with evaporated attributes removed\n")
-      new.X_train <- data.sets$train[, c(kept.atts, "pheno"), drop=F]
-      new.X_holdo <- data.sets$holdout[, c(kept.atts, "pheno"), drop=F]
-      new.X_test <- data.sets$test[, c(kept.atts, "pheno"), drop=F]
-      new.scores <- getImportanceScores(new.X_train, new.X_holdo)
+      new.X_train <- data.sets$train[, c(kept.atts, label), drop=F]
+      new.X_holdo <- data.sets$holdout[, c(kept.atts, label), drop=F]
+      new.X_validation <- data.sets$validation[, c(kept.atts, label), drop=F]
+      new.scores <- getImportanceScores(new.X_train, new.X_holdo, label=label)
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
       if(verbose) cat("\trunning randomForest\n")
-      result.rf <- randomForest::randomForest(pheno ~ ., data=new.X_train)
+      result.rf <- randomForest::randomForest(label ~ ., data=new.X_train)
       ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
       if(verbose) cat("\tpredict\n")
       holdo.pred <- predict(result.rf, newdata=new.X_holdo)
-      fholdo <- mean(holdo.pred == data.sets$holdout$pheno)
+      fholdo <- mean(holdo.pred == data.sets$holdout[, label])
       if(is.simulated) {
-        test.pred <- predict(result.rf, newdata=new.X_test)
-        ftest <- mean((test.pred == data.sets$test$pheno))
+        validation.pred <- predict(result.rf, newdata=new.X_validation)
+        fvalidation <- mean(validation.pred == data.sets$validation[, label])
       } else {
-        ftest <- 0
+        fvalidation <- 0
       }
       if(abs(ftrain - fholdo) < (threshold + rnorm(1, 0, tolerance))) {
         fholdo <- ftrain
@@ -195,7 +198,7 @@ privateEC <- function(data.sets=NULL,
 
       ftrains <- c(ftrains, ftrain)
       fholds <- c(fholds, fholdo)
-      ftests <- c(ftests, ftest)
+      fvalidations <- c(fvalidations, fvalidation)
 
       if(verbose) cat("\tadjusting temperature\n")
       myT <- myT * exp(-1 / tau) # dropping T
@@ -219,7 +222,7 @@ privateEC <- function(data.sets=NULL,
   fplots <- data.frame(num.atts,
                        ftrain=ftrains,
                        fholdo=fholds,
-                       ftest=ftests,
+                       fvalidation=fvalidations,
                        alg=1)
   fplots <- fplots[-1, ] # remove the first row
   melted.fs <- reshape2::melt(fplots, id=c("num.atts", "alg"))
@@ -245,12 +248,11 @@ privateEC <- function(data.sets=NULL,
 #' Original Thresholdout with Dwork’s linear classifier
 #' (Dwork, et al., 2015)
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
+#' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param n An integer for the number of samples
-#' @param d An integer for the number of variables
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param pec.file A character vector filename of privateEC results
@@ -259,6 +261,7 @@ privateEC <- function(data.sets=NULL,
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
+#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -271,14 +274,14 @@ privateEC <- function(data.sets=NULL,
 #' @examples
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
-#' nbias <- pb * num.variables
+#' pct.signals <- 0.1
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
 #' temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 #'
 #' data.sets <- createSimulation(d=num.variables,
 #'                               n=num.samples,
-#'                               type="sva",
+#'                               sim.type="mainEffect",
 #'                               verbose=FALSE)
 #' pec.results <- privateEC(data.sets=data.sets,
 #'                          is.simulated=TRUE,
@@ -287,7 +290,7 @@ privateEC <- function(data.sets=NULL,
 #'                          signal.names=signals,
 #'                          save.file=temp.pec.file,
 #'                          verbose=FALSE)
-#' por.results <- originalPrivacy(data.sets=data.sets,
+#' por.results <- originalThresholout(data.sets=data.sets,
 #'                                is.simulated=TRUE,
 #'                                n=num.samples,
 #'                                d=num.variables,
@@ -297,49 +300,51 @@ privateEC <- function(data.sets=NULL,
 #' file.remove(temp.pec.file)
 #' @family classification
 #' @export
-originalPrivacy <- function(data.sets=NULL,
-                            is.simulated=TRUE,
-                            n=100,
-                            d=100,
-                            shortname="paramstring",
-                            type="sva",
-                            myrun="001",
-                            update.freq=50,
-                            pec.file=NULL,
-                            threshold=4 / sqrt(n),
-                            tolerance=1 / sqrt(n),
-                            signal.names=NULL,
-                            save.file=NULL,
-                            verbose=FALSE) {
+originalThresholout <- function(data.sets=NULL,
+                                label="phenos",
+                                is.simulated=TRUE,
+                                sim.type="mainEffect",
+                                myrun="001",
+                                update.freq=50,
+                                pec.file=NULL,
+                                threshold=4 / sqrt(nrow(data.sets$holdout)),
+                                tolerance=1 / sqrt(nrow(data.sets$holdout)),
+                                signal.names=NULL,
+                                shortname="paramstring",
+                                save.file=NULL,
+                                verbose=FALSE) {
   if(is.null(data.sets)) {
-    stop("originalPrivacy: No data sets provided as data.sets argument")
+    stop("No data sets provided as data.sets argument")
   }
   if(is.simulated & is.null(signal.names)) {
-    stop("originalPrivacy: No signal names provided")
+    stop("No signal names provided")
   }
   if(is.null(pec.file)) {
-    stop("originalPrivacy: No previous privateEC results file in pec.file argument")
+    stop("No previous privateEC results file in pec.file argument")
   }
   if(!file.exists(pec.file)) {
-    stop("originalPrivacy: privateEC results file expected in pec.file argument:", pec.file)
+    stop("privateEC results file expected in pec.file argument:", pec.file)
   }
 
   ptm <- proc.time()
+
+  n <- nrow(data.sets[[1]])
+  d <- ncol(data.sets[[1]]) - 1
 
   # compare with original privacy::
   if(verbose) cat("loading resuls from privacy EC", pec.file, "\n")
   load(pec.file)
 
-  predictors.train <- as.matrix(data.sets$train[, 1:(d - 1)])
-  predictors.holdo <- as.matrix(data.sets$holdout[, 1:(d - 1)])
+  predictors.train <- as.matrix(data.sets$train[, 1:d])
+  predictors.holdo <- as.matrix(data.sets$holdout[, 1:d])
   if(is.simulated) {
-    predictors.test <- as.matrix(data.sets$test[, 1:(d - 1)])
+    predictors.validation <- as.matrix(data.sets$validation[, 1:d])
   }
-  train.pheno <- data.sets$train[, d]
-  holdo.pheno <- data.sets$holdout[, d]
+  train.pheno <- data.sets$train[, label]
+  holdo.pheno <- data.sets$holdout[, label]
   if(is.simulated) {
-    test.pheno <- data.sets$test[, d]
-    test.pheno <- as.numeric(levels(test.pheno))[test.pheno]
+    validation.pheno <- data.sets$validation[, label]
+    validation.pheno <- as.numeric(levels(validation.pheno))[validation.pheno]
   }
   train.pheno <- as.numeric(levels(train.pheno))[train.pheno]
   holdo.pheno <- as.numeric(levels(holdo.pheno))[holdo.pheno]
@@ -381,16 +386,16 @@ originalPrivacy <- function(data.sets=NULL,
       fholdo <- fholdo + rnorm(1, 0, tolerance)
     }
     if(is.simulated) {
-      ftest <- mean((sign(predictors.test %*% weights)) == test.pheno)
+      fvalidation <- mean((sign(predictors.validation %*% weights)) == validation.pheno)
     } else {
-      ftest <- 0
+      fvalidation <- 0
     }
     if(k == 0) {
       ftrain <- 0.5
       fholdo <- 0.5
-      ftest <- 0.5
+      fvalidation <- 0.5
     }
-    noisy_vals[i,] <- c(ftrain, fholdo, ftest)
+    noisy_vals[i,] <- c(ftrain, fholdo, fvalidation)
     var.names[[i]] <- colnames(data.sets$train)[topk]
     if(is.simulated) {
       correct.detect.ori <- c(correct.detect.ori,
@@ -398,7 +403,7 @@ originalPrivacy <- function(data.sets=NULL,
     }
   }
 
-  colnames(noisy_vals) <- c("ftrain", "fholdo", "ftest")
+  colnames(noisy_vals) <- c("ftrain", "fholdo", "fvalidation")
   pplots <- data.frame(num.atts, noisy_vals, alg=2)
   melted.ps <- reshape2::melt(pplots, id=c("num.atts", "alg"))
 
@@ -407,7 +412,7 @@ originalPrivacy <- function(data.sets=NULL,
     save(pplots, melted.ps, correct.detect.ori, file=save.file)
   }
 
-  if(verbose) cat("originalPrivacy elapsed time:", (proc.time() - ptm)[3], "\n")
+  if(verbose) cat("originalThresholout elapsed time:", (proc.time() - ptm)[3], "\n")
 
   list(plots.data=pplots,
        melted.data=melted.ps,
@@ -420,12 +425,11 @@ originalPrivacy <- function(data.sets=NULL,
 #' Random Forest Thresholdout, which is TO with the feature selection
 #' and classifier replaced with Random Forest.
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
+#' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param n An integer for the number of samples
-#' @param d An integer for the number of variables
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param rf.importance.measure A character vector for the random forest importance measure
 #' @param pec.file A character vector filename of privateEC results
 #' @param update.freq A integer for the number of steps before update
@@ -434,6 +438,7 @@ originalPrivacy <- function(data.sets=NULL,
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
+#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -446,14 +451,14 @@ originalPrivacy <- function(data.sets=NULL,
 #' @examples
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
-#' nbias <- pb * num.variables
+#' pct.signals <- 0.1
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
 #' temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 #'
 #' data.sets <- createSimulation(d=num.variables,
 #'                               n=num.samples,
-#'                               type="sva",
+#'                               sim.type="mainEffect",
 #'                               verbose=FALSE)
 #' pec.results <- privateEC(data.sets=data.sets,
 #'                          is.simulated=TRUE,
@@ -472,17 +477,16 @@ originalPrivacy <- function(data.sets=NULL,
 #' file.remove(temp.pec.file)
 #' @export
 privateRF <- function(data.sets=NULL,
+                      label="phenos",
                       is.simulated=TRUE,
-                      n=100,
-                      d=100,
-                      shortname="paramstring",
-                      type="sva",
+                      sim.type="mainEffect",
                       rf.importance.measure="MeanDecreaseGini",
                       pec.file=NULL,
                       update.freq=50,
-                      threshold=4 / sqrt(n),
-                      tolerance=1 / sqrt(n),
+                      threshold=4 / sqrt(nrow(data.sets$holdout)),
+                      tolerance=1 / sqrt(nrow(data.sets$holdout)),
                       signal.names=NULL,
+                      shortname="paramstring",
                       save.file=NULL,
                       verbose=FALSE) {
   if(is.null(data.sets)) {
@@ -500,13 +504,16 @@ privateRF <- function(data.sets=NULL,
 
   ptm <- proc.time()
 
+  n <- nrow(data.sets[[1]])
+  d <- ncol(data.sets[[1]]) - 1
+
   if(verbose) cat("loading resuls from privacy EC", pec.file, "\n")
   load(pec.file)
 
-  predictors.train <- as.matrix(data.sets$train[, 1:(d - 1)])
-  predictors.holdo <- as.matrix(data.sets$holdout[, 1:(d - 1)])
+  predictors.train <- as.matrix(data.sets$train[, 1:d])
+  predictors.holdo <- as.matrix(data.sets$holdout[, 1:d])
   if(is.simulated) {
-    predictors.test <- as.matrix(data.sets$test[, 1:(d - 1)])
+    predictors.validation <- as.matrix(data.sets$validation[, 1:d])
   }
 
   train.rf <- randomForest::randomForest(x=predictors.train,
@@ -546,7 +553,7 @@ privateRF <- function(data.sets=NULL,
     if (k == 0) {
       ftrain <- 0.5
       fholdo <- 0.5
-      ftest <- 0.5
+      fvalidation <- 0.5
     } else {
       topk <- tail(sortanswers, k)
       var.names[[i]] <- colnames(data.sets$train)[topk]
@@ -557,7 +564,7 @@ privateRF <- function(data.sets=NULL,
       # ytrain.pred <- predict(rf.model.k, newdata=data.sets$train)
       yholdo.pred <- predict(rf.model.k, newdata=data.sets$holdout)
       if(is.simulated) {
-        ytest.pred <- predict(rf.model.k, newdata=data.sets$test)
+        yvalidation.pred <- predict(rf.model.k, newdata=data.sets$validation)
       }
       ftrain <- 1 - mean(rf.model.k$confusion[, "class.error"])
       # ftrain <- mean(ytrain.pred == data.sets$train$pheno)
@@ -569,14 +576,14 @@ privateRF <- function(data.sets=NULL,
       } else {
         fholdo <- fholdo + rnorm(1, 0, tolerance)
       }
-      #   ftest <- sum((sign(predictors.test %*% weights)) == pheno.test)/n
+      #   fvalidation <- sum((sign(predictors.validation %*% weights)) == pheno.validation)/n
       if(is.simulated) {
-        ftest <- mean(ytest.pred == data.sets$test$pheno)
+        fvalidation <- mean(yvalidation.pred == data.sets$validation$pheno)
       } else {
-        ftest <- 0
+        fvalidation <- 0
       }
     }
-    noisy_vals[i,] <- c(ftrain, fholdo, ftest)
+    noisy_vals[i,] <- c(ftrain, fholdo, fvalidation)
     if(is.simulated) {
       correct.detect.rf <- c(correct.detect.rf,
                            sum(var.names[[i]] %in% signal.names))
@@ -584,7 +591,7 @@ privateRF <- function(data.sets=NULL,
   }
   if(verbose) cat(i, "\n")
 
-  colnames(noisy_vals) <- c("ftrain", "fholdo", "ftest")
+  colnames(noisy_vals) <- c("train.acc", "holdo.acc", "validation.acc")
   rfplots <- data.frame(num.atts, noisy_vals, alg=3)
 
   melted.rfs <- reshape2::melt(rfplots, id=c("num.atts", "alg"))
@@ -604,11 +611,13 @@ privateRF <- function(data.sets=NULL,
 
 #' Standard random forests algorithm serves as a baseline model
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
+#' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param signal.names A character vector of signal names in simulated data
+#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -621,11 +630,11 @@ privateRF <- function(data.sets=NULL,
 #' @examples
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
-#' nbias <- pb * num.variables
+#' pct.signals <- 0.1
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
 #' data.sets <- createSimulation(d=num.variables, n=num.samples,
-#'                               type="sva", verbose=FALSE)
+#'                               sim.type="mainEffect", verbose=FALSE)
 #' rra.results <- standardRF(data.sets=data.sets,
 #'                           is.simulated=TRUE,
 #'                           type=type,
@@ -634,10 +643,11 @@ privateRF <- function(data.sets=NULL,
 #' @family classification
 #' @export
 standardRF <- function(data.sets=NULL,
+                       label="phenos",
                        is.simulated=TRUE,
-                       shortname="paramstring",
-                       type="sva",
+                       sim.type="mainEffect",
                        signal.names=NULL,
+                       shortname="paramstring",
                        save.file=NULL,
                        verbose=FALSE) {
   if(is.null(data.sets)) {
@@ -647,27 +657,27 @@ standardRF <- function(data.sets=NULL,
     stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
-  bag.simul <- randomForest::randomForest(pheno ~.,
+  bag.simul <- randomForest::randomForest(label ~.,
                                           data=rbind(data.sets$train,
                                                      data.sets$holdout),
                                           importance=T)
   # rf.holdo.accu <- 1- bag.simul$prediction.error
   rf.holdo.accu <- 1 - mean(bag.simul$confusion[, "class.error"])
   if(is.simulated) {
-    rf.pred <- predict(bag.simul, newdata=data.sets$test)
-    rf.test.accu <- mean(rf.pred == data.sets$test$pheno)
+    rf.pred <- predict(bag.simul, newdata=data.sets$validation)
+    rf.validation.accu <- mean(rf.pred == data.sets$validation[, label])
   } else {
-    rf.test.accu  <- 0
+    rf.validation.accu  <- 0
   }
-  if(verbose) cat("accuracies", rf.holdo.accu, rf.test.accu, "\n")
+  if(verbose) cat("accuracies", rf.holdo.accu, rf.validation.accu, "\n")
   if(!is.null(save.file)) {
-    save(rf.test.accu, rf.holdo.accu, file=save.file)
+    save(rf.validation.accu, rf.holdo.accu, file=save.file)
   }
 
   rRaplots <- data.frame(num.atts=ncol(data.sets$train),
                          ftrain=1,
                          fholdo=rf.holdo.accu,
-                         ftest=rf.test.accu,
+                         fvalidation=rf.validation.accu,
                          alg=4)
   melted.rra <- reshape2::melt(rRaplots, id=c("num.atts", "alg"))
 
@@ -683,17 +693,18 @@ standardRF <- function(data.sets=NULL,
 #'
 #' Assumes the inbix executable is in the PATH.
 #'
-#' @param data.sets A list of train, holdout and test data frames
+#' @param data.sets A list of train, holdout and validation data frames
+#' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param n An integer for the number of samples
-#' @param shortname A character vector of a parameters separated by '_'
-#' @param bias A numeric for ?
-#' @param type A character vector of the type of simulation: sva|er|inte
+#' @param bias A numeric for effect size in simulated signal variables
+#' @param sim.type A character vector of the type of simulation:
+#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param start.temp A numeric for EC starting temperature
 #' @param final.temp A numeric for EC final temperature
 #' @param tau.param A numeric for tau to control reduction schedule
+#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @note inbix must be instaled in the path
@@ -707,27 +718,27 @@ standardRF <- function(data.sets=NULL,
 #' @examples
 #' num.samples <- 100
 #' num.variables <- 100
-#' pb <- 0.1
-#' nbias <- pb * num.variables
+#' pct.signals <- 0.1
+#' nbias <- pct.signals * num.variables
 #' signals <- sprintf("gene%04d", 1:nbias)
 #' sim.data <- createSimulation(d=num.variables, n=num.samples,
-#'                              type="sva", verbose=FALSE)
+#'                              sim.type="mainEffect", verbose=FALSE)
 #' pec.results <- privateECinbix(data.sets=sim.data,
 #'                               n=num.samples,
 #'                               verbose=FALSE)
 #' @family classification
 #' @export
 privateECinbix <- function(data.sets=NULL,
+                           label="phenos",
                            is.simulated=TRUE,
-                           n=100,
-                           shortname="paramstring",
                            bias=0.4,
-                           type="sva",
+                           sim.type="mainEffect",
                            myrun="001",
                            update.freq=50,
                            start.temp=0.1,
                            final.temp=10 ^ (-5),
                            tau.param=100,
+                           shortname="paramstring",
                            save.file=NULL,
                            verbose=FALSE) {
   if(is.null(data.sets)) {
@@ -738,21 +749,21 @@ privateECinbix <- function(data.sets=NULL,
     stop("inbix is not installed or not in the PATH")
   }
   ptm <- proc.time()
-  base.sim.prefix <- paste(type, "_", shortname, sep="")
-  unique.sim.prefix <- paste(type, "_", shortname, sep="")
+  base.sim.prefix <- paste(sim.type, "_", shortname, sep="")
+  unique.sim.prefix <- paste(sim.type, "_", shortname, sep="")
   correct.detect.inbix <- vector(mode="numeric")
   # write simple tab-separated vales (tsv) files
-  if(verbose) cat("Writing ", unique.sim.prefix, ".sim.(train|holdout|test).tab files\n")
+  if(verbose) cat("Writing ", unique.sim.prefix, ".sim.(train|holdout|validation).tab files\n")
   write.table(data.sets$train, paste(unique.sim.prefix, ".sim.train.tab", sep=""), sep="\t",
               row.names=FALSE, col.names=TRUE, quote=FALSE)
   write.table(data.sets$holdout, paste(unique.sim.prefix, ".sim.holdo.tab", sep=""), sep="\t",
               row.names=FALSE, col.names=TRUE, quote=FALSE)
-  write.table(data.sets$test, paste(unique.sim.prefix, ".sim.test.tab", sep=""), sep="\t",
+  write.table(data.sets$validation, paste(unique.sim.prefix, ".sim.test.tab", sep=""), sep="\t",
               row.names=FALSE, col.names=TRUE, quote=FALSE)
   if(verbose) cat("Running inbix privacy EC on saved simulation data sets\n")
   system.command <- paste("OMP_NUM_THREADS=4 inbix ",
                           "--ec-privacy ",
-                          "--depvarname pheno ",
+                          "--depvarname ", label, " ",
                           "--ec-privacy-train-file ", unique.sim.prefix, ".sim.train.tab ",
                           "--ec-privacy-holdout-file ", unique.sim.prefix, ".sim.holdo.tab ",
                           "--ec-privacy-test-file ", unique.sim.prefix, ".sim.test.tab ",
@@ -778,7 +789,7 @@ privateECinbix <- function(data.sets=NULL,
   fxplots <- data.frame(num.atts=as.integer(iters.table$Keep),
                         ftrain=iters.table$TrainAcc,
                         fholdo=iters.table$HoldoutAcc,
-                        ftest=iters.table$TestAcc,
+                        fvalidation=iters.table$TestAcc,
                         alg=5)
   melted.fx <- reshape2::melt(fxplots, id=c("num.atts", "alg"))
   if(verbose) cat("Cleaning up inbix private EC results files\n")
@@ -793,8 +804,8 @@ privateECinbix <- function(data.sets=NULL,
     if(verbose) {
       cat("saving results to ", save.file, "\n")
     }
-    save(fxplots, melted.fx, correct.detect.inbix, n, bias, shortname,
-         type, data.sets$train, data.sets$holdout, data.sets$test,
+    save(fxplots, melted.fx, correct.detect.inbix, bias, shortname,
+         type, data.sets$train, data.sets$holdout, data.sets$validation,
          file=save.file)
   }
   if(verbose) cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")

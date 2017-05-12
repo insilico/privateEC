@@ -7,7 +7,7 @@
 saveSimAsInbixNative(data.sets = NULL, base.sim.prefix, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and test data frames}
+\item{data.sets}{A list of train, holdout and validation data frames}
 
 \item{base.sim.prefix}{A character vector for the input and saved file prefixes}
 

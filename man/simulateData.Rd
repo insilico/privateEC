@@ -57,5 +57,6 @@ the database, not confounding in the new samples
 }
 \seealso{
 Other simulation: \code{\link{createDiffCoexpMatrixNoME}},
-  \code{\link{createSimulation}}
+  \code{\link{createSimulation}},
+  \code{\link{splitDataset}}
 }

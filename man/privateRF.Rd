@@ -4,24 +4,22 @@
 \alias{privateRF}
 \title{Private random forests algorithm}
 \usage{
-privateRF(data.sets = NULL, is.simulated = TRUE, n = 100, d = 100,
-  shortname = "paramstring", type = "sva",
-  rf.importance.measure = "MeanDecreaseGini", pec.file = NULL,
-  update.freq = 50, threshold = 4/sqrt(n), tolerance = 1/sqrt(n),
-  signal.names = NULL, save.file = NULL, verbose = FALSE)
+privateRF(data.sets = NULL, label = "phenos", is.simulated = TRUE,
+  sim.type = "mainEffect", rf.importance.measure = "MeanDecreaseGini",
+  pec.file = NULL, update.freq = 50,
+  threshold = 4/sqrt(nrow(data.sets$holdout)),
+  tolerance = 1/sqrt(nrow(data.sets$holdout)), signal.names = NULL,
+  shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and test data frames}
+\item{data.sets}{A list of train, holdout and validation data frames}
+
+\item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 
-\item{n}{An integer for the number of samples}
-
-\item{d}{An integer for the number of variables}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
-
-\item{type}{A character vector of the type of simulation: sva|er|inte}
+\item{sim.type}{A character vector of the type of simulation:
+mainEffect/interactionErdos/interactionScalefree}
 
 \item{rf.importance.measure}{A character vector for the random forest importance measure}
 
@@ -36,6 +34,8 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 thresholdout’s supplementary material (Dwork, et al.,2015)}
 
 \item{signal.names}{A character vector of signal names in simulated data}
+
+\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
@@ -57,14 +57,14 @@ and classifier replaced with Random Forest.
 \examples{
 num.samples <- 100
 num.variables <- 100
-pb <- 0.1
-nbias <- pb * num.variables
+pct.signals <- 0.1
+nbias <- pct.signals * num.variables
 signals <- sprintf("gene\%04d", 1:nbias)
 temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
 data.sets <- createSimulation(d=num.variables,
                               n=num.samples,
-                              type="sva",
+                              sim.type="mainEffect",
                               verbose=FALSE)
 pec.results <- privateEC(data.sets=data.sets,
                          is.simulated=TRUE,

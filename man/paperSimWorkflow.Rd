@@ -4,17 +4,17 @@
 \alias{paperSimWorkflow}
 \title{Workflow for running one simulation of the Bioinformatics paper workflow}
 \usage{
-paperSimWorkflow(myrun = "001", n = 100, d = 100, pb = 0.1,
-  update.freq = 50, verbose = FALSE)
+paperSimWorkflow(myrun = "001", n = 100, num.vars = 100,
+  pct.signals = 0.1, update.freq = 50, verbose = FALSE)
 }
 \arguments{
 \item{myrun}{A character vector identifying the run}
 
 \item{n}{An integer for the number of samples}
 
-\item{d}{An integer for the number of variables}
+\item{num.vars}{An integer for the number of variables}
 
-\item{pb}{A numeric for the significant variable bias}
+\item{pct.signals}{A numeric for the significant variable bias}
 
 \item{update.freq}{A integer for the number of steps before update}
 
@@ -28,7 +28,7 @@ A list containing:
 }
 }
 \description{
-Creates one simulation of train/holdout/test data sets, then runs the
+Creates one simulation of train/holdout/validation data sets, then runs the
 four algorithms on that data. Returns a data frame of run results for each.
 }
 \note{
@@ -37,9 +37,9 @@ Default parameter values match those from the Bioinformatics paper.
 \examples{
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
+  pct.signals <- 0.1
   bias <- 0.4
-  one.step.result <- paperSimWorkflow(myrun="001", n=100, d=100, pb=0.1,
+  one.step.result <- paperSimWorkflow(myrun="001", n=100, num.vars=100, pct.signals=0.1,
   update.freq=50, verbose=FALSE)
 }
 \seealso{

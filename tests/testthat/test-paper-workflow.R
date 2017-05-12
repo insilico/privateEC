@@ -8,12 +8,12 @@ context("Paper Workflows")
 test_that("run one workflow of a simulation plus an analysis step", {
   num.samples <- 100
   num.variables <- 100
-  pb <- 0.1
+  pct.signals <- 0.1
   bias <- 0.4
   one.step.result <- paperSimWorkflow(myrun="001",
                                       n=num.samples,
-                                      d=num.variables,
-                                      pb=pb,
+                                      num.vars=num.variables,
+                                      pct.signals=pct.signals,
                                       update.freq=50,
                                       verbose=FALSE)
   expect_equal(length(one.step.result), 2)
@@ -22,10 +22,10 @@ test_that("run one workflow of a simulation plus an analysis step", {
 
 test_that("run one workflow for a real data analysis", {
   data(fullfMRI2)
-  data(phenos)
-  # only 100 variables for a test
-  real.result <- paperRealWorkflow(corr.mat=fullfMRI2[, 2900:ncol(fullfMRI2)],
-                                   phenos=phenos,
+  # ~100 variables for a test
+  test.mat <- fullfMRI2[, 2900:ncol(fullfMRI2)]
+  real.result <- paperRealWorkflow(real.data=test.mat,
+                                   label="phenos",
                                    update.freq=50,
                                    verbose=FALSE)
   expect_equal(length(real.result), 2)

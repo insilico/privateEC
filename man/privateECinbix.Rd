@@ -4,23 +4,22 @@
 \alias{privateECinbix}
 \title{Call C++ inbix Evaporative Cooling Privacy}
 \usage{
-privateECinbix(data.sets = NULL, is.simulated = TRUE, n = 100,
-  shortname = "paramstring", bias = 0.4, type = "sva", myrun = "001",
-  update.freq = 50, start.temp = 0.1, final.temp = 10^(-5),
-  tau.param = 100, save.file = NULL, verbose = FALSE)
+privateECinbix(data.sets = NULL, label = "phenos", is.simulated = TRUE,
+  bias = 0.4, sim.type = "mainEffect", myrun = "001", update.freq = 50,
+  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
+  shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and test data frames}
+\item{data.sets}{A list of train, holdout and validation data frames}
+
+\item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 
-\item{n}{An integer for the number of samples}
+\item{bias}{A numeric for effect size in simulated signal variables}
 
-\item{shortname}{A character vector of a parameters separated by '_'}
-
-\item{bias}{A numeric for ?}
-
-\item{type}{A character vector of the type of simulation: sva|er|inte}
+\item{sim.type}{A character vector of the type of simulation:
+mainEffect/interactionErdos/interactionScalefree}
 
 \item{myrun}{A character vector of a unique run identifier}
 
@@ -31,6 +30,8 @@ privateECinbix(data.sets = NULL, is.simulated = TRUE, n = 100,
 \item{final.temp}{A numeric for EC final temperature}
 
 \item{tau.param}{A numeric for tau to control reduction schedule}
+
+\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
@@ -54,16 +55,16 @@ inbix must be instaled in the path
 \examples{
 num.samples <- 100
 num.variables <- 100
-pb <- 0.1
-nbias <- pb * num.variables
+pct.signals <- 0.1
+nbias <- pct.signals * num.variables
 signals <- sprintf("gene\%04d", 1:nbias)
 sim.data <- createSimulation(d=num.variables, n=num.samples,
-                             type="sva", verbose=FALSE)
+                             sim.type="mainEffect", verbose=FALSE)
 pec.results <- privateECinbix(data.sets=sim.data,
                               n=num.samples,
                               verbose=FALSE)
 }
 \seealso{
-Other classification: \code{\link{originalPrivacy}},
+Other classification: \code{\link{originalThresholout}},
   \code{\link{privateEC}}, \code{\link{standardRF}}
 }

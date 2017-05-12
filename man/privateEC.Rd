@@ -4,27 +4,25 @@
 \alias{privateEC}
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
-privateEC(data.sets = NULL, is.simulated = TRUE, n = 100, d = 100,
-  shortname = "paramstring", bias = 0.4, type = "sva", myrun = "001",
-  update.freq = 50, corelearn.estimator = "ReliefFbestK",
-  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
-  threshold = 4/sqrt(n), tolerance = 1/sqrt(n), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+privateEC(data.sets = NULL, label = "phenos", is.simulated = TRUE,
+  bias = 0.4, sim.type = "mainEffect", myrun = "001", update.freq = 50,
+  corelearn.estimator = "ReliefFbestK", start.temp = 0.1,
+  final.temp = 10^(-5), tau.param = 100,
+  threshold = 4/sqrt(nrow(data.sets$holdout)),
+  tolerance = 1/sqrt(nrow(data.sets$holdout)), signal.names = NULL,
+  shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and test data frames}
+\item{data.sets}{A list of train, holdout and validation data frames}
+
+\item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 
-\item{n}{An integer for the number of samples}
+\item{bias}{A numeric for effect size in simulated signal variables}
 
-\item{d}{An integer for the number of variables}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
-
-\item{bias}{A numeric for bias in signal variables simulation}
-
-\item{type}{A character vector of the type of simulation: sva|er|inte}
+\item{sim.type}{A character vector of the type of simulation:
+mainEffect/interactionErdos/interactionScalefree}
 
 \item{myrun}{A character vector of a unique run identifier}
 
@@ -45,6 +43,8 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 thresholdout’s supplementary material (Dwork, et al.,2015)}
 
 \item{signal.names}{A character vector of signal names in simulated data}
+
+\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
@@ -70,13 +70,13 @@ material (Dwork, et al., 2015).
 \examples{
 num.samples <- 100
 num.variables <- 100
-pb <- 0.1
-nbias <- pb * num.variables
+pct.signals <- 0.1
+nbias <- pct.signals * num.variables
 signals <- sprintf("gene\%04d", 1:nbias)
 sim.data <- createSimulation(d=num.variables, n=num.samples,
-                             type="sva", verbose=FALSE)
+                             sim.type="mainEffect", verbose=FALSE)
 ec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE,
-                        n=num.samples, signal.names=signals, verbose=FALSE)
+                        signal.names=signals, verbose=FALSE)
 }
 \references{
 Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
@@ -85,6 +85,6 @@ selection and classification with Relief-F and Random Forests,”
 Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
 }
 \seealso{
-Other classification: \code{\link{originalPrivacy}},
+Other classification: \code{\link{originalThresholout}},
   \code{\link{privateECinbix}}, \code{\link{standardRF}}
 }

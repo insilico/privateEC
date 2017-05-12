@@ -4,20 +4,23 @@
 \alias{standardRF}
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
-standardRF(data.sets = NULL, is.simulated = TRUE,
-  shortname = "paramstring", type = "sva", signal.names = NULL,
+standardRF(data.sets = NULL, label = "phenos", is.simulated = TRUE,
+  sim.type = "mainEffect", signal.names = NULL, shortname = "paramstring",
   save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and test data frames}
+\item{data.sets}{A list of train, holdout and validation data frames}
+
+\item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 
-\item{shortname}{A character vector of a parameters separated by '_'}
-
-\item{type}{A character vector of the type of simulation: sva|er|inte}
+\item{sim.type}{A character vector of the type of simulation:
+mainEffect/interactionErdos/interactionScalefree}
 
 \item{signal.names}{A character vector of signal names in simulated data}
+
+\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
@@ -38,11 +41,11 @@ Standard random forests algorithm serves as a baseline model
 \examples{
 num.samples <- 100
 num.variables <- 100
-pb <- 0.1
-nbias <- pb * num.variables
+pct.signals <- 0.1
+nbias <- pct.signals * num.variables
 signals <- sprintf("gene\%04d", 1:nbias)
 data.sets <- createSimulation(d=num.variables, n=num.samples,
-                              type="sva", verbose=FALSE)
+                              sim.type="mainEffect", verbose=FALSE)
 rra.results <- standardRF(data.sets=data.sets,
                           is.simulated=TRUE,
                           type=type,
@@ -50,6 +53,6 @@ rra.results <- standardRF(data.sets=data.sets,
                           signal.names=signals)
 }
 \seealso{
-Other classification: \code{\link{originalPrivacy}},
+Other classification: \code{\link{originalThresholout}},
   \code{\link{privateECinbix}}, \code{\link{privateEC}}
 }

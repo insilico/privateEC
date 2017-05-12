@@ -4,13 +4,15 @@
 \alias{getImportanceScores}
 \title{Compute and return importance scores (Relief-F scores)}
 \usage{
-getImportanceScores(train.set = NULL, holdo.set = NULL,
+getImportanceScores(train.set = NULL, holdo.set = NULL, label = "phenos",
   imp.estimator = "ReliefFbestK", verbose = FALSE)
 }
 \arguments{
 \item{train.set}{A training data frame with last column as class}
 
 \item{holdo.set}{A holdout data frame with last column as class}
+
+\item{label}{A character vector of the class variable column name}
 
 \item{imp.estimator}{A character vector CORElearn attribute importance estimator}
 

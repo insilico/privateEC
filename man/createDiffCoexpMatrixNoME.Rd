@@ -4,14 +4,16 @@
 \alias{createDiffCoexpMatrixNoME}
 \title{Create a differentially coexpressed data set without main effects}
 \usage{
-createDiffCoexpMatrixNoME(M = 100, N = 100, meanExpression = 7,
-  A = NULL, randSdNoise = 1, sdNoise = 0.4,
+createDiffCoexpMatrixNoME(M = 100, N = 100, class.label = "class",
+  meanExpression = 7, A = NULL, randSdNoise = 1, sdNoise = 0.4,
   sampleIndicesInteraction = NULL, verbose = FALSE)
 }
 \arguments{
 \item{M}{An integer for the number of samples (rows)}
 
 \item{N}{An integer for the number of variables (columns)}
+
+\item{class.label}{A character vector for the name of the class column}
 
 \item{meanExpression}{A numeric for the mean expression levels}
 
@@ -33,5 +35,5 @@ Create a differentially coexpressed data set without main effects
 }
 \seealso{
 Other simulation: \code{\link{createSimulation}},
-  \code{\link{simulateData}}
+  \code{\link{simulateData}}, \code{\link{splitDataset}}
 }
