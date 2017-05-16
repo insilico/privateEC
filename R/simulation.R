@@ -321,8 +321,8 @@ simulateData <- function(n.e=1000,
 #'
 #' @param n An integer for the number of samples
 #' @param num.vars An integer for the number of variables
-#' @param pct.signals A numeric for proportion of functional variables
-#' @param bias A numeric for bias in data simulation
+#' @param pct.signals A numeric for proportion of simulated signal variables
+#' @param bias A numeric for effect size in simulated signal variables
 #' @param class.label A character vector for the name of the class column
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param sim.type A character vector of the type of simulation:
@@ -332,9 +332,11 @@ simulateData <- function(n.e=1000,
 #' @param save.file A flag indicating whther to save the results to file
 #' @return A list with:
 #' \describe{
-#'   \item{plots.data}{data frame of results, a row for each update}
-#'   \item{melted.data}{melted results data frame for plotting}
-#'   \item{correct}{number of variables detected correctly in each data set}
+#'   \item{train}{traing data set}
+#'   \item{holdout}{holdout data set}
+#'   \item{validation}{validation data set}
+#'   \item{class.label}{the class label/column name}
+#'   \item{signal.names}{the variable names with simulated signals}
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
@@ -343,10 +345,12 @@ simulateData <- function(n.e=1000,
 #' num.variables <- 100
 #' pct.signals <- 0.1
 #' bias <- 0.4
-#' nbias <- pct.signals * num.variables
-#' signals <- sprintf("gene%04d", 1:nbias)
-#' sim.data <- createSimulation(d=num.variables, n=num.samples, pct.signals=pct.signals,
-#'                              bias=bias, sim.type=sim.type, verbose=FALSE)
+#' sim.data <- createSimulation(num.vars=num.variables,
+#'                              n=num.samples,
+#'                              pct.signals=pct.signals,
+#'                              bias=bias,
+#'                              sim.type=sim.type,
+#'                              verbose=FALSE)
 #' @family simulation
 #' @export
 createSimulation <- function(n=100,
@@ -403,7 +407,7 @@ createSimulation <- function(n=100,
   background.names <- paste("var", 1:(num.vars - nbias), sep="")
   var.names <- c(signal.names, background.names, class.label)
   colnames(dataset) <- var.names
-  split.data <- splitDataset(dataset,
+  split.data <- splitDataset(all.data=dataset,
                              pct.train=1 / 3,
                              pct.holdo=1 / 3,
                              pct.validation=1 / 3,

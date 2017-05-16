@@ -4,16 +4,21 @@
 \alias{privateEC}
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
-privateEC(data.sets = NULL, label = "phenos", is.simulated = TRUE,
-  bias = 0.4, sim.type = "mainEffect", myrun = "001", update.freq = 50,
+privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
+  label = "phenos", is.simulated = TRUE, bias = 0.4,
+  sim.type = "mainEffect", myrun = "001", update.freq = 50,
   corelearn.estimator = "ReliefFbestK", start.temp = 0.1,
   final.temp = 10^(-5), tau.param = 100,
-  threshold = 4/sqrt(nrow(data.sets$holdout)),
-  tolerance = 1/sqrt(nrow(data.sets$holdout)), signal.names = NULL,
+  threshold = 4/sqrt(nrow(holdout.ds)),
+  tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
   shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and validation data frames}
+\item{train.ds}{A data frame with training data and class labels}
+
+\item{holdout.ds}{A data frame with holdout data and class labels}
+
+\item{validation.ds}{A data frame with validation data and class labels}
 
 \item{label}{A character vector of the class variable column name}
 
@@ -53,8 +58,8 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 \value{
 A list with:
 \describe{
-  \item{plots.data}{data frame of results, a row for each update}
-  \item{melted.data}{melted results data frame for plotting}
+  \item{algo.acc}{data frame of results, a row for each update}
+  \item{ggplot.data}{melted results data frame for plotting with ggplot}
   \item{correct}{number of variables detected correctly in each data set}
   \item{elapsed}{total elapsed time}
 }
@@ -71,12 +76,18 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
-nbias <- pct.signals * num.variables
-signals <- sprintf("gene\%04d", 1:nbias)
-sim.data <- createSimulation(d=num.variables, n=num.samples,
-                             sim.type="mainEffect", verbose=FALSE)
-ec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE,
-                        signal.names=signals, verbose=FALSE)
+sim.data <- createSimulation(n=num.samples,
+                             num.vars=num.variables,
+                             pct.signals=pct.signals,
+                             sim.type="mainEffect",
+                             verbose=FALSE)
+pec.results <- privateEC(train.ds=sim.data$train,
+                         holdout.ds=sim.data$holdout,
+                         validation.ds=sim.data$validation,
+                         label=sim.data$class.label,
+                         is.simulated=TRUE,
+                         signal.names=sim.data$signal.names,
+                         verbose=FALSE)
 }
 \references{
 Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
@@ -85,6 +96,6 @@ selection and classification with Relief-F and Random Forests,”
 Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
 }
 \seealso{
-Other classification: \code{\link{originalThresholout}},
+Other classification: \code{\link{originalThresholdout}},
   \code{\link{privateECinbix}}, \code{\link{standardRF}}
 }

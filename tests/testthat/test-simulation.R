@@ -11,11 +11,14 @@ test_that("createSimulation mainEffect returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   bias <- 0.4
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples, pct.signals=pct.signals,
-                               bias=bias, sim.type=sim.type, verbose=FALSE)
-  expect_equal(nrow(sim.data$train) +
-                 nrow(sim.data$holdout) +
-                 nrow(sim.data$validation), num.samples * 3)
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               pct.signals=pct.signals,
+                               bias=bias,
+                               sim.type=sim.type,
+                               verbose=FALSE)
+  expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
+               num.samples * 3)
   expect_equal(ncol(sim.data$train), num.variables + 1)
 })
 
@@ -25,8 +28,12 @@ test_that("createSimulation Erdos-Renyi network base returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   bias <- 0.4
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples, pct.signals=pct.signals,
-                               bias=bias, sim.type=sim.type, verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               pct.signals=pct.signals,
+                               bias=bias,
+                               sim.type=sim.type,
+                               verbose=FALSE)
   expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
                num.samples * 3)
   expect_equal(ncol(sim.data$train), num.variables + 1)
@@ -38,18 +45,25 @@ test_that("createSimulation with interaction network returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   bias <- 0.4
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples, pct.signals=pct.signals,
-                               bias=bias, sim.type=sim.type, verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               pct.signals=pct.signals,
+                               bias=bias,
+                               sim.type=sim.type,
+                               verbose=FALSE)
   expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
                num.samples * 3)
   expect_equal(ncol(sim.data$train), num.variables + 1)
 })
 
-test_that("splitDataset", {
+test_that("splitDataset makes the right sized splits", {
   data("fullfMRI2")
   n <- nrow(fullfMRI2)
-  data.sets <- splitDataset(all.data=fullfMRI2, pct.train=0.5, pct.holdo=0.5,
-                            pct.validation=0, class.label="phenos")
+  data.sets <- splitDataset(all.data=fullfMRI2,
+                            pct.train=0.5,
+                            pct.holdo=0.5,
+                            pct.validation=0,
+                            class.label="phenos")
   # splits
   expect_equal(nrow(data.sets$train), n * 0.5, tolerance=0.5)
   expect_equal(nrow(data.sets$holdout), n * 0.5, tolerance=0.5)

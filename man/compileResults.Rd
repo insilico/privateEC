@@ -16,8 +16,8 @@ compileResults(run.results = NULL, save.file = NULL, verbose = FALSE)
 \value{
 A list with:
 \describe{
-  \item{plots.data}{data frame of results, a row for each update}
-  \item{melted.data}{melted results data frame for plotting}
+  \item{algo.acc}{data frame of results, a row for each update}
+  \item{ggplot.data}{melted results data frame for plotting}
   \item{correct}{number of variables detected correctly in each data set}
 }
 }

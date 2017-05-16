@@ -9,112 +9,128 @@ test_that("privateEC returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  nbias <- pct.signals * num.variables
-  signals <- sprintf("gene%04d", 1:nbias)
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
-                               sim.type="mainEffect", verbose=FALSE)
-  pec.results <- privateEC(data.sets=sim.data, is.simulated=TRUE, signal.names=signals,
+  sim.data <- createSimulation(n=num.samples,
+                               num.vars=num.variables,
+                               pct.signals=pct.signals,
+                               sim.type="mainEffect",
+                               verbose=FALSE)
+  pec.results <- privateEC(train.ds=sim.data$train,
+                           holdout.ds=sim.data$holdout,
+                           validation.ds=sim.data$validation,
+                           label=sim.data$class.label,
+                           is.simulated=TRUE,
+                           signal.names=sim.data$signal.names,
                            verbose=FALSE)
-  expect_equal(ncol(pec.results$plots.data), 5)
-  expect_equal(ncol(pec.results$melted.data), 4)
-  expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })
 
-test_that("originalThresholout returns sane results", {
+test_that("originalThresholdout returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  nbias <- pct.signals * num.variables
-  signals <- sprintf("gene%04d", 1:nbias)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
-  data.sets <- createSimulation(num.vars=num.variables,
-                                n=num.samples,
-                                sim.type="mainEffect",
-                                verbose=FALSE)
-  pec.results <- privateEC(data.sets=data.sets,
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               sim.type="mainEffect",
+                               verbose=FALSE)
+  pec.results <- privateEC(train.ds=sim.data$train,
+                           holdout.ds=sim.data$holdout,
+                           validation.ds=sim.data$validation,
+                           label=sim.data$class.label,
                            is.simulated=TRUE,
-                           signal.names=signals,
+                           signal.names=sim.data$signal.names,
                            save.file=temp.pec.file,
                            verbose=FALSE)
-  por.results <- originalThresholout(data.sets=data.sets,
-                                     is.simulated=TRUE,
-                                     signal.names=signals,
-                                     pec.file=temp.pec.file,
-                                     verbose=FALSE)
+  por.results <- originalThresholdout(train.ds=sim.data$train,
+                                      holdout.ds=sim.data$holdout,
+                                      validation.ds=sim.data$validation,
+                                      label=sim.data$class.label,
+                                      is.simulated=TRUE,
+                                      signal.names=sim.data$signal.names,
+                                      pec.file=temp.pec.file,
+                                      verbose=FALSE)
   file.remove(temp.pec.file)
 
-  expect_equal(ncol(pec.results$plots.data), 5)
-  expect_equal(ncol(pec.results$melted.data), 4)
-  expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 
-  expect_equal(ncol(por.results$plots.data), 5)
-  expect_equal(ncol(por.results$melted.data), 4)
-  expect_equal(length(por.results$correct), nrow(por.results$plots.data))
+  expect_equal(ncol(por.results$algo.acc), 5)
+  expect_equal(ncol(por.results$ggplot.data), 4)
+  expect_equal(length(por.results$correct), nrow(por.results$algo.acc))
 })
 
 test_that("privateRF returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  nbias <- pct.signals * num.variables
-  signals <- sprintf("gene%04d", 1:nbias)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
 
-  data.sets <- createSimulation(num.vars=num.variables,
+  sim.data <- createSimulation(num.vars=num.variables,
                                 n=num.samples,
                                 sim.type="mainEffect",
                                 verbose=FALSE)
-  pec.results <- privateEC(data.sets=data.sets,
+  pec.results <- privateEC(train.ds=sim.data$train,
+                           holdout.ds=sim.data$holdout,
+                           validation.ds=sim.data$validation,
+                           label=sim.data$class.label,
                            is.simulated=TRUE,
-                           signal.names=signals,
+                           signal.names=sim.data$signal.names,
                            save.file=temp.pec.file,
                            verbose=FALSE)
-  prf.results <- privateRF(data.sets=data.sets,
+  prf.results <- privateRF(train.ds=sim.data$train,
+                           holdout.ds=sim.data$holdout,
+                           validation.ds=sim.data$validation,
+                           label=sim.data$class.label,
                            is.simulated=TRUE,
-                           signal.names=signals,
+                           signal.names=sim.data$signal.names,
                            pec.file=temp.pec.file,
                            verbose=FALSE)
   file.remove(temp.pec.file)
 
-  expect_equal(ncol(pec.results$plots.data), 5)
-  expect_equal(ncol(pec.results$melted.data), 4)
-  expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 
-  expect_equal(ncol(prf.results$plots.data), 5)
-  expect_equal(ncol(prf.results$melted.data), 4)
-  expect_equal(length(prf.results$correct), nrow(prf.results$plots.data))
+  expect_equal(ncol(prf.results$algo.acc), 5)
+  expect_equal(ncol(prf.results$ggplot.data), 4)
+  expect_equal(length(prf.results$correct), nrow(prf.results$algo.acc))
 })
 
 test_that("standard random forest returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  nbias <- pct.signals * num.variables
-  signals <- sprintf("gene%04d", 1:nbias)
-  data.sets <- createSimulation(num.vars=num.variables, n=num.samples,
-                                sim.type="mainEffect", verbose=FALSE)
-  rra.results <- standardRF(data.sets=data.sets,
+  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
+                               sim.type="mainEffect", verbose=FALSE)
+  rra.results <- standardRF(train.ds=sim.data$train,
+                            holdout.ds=sim.data$holdout,
+                            validation.ds=sim.data$validation,
+                            label=sim.data$class.label,
                             is.simulated=TRUE,
                             sim.type=type,
                             verbose=FALSE,
-                            signal.names=signals)
+                            signal.names=sim.data$signal.names)
 
-  expect_equal(ncol(rra.results$plots.data), 5)
-  expect_equal(ncol(rra.results$melted.data), 4)
-  expect_equal(length(rra.results$correct), nrow(rra.results$plots.data))
+  expect_equal(ncol(rra.results$algo.acc), 5)
+  expect_equal(ncol(rra.results$ggplot.data), 4)
+  expect_equal(length(rra.results$correct), nrow(rra.results$algo.acc))
 })
 
 test_that("privateECinbix returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  nbias <- pct.signals * num.variables
-  signals <- sprintf("gene%04d", 1:nbias)
   sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
                                sim.type="mainEffect", verbose=FALSE)
-  pec.results <- privateECinbix(data.sets=sim.data, verbose=FALSE)
-  expect_equal(ncol(pec.results$plots.data), 5)
-  expect_equal(ncol(pec.results$melted.data), 4)
-  expect_equal(length(pec.results$correct), nrow(pec.results$plots.data))
+  pec.results <- privateECinbix(train.ds=sim.data$train,
+                                holdout.ds=sim.data$holdout,
+                                validation.ds=sim.data$validation,
+                                verbose=FALSE)
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })

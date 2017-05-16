@@ -14,9 +14,9 @@ createSimulation(n = 100, num.vars = 100, pct.signals = 0.1, bias = 0.4,
 
 \item{num.vars}{An integer for the number of variables}
 
-\item{pct.signals}{A numeric for proportion of functional variables}
+\item{pct.signals}{A numeric for proportion of simulated signal variables}
 
-\item{bias}{A numeric for bias in data simulation}
+\item{bias}{A numeric for effect size in simulated signal variables}
 
 \item{class.label}{A character vector for the name of the class column}
 
@@ -34,9 +34,11 @@ mainEffect/interactionErdos/interactionScalefree}
 \value{
 A list with:
 \describe{
-  \item{plots.data}{data frame of results, a row for each update}
-  \item{melted.data}{melted results data frame for plotting}
-  \item{correct}{number of variables detected correctly in each data set}
+  \item{train}{traing data set}
+  \item{holdout}{holdout data set}
+  \item{validation}{validation data set}
+  \item{class.label}{the class label/column name}
+  \item{signal.names}{the variable names with simulated signals}
   \item{elapsed}{total elapsed time}
 }
 }
@@ -49,10 +51,12 @@ num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
 bias <- 0.4
-nbias <- pct.signals * num.variables
-signals <- sprintf("gene\%04d", 1:nbias)
-sim.data <- createSimulation(d=num.variables, n=num.samples, pct.signals=pct.signals,
-                             bias=bias, sim.type=sim.type, verbose=FALSE)
+sim.data <- createSimulation(num.vars=num.variables,
+                             n=num.samples,
+                             pct.signals=pct.signals,
+                             bias=bias,
+                             sim.type=sim.type,
+                             verbose=FALSE)
 }
 \seealso{
 Other simulation: \code{\link{createDiffCoexpMatrixNoME}},

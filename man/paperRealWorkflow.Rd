@@ -38,7 +38,7 @@ Returns a data frame of run results for each.
 \seealso{
 The workflow consists of the sequence:
 \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
-\code{\link{originalPrivacy}}
+\code{\link{originalThresholdout}}
 \code{\link{privateRF}}
 \code{\link{standardRF}} and
 \code{\link{compileResults}}. A comparison analysis with simulated data

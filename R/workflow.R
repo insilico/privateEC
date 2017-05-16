@@ -26,7 +26,7 @@
 #' @seealso The workflow consists of the sequence:
 #' \code{\link{createSimulation}}
 #' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
-#' \code{\link{originalPrivacy}}
+#' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and
 #' \code{\link{compileResults}}. A comparison analysis with real data (fMRI)
@@ -68,7 +68,10 @@ paperSimWorkflow <- function(myrun="001",
                                   save.file=FALSE)
     if(verbose) cat("running private algorithms\n")
     if(verbose) cat("\nrunning privateEC\n")
-    pec.result <- privateEC(data.sets=data.sets,
+    pec.result <- privateEC(train.ds=data.sets$train,
+                            holdout.ds=data.sets$holdout,
+                            validation.ds=data.sets$validation,
+                            label=data.sets$class.label,
                             is.simulated=TRUE,
                             shortname=shortname,
                             bias=bias,
@@ -77,25 +80,34 @@ paperSimWorkflow <- function(myrun="001",
                             update.freq=update.freq,
                             save.file=temp.pec.file,
                             verbose=verbose,
-                            signal.names=signal.names)
-    if(verbose) cat("\nrunning originalprivacy.R\n")
-    por.result <- originalThresholout(data.sets=data.sets,
-                                  is.simulated=TRUE,
-                                  shortname=shortname,
-                                  sim.type=type,
-                                  myrun=myrun,
-                                  verbose=verbose,
-                                  signal.names=signal.names,
-                                  pec.file=temp.pec.file)
+                            signal.names=data.sets$signal.names)
+    if(verbose) cat("\nrunning originalThresholdout.R\n")
+    por.result <- originalThresholdout(train.ds=data.sets$train,
+                                       holdout.ds=data.sets$holdout,
+                                       validation.ds=data.sets$validation,
+                                       label=data.sets$class.label,
+                                       is.simulated=TRUE,
+                                       shortname=shortname,
+                                       sim.type=type,
+                                       myrun=myrun,
+                                       verbose=verbose,
+                                       signal.names=signal.names,
+                                       pec.file=temp.pec.file)
     if(verbose) cat("\nrunning privaterf.R\n")
-    pra.result <- privateRF(data.sets=data.sets,
+    pra.result <- privateRF(train.ds=data.sets$train,
+                            holdout.ds=data.sets$holdout,
+                            validation.ds=data.sets$validation,
+                            label=data.sets$class.label,
                             shortname=shortname,
                             sim.type=type,
                             verbose=verbose,
                             signal.names=signal.names,
                             pec.file=temp.pec.file)
     if(verbose) cat("\nrunning regularRF\n")
-    rra.result <- standardRF(data.sets=data.sets,
+    rra.result <- standardRF(train.ds=data.sets$train,
+                             holdout.ds=data.sets$holdout,
+                             validation.ds=data.sets$validation,
+                             label=data.sets$class.label,
                              is.simulated=TRUE,
                              shortname=shortname,
                              sim.type=type,
@@ -130,8 +142,8 @@ paperSimWorkflow <- function(myrun="001",
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with:
 #' \describe{
-#'   \item{plots.data}{data frame of results, a row for each update}
-#'   \item{melted.data}{melted results data frame for plotting}
+#'   \item{algo.acc}{data frame of results, a row for each update}
+#'   \item{ggplot.data}{melted results data frame for plotting}
 #'   \item{correct}{number of variables detected correctly in each data set}
 #' }
 #' @family workflows
@@ -142,24 +154,24 @@ compileResults <- function(run.results=NULL,
     stop("compileResults: No results list provided as first argument")
   }
   if(verbose) cat("compiling results for plotting\n")
-  plots.dfs <- lapply(run.results, FUN=function(method.results) {
-    method.results$plots.data
+  acc.dfs <- lapply(run.results, FUN=function(method.results) {
+    method.results$algo.acc
   })
-  fp.plots <- do.call(rbind, plots.dfs)
-  melted.dfs <- lapply(run.results, FUN=function(method.results) {
-    method.results$melted.data
+  all.acc <- do.call(rbind, acc.dfs)
+  ggplot.dfs <- lapply(run.results, FUN=function(method.results) {
+    method.results$ggplot.data
   })
-  fp.melted <- do.call(rbind, melted.dfs)
-  correct.dfs <- lapply(run.results, FUN=function(method.results) {
+  all.ggplot <- do.call(rbind, ggplot.dfs)
+  all.correct <- lapply(run.results, FUN=function(method.results) {
     method.results$correct
   })
   if(!is.null(save.file)) {
     if(verbose) cat("saving compiled results", save.file, "\n")
-    save(fp.plots, plots.dfs, fp.melted, file=save.file)
+    save(all.acc, all.correct, all.ggplot, file=save.file)
   }
-  list(plots.data=fp.plots,
-       melted.data=fp.melted,
-       correct=correct.dfs)
+  list(algo.acc=all.acc,
+       ggplot.data=all.ggplot,
+       correct=all.correct)
 }
 
 #' Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
@@ -182,7 +194,7 @@ compileResults <- function(run.results=NULL,
 #'                                    verbose=FALSE)
 #' @seealso The workflow consists of the sequence:
 #' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
-#' \code{\link{originalPrivacy}}
+#' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and
 #' \code{\link{compileResults}}. A comparison analysis with simulated data
@@ -203,21 +215,27 @@ paperRealWorkflow <- function(real.data=NULL,
   # transform the data to fit the workflow expectations
   n <- nrow(real.data)
   num.vars <- ncol(real.data) - 1
-  ind <- sample(2, n, replace=T)
-  ind.case <- sample(2, n, replace=T)[1:floor(n / 2)]
-  ind.ctrl <- sample(ind.case, floor(n / 2))
-  ind.case <- c(ind.case, 2)
-  real.data <- data.frame(real.data)
-  real.data[, label] <- factor(real.data[, label])
-  levels(real.data[, label]) <- c(-1, 1)
-  real.data.case <- real.data[real.data[num.vars] == 1, ]
-  real.data.ctrl <- real.data[real.data[num.vars] == -1, ]
-  X_train <- rbind(real.data.case[ind.case == 1, ], real.data.ctrl[ind.ctrl == 1, ])
-  X_holdo <- rbind(real.data.case[ind.case == 2, ], real.data.ctrl[ind.ctrl == 2, ])
-  real.data.sets <- list(train=X_train, holdout=X_holdo)
+  real.data.sets <- splitDataset(all.data=real.data,
+                                 pct.train=0.5, pct.holdo=0.5, pct.validation=0,
+                                 class.label="phenos")
+  # ind <- sample(2, n, replace=T)
+  # ind.case <- sample(2, n, replace=T)[1:floor(n / 2)]
+  # ind.ctrl <- sample(ind.case, floor(n / 2))
+  # ind.case <- c(ind.case, 2)
+  # real.data <- data.frame(real.data)
+  # real.data[, label] <- factor(real.data[, label])
+  # levels(real.data[, label]) <- c(-1, 1)
+  # real.data.case <- real.data[real.data[num.vars] == 1, ]
+  # real.data.ctrl <- real.data[real.data[num.vars] == -1, ]
+  # X_train <- rbind(real.data.case[ind.case == 1, ], real.data.ctrl[ind.ctrl == 1, ])
+  # X_holdo <- rbind(real.data.case[ind.case == 2, ], real.data.ctrl[ind.ctrl == 2, ])
+  # real.data.sets <- list(train=X_train, holdout=X_holdo)
 
   if(verbose) cat("\nrunning privateEC\n")
-  pec.result <- privateEC(data.sets=real.data.sets,
+  pec.result <- privateEC(train.ds=real.data.sets$train,
+                          holdout.ds=real.data.sets$holdout,
+                          validation.ds=NULL,
+                          label=label,
                           is.simulated=FALSE,
                           shortname="fmri",
                           sim.type="REAL",
@@ -225,23 +243,32 @@ paperRealWorkflow <- function(real.data=NULL,
                           update.freq=update.freq,
                           save.file=temp.pec.file,
                           verbose=verbose)
-  if(verbose) cat("\nrunning originalprivacy.R\n")
-  por.result <- originalPrivacy(data.sets=real.data.sets,
-                                is.simulated=FALSE,
-                                shortname="fmri",
-                                sim.type="REAL",
-                                myrun="000",
-                                verbose=verbose,
-                                pec.file=temp.pec.file)
+  if(verbose) cat("\nrunning originalThresholdout.R\n")
+  por.result <- originalThresholdout(train.ds=real.data.sets$train,
+                                     holdout.ds=real.data.sets$holdout,
+                                     validation.ds=NULL,
+                                     label=label,
+                                     is.simulated=FALSE,
+                                     shortname="fmri",
+                                     sim.type="REAL",
+                                     myrun="000",
+                                     verbose=verbose,
+                                     pec.file=temp.pec.file)
   if(verbose) cat("\nrunning privaterf.R\n")
-  pra.result <- privateRF(data.sets=real.data.sets,
+  pra.result <- privateRF(train.ds=real.data.sets$train,
+                          holdout.ds=real.data.sets$holdout,
+                          validation.ds=NULL,
+                          label=label,
                           shortname="fmri",
                           sim.type="REAL",
                           is.simulated=FALSE,
                           pec.file=temp.pec.file,
                           verbose=verbose)
   if(verbose) cat("\nrunning regularRF\n")
-  rra.result <- standardRF(data.sets=real.data.sets,
+  rra.result <- standardRF(train.ds=real.data.sets$train,
+                           holdout.ds=real.data.sets$holdout,
+                           validation.ds=NULL,
+                           label=label,
                            is.simulated=FALSE,
                            shortname="fmri",
                            sim.type="REAL",
@@ -250,15 +277,11 @@ paperRealWorkflow <- function(real.data=NULL,
   file.remove(temp.pec.file)
 
   # compile and return results
-  all.results = list(pec=pec.result,
-                     por=por.result,
-                     pra=pra.result,
-                     rra=rra.result)
-  run.results <- compileResults(run.results=all.results,
-                                verbose=verbose)
+  all.results = list(pec=pec.result, por=por.result, pra=pra.result, rra=rra.result)
+  final.results <- compileResults(run.results=all.results, verbose=verbose)
 
   elapsed <- (proc.time() - ptm)[3]
   if(verbose) cat("Total elapsed time:", elapsed, "\n")
 
-  list(run.results=run.results, elapsed=elapsed)
+  list(run.results=final.results, elapsed=elapsed)
 }

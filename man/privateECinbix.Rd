@@ -4,13 +4,18 @@
 \alias{privateECinbix}
 \title{Call C++ inbix Evaporative Cooling Privacy}
 \usage{
-privateECinbix(data.sets = NULL, label = "phenos", is.simulated = TRUE,
-  bias = 0.4, sim.type = "mainEffect", myrun = "001", update.freq = 50,
+privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
+  label = "phenos", is.simulated = TRUE, bias = 0.4,
+  sim.type = "mainEffect", myrun = "001", update.freq = 50,
   start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
   shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{data.sets}{A list of train, holdout and validation data frames}
+\item{train.ds}{A data frame with training data and class labels}
+
+\item{holdout.ds}{A data frame with holdout data and class labels}
+
+\item{validation.ds}{A data frame with validation data and class labels}
 
 \item{label}{A character vector of the class variable column name}
 
@@ -40,8 +45,8 @@ mainEffect/interactionErdos/interactionScalefree}
 \value{
 A list containing:
 \describe{
-  \item{plots.data}{data frame of results, a row for each update}
-  \item{melted.data}{melted results data frame for plotting}
+  \item{algo.acc}{data frame of results, a row for each update}
+  \item{ggplot.data}{melted results data frame for plotting}
   \item{correct}{number of variables detected correctly in each data set}
   \item{elapsed}{total elapsed time}
 }
@@ -56,15 +61,14 @@ inbix must be instaled in the path
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
-nbias <- pct.signals * num.variables
-signals <- sprintf("gene\%04d", 1:nbias)
-sim.data <- createSimulation(d=num.variables, n=num.samples,
+sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
                              sim.type="mainEffect", verbose=FALSE)
-pec.results <- privateECinbix(data.sets=sim.data,
-                              n=num.samples,
+pec.results <- privateECinbix(train.ds=sim.data$train,
+                              holdout.ds=sim.data$holdout,
+                              validation.ds=sim.data$validation,
                               verbose=FALSE)
 }
 \seealso{
-Other classification: \code{\link{originalThresholout}},
+Other classification: \code{\link{originalThresholdout}},
   \code{\link{privateEC}}, \code{\link{standardRF}}
 }
