@@ -1,0 +1,80 @@
+---
+title: "Example1"
+author: "Bill C. White"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+  
+vignette: >
+  %\VignetteIndexEntry{Example1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Privacy preserving Evaporative Cooling feature selection and classification with Relief-F and Random Forests
+
+Methods are described in the following publication.
+
+Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. “Privacy preserving evaporative cooling feature selection and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. [Bioinformatics Abstract](https://doi.org/10.1093/bioinformatics/btx298). 2017.
+
+## Example Run and Results
+
+```{r}
+library(privateEC)
+myrun <- "001"
+n <- 100
+num.vars <- 100
+bias <- 0.4
+type <- "mainEffect"
+pct.signals <- 0.1
+update.freq <- 5
+verbose <- FALSE
+shortname <- "Example1"
+
+data.sets <- createSimulation(n=n,
+                              num.vars=num.vars,
+                              pct.signals=pct.signals,
+                              bias=bias,
+                              shortname=shortname,
+                              sim.type=type,
+                              myrun=myrun,
+                              verbose=verbose,
+                              save.file=FALSE)
+
+pec.result <- privateEC(train.ds=data.sets$train,
+                        holdout.ds=data.sets$holdout,
+                        validation.ds=data.sets$validation,
+                        label=data.sets$class.label,
+                        is.simulated=TRUE,
+                        shortname=shortname,
+                        bias=bias,
+                        myrun=myrun,
+                        update.freq=update.freq,
+                        save.file=NULL,
+                        verbose=verbose,
+                        signal.names=data.sets$signal.names)
+```
+
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",
+             row.names=FALSE, digits=3)
+```
+
+```{r, echo=FALSE, fig.width=14, fig.width=7, fig.align='center'}
+# library(ggplot2)
+# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
+#   geom_point(size=1) + geom_line()
+plot(pec.result$algo.acc$vars.remain, 
+     pec.result$algo.acc$holdout.acc, 
+     col="red", pch=16, type='b', cex=0.75, 
+     main="One run of privateEC",
+     xlab="Number of Attributes in Model",
+     ylab="Accuracy")
+points(pec.result$algo.acc$vars.remain, 
+       pec.result$algo.acc$train.acc, 
+       col="green", pch=1, type='b', cex=0.75)
+points(pec.result$algo.acc$vars.remain, 
+       pec.result$algo.acc$validation.acc, 
+       col="blue", pch=4, type='b', cex=0.75)
+legend("topright", c("Train", "Holdout", "Test"), 
+       pch=c(16, 1, 4), col=c("red", "green", "blue"), cex=0.75)
+```
