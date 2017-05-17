@@ -53,7 +53,7 @@ paperSimWorkflow <- function(myrun="001",
     type <- types[[simtype.num]]
     bias <- biases[[simtype.num]]
     if(verbose) cat("begin type/sim/classification loop for type/bias",
-                    sim.type, bias, "\n")
+                    simtype.num, bias, "\n")
     if(verbose) cat("running simulation with n num.vars pct.signals", n, num.vars, pct.signals, "\n")
     shortname <- paste(round(bias, digits=1), pct.signals, num.vars, n, myrun, sep="_")
     if(verbose) cat("--------------------------------------------\n")
@@ -75,7 +75,6 @@ paperSimWorkflow <- function(myrun="001",
                             is.simulated=TRUE,
                             shortname=shortname,
                             bias=bias,
-                            sim.type=type,
                             myrun=myrun,
                             update.freq=update.freq,
                             save.file=temp.pec.file,
@@ -88,7 +87,6 @@ paperSimWorkflow <- function(myrun="001",
                                        label=data.sets$class.label,
                                        is.simulated=TRUE,
                                        shortname=shortname,
-                                       sim.type=type,
                                        myrun=myrun,
                                        verbose=verbose,
                                        signal.names=signal.names,
@@ -99,7 +97,6 @@ paperSimWorkflow <- function(myrun="001",
                             validation.ds=data.sets$validation,
                             label=data.sets$class.label,
                             shortname=shortname,
-                            sim.type=type,
                             verbose=verbose,
                             signal.names=signal.names,
                             pec.file=temp.pec.file)
@@ -110,7 +107,6 @@ paperSimWorkflow <- function(myrun="001",
                              label=data.sets$class.label,
                              is.simulated=TRUE,
                              shortname=shortname,
-                             sim.type=type,
                              verbose=verbose,
                              signal.names=signal.names)
 
@@ -216,20 +212,10 @@ paperRealWorkflow <- function(real.data=NULL,
   n <- nrow(real.data)
   num.vars <- ncol(real.data) - 1
   real.data.sets <- splitDataset(all.data=real.data,
-                                 pct.train=0.5, pct.holdo=0.5, pct.validation=0,
+                                 pct.train=0.5,
+                                 pct.holdout=0.5,
+                                 pct.validation=0,
                                  class.label="phenos")
-  # ind <- sample(2, n, replace=T)
-  # ind.case <- sample(2, n, replace=T)[1:floor(n / 2)]
-  # ind.ctrl <- sample(ind.case, floor(n / 2))
-  # ind.case <- c(ind.case, 2)
-  # real.data <- data.frame(real.data)
-  # real.data[, label] <- factor(real.data[, label])
-  # levels(real.data[, label]) <- c(-1, 1)
-  # real.data.case <- real.data[real.data[num.vars] == 1, ]
-  # real.data.ctrl <- real.data[real.data[num.vars] == -1, ]
-  # X_train <- rbind(real.data.case[ind.case == 1, ], real.data.ctrl[ind.ctrl == 1, ])
-  # X_holdo <- rbind(real.data.case[ind.case == 2, ], real.data.ctrl[ind.ctrl == 2, ])
-  # real.data.sets <- list(train=X_train, holdout=X_holdo)
 
   if(verbose) cat("\nrunning privateEC\n")
   pec.result <- privateEC(train.ds=real.data.sets$train,
@@ -238,7 +224,6 @@ paperRealWorkflow <- function(real.data=NULL,
                           label=label,
                           is.simulated=FALSE,
                           shortname="fmri",
-                          sim.type="REAL",
                           myrun="000",
                           update.freq=update.freq,
                           save.file=temp.pec.file,
@@ -250,7 +235,6 @@ paperRealWorkflow <- function(real.data=NULL,
                                      label=label,
                                      is.simulated=FALSE,
                                      shortname="fmri",
-                                     sim.type="REAL",
                                      myrun="000",
                                      verbose=verbose,
                                      pec.file=temp.pec.file)
@@ -260,7 +244,6 @@ paperRealWorkflow <- function(real.data=NULL,
                           validation.ds=NULL,
                           label=label,
                           shortname="fmri",
-                          sim.type="REAL",
                           is.simulated=FALSE,
                           pec.file=temp.pec.file,
                           verbose=verbose)
@@ -271,7 +254,6 @@ paperRealWorkflow <- function(real.data=NULL,
                            label=label,
                            is.simulated=FALSE,
                            shortname="fmri",
-                           sim.type="REAL",
                            verbose=verbose)
 
   file.remove(temp.pec.file)

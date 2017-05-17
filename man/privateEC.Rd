@@ -5,10 +5,9 @@
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, bias = 0.4,
-  sim.type = "mainEffect", myrun = "001", update.freq = 50,
-  corelearn.estimator = "ReliefFbestK", start.temp = 0.1,
-  final.temp = 10^(-5), tau.param = 100,
+  label = "phenos", is.simulated = TRUE, bias = 0.4, myrun = "001",
+  update.freq = 50, corelearn.estimator = "ReliefFbestK",
+  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
   threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
   shortname = "paramstring", save.file = NULL, verbose = FALSE)
@@ -25,9 +24,6 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{is.simulated}{Is the data simulated (or real?)}
 
 \item{bias}{A numeric for effect size in simulated signal variables}
-
-\item{sim.type}{A character vector of the type of simulation:
-mainEffect/interactionErdos/interactionScalefree}
 
 \item{myrun}{A character vector of a unique run identifier}
 

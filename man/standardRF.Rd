@@ -5,9 +5,8 @@
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
 standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, sim.type = "mainEffect",
-  signal.names = NULL, shortname = "paramstring", save.file = NULL,
-  verbose = FALSE)
+  label = "phenos", is.simulated = TRUE, signal.names = NULL,
+  shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -19,9 +18,6 @@ standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
-
-\item{sim.type}{A character vector of the type of simulation:
-mainEffect/interactionErdos/interactionScalefree}
 
 \item{signal.names}{A character vector of signal names in simulated data}
 
@@ -44,6 +40,7 @@ A list containing:
 Standard random forests algorithm serves as a baseline model
 }
 \examples{
+num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
 sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
@@ -53,7 +50,6 @@ rra.results <- standardRF(train.ds=sim.data$train,
                           validation.ds=sim.data$validation,
                           label=sim.data$class.label,
                           is.simulated=TRUE,
-                          sim.type=type,
                           verbose=FALSE,
                           signal.names=sim.data$signal.names)
 }

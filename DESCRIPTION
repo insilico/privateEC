@@ -4,21 +4,18 @@ Title: Privacy preserving evaporative cooling feature selection and
     classification with Relief-F and Random Forests
 Version: 0.4.0
 Date: May 2017
-Authors@R: c(person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut")), 
-  person("W. K.", "Simmons", role=c("aut")),
-  person("M.", "Misaki", role=c("aut")),
-  person("B. C.", "White", email="bill-white@utulsa.edu",role=c("aut", "cre")),
-  person("J.", "Savitz", role=c("aut")),
-  person("J.", "Borduka", role=c("aut")),
-  person("B. A.", "McKinney", role=c("aut")))
-Maintainer: Bill White <bill-white@utulsa.edu>
+Authors@R: c(person("B. A.", "McKinney", email="brett-mckinney@utulsa.edu", role=c("aut", "cre")),
+             person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut")), 
+             person("B. C.", "White", email="bill-white@utulsa.edu", role=c("aut")))
+Maintainer: Brett McKinney <brett-mckinney@utulsa.edu>
 Description: Privacy preserving evaporative cooling algorithm along
     with other comparison algorithms used in the Bioinformatics paper referenced 
     below: 
-    Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and 
+    Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and 
     B. A. McKinney. “Privacy preserving evaporative cooling feature selection and 
-    classification with Relief-F and Random Forests,”  Bioinformatics. Accepted. 2017.
-License: GPL-3
+    classification with Relief-F and Random Forests,” Bioinformatics. Accepted. 
+    https://doi.org/10.1093/bioinformatics/btx298. 2017.
+License: file LICENSE
 Depends: R (>= 3.1.0)
 Encoding: UTF-8
 LazyData: true

@@ -24,13 +24,13 @@
 #' data.sets <- splitDataset(fullfMRI2)
 #' @family simulation
 #' @export
-splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdo=0.5, pct.validation=0,
+splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdout=0.5, pct.validation=0,
                          class.label="phenos") {
   if(is.null(all.data)) {
     # stop or warning and return list of length 0?
     stop("No data passed")
   }
-  if(pct.train + pct.holdo + pct.validation != 1) {
+  if(pct.train + pct.holdout + pct.validation != 1) {
     stop("Proportions of training, holdout and testing have to sum to 1")
   }
   if(!(class.label %in% colnames(all.data))) {
@@ -51,13 +51,13 @@ splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdo=0.5, pct.valida
   n.ctrl <- length(ind.ctrl)
 
   n.validation.case <- floor(pct.validation * n.case)
-  n.holdo.case <- floor(pct.holdo * n.case)
+  n.holdo.case <- floor(pct.holdout * n.case)
   n.train.case <- n.case - n.validation.case - n.holdo.case
   partition.case <- sample(c(rep(3, n.validation.case), rep(2, n.holdo.case),
                              rep(1, n.train.case)), n.case)
 
   n.validation.ctrl <- floor(pct.validation * n.ctrl)
-  n.holdo.ctrl <- floor(pct.holdo * n.ctrl)
+  n.holdo.ctrl <- floor(pct.holdout * n.ctrl)
   n.train.ctrl <- n.ctrl - n.validation.ctrl - n.holdo.ctrl
   partition.ctrl <- sample(c(rep(3, n.validation.ctrl),
                              rep(2, n.holdo.ctrl),
@@ -409,7 +409,7 @@ createSimulation <- function(n=100,
   colnames(dataset) <- var.names
   split.data <- splitDataset(all.data=dataset,
                              pct.train=1 / 3,
-                             pct.holdo=1 / 3,
+                             pct.holdout=1 / 3,
                              pct.validation=1 / 3,
                              class.label=class.label)
 

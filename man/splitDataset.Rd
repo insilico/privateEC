@@ -4,7 +4,7 @@
 \alias{splitDataset}
 \title{Split a data set for machine learning classification}
 \usage{
-splitDataset(all.data = NULL, pct.train = 0.5, pct.holdo = 0.5,
+splitDataset(all.data = NULL, pct.train = 0.5, pct.holdout = 0.5,
   pct.validation = 0, class.label = "phenos")
 }
 \arguments{
@@ -12,11 +12,11 @@ splitDataset(all.data = NULL, pct.train = 0.5, pct.holdo = 0.5,
 
 \item{pct.train}{A numeric percentage of samples to use for traning}
 
+\item{pct.holdout}{A numeric percentage of samples to use for holdout}
+
 \item{pct.validation}{A numeric percentage of samples to use for testing}
 
 \item{class.label}{A character vector of the data column name for the class label}
-
-\item{pct.holdout}{A numeric percentage of samples to use for holdout}
 }
 \value{
 A list containing:

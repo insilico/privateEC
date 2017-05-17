@@ -1,41 +1,58 @@
 ## ------------------------------------------------------------------------
 library(privateEC)
-update.freq <- 10
-num.samples <- 100
-num.variables <- 100
-prob.bias <- 0.1
-nbias <- prob.bias * num.variables
-signals <- sprintf("gene%04d", 1:nbias)
-sim.data <- createSimulation(d=num.variables, 
-                             n=num.samples,
-                             type="inte", 
-                             verbose=FALSE)
-pec.results <- privateEC(data.sets=sim.data, 
-                         is.simulated=TRUE, 
-                         n=num.samples,
-                         signal.names=signals, 
-                         verbose=FALSE, 
-                         update.freq=update.freq)
+myrun <- "001"
+n <- 100
+num.vars <- 100
+bias <- 0.4
+type <- "mainEffect"
+pct.signals <- 0.1
+update.freq <- 5
+verbose <- FALSE
+shortname <- "Example1"
+
+data.sets <- createSimulation(n=n,
+                              num.vars=num.vars,
+                              pct.signals=pct.signals,
+                              bias=bias,
+                              shortname=shortname,
+                              sim.type=type,
+                              myrun=myrun,
+                              verbose=verbose,
+                              save.file=FALSE)
+
+pec.result <- privateEC(train.ds=data.sets$train,
+                        holdout.ds=data.sets$holdout,
+                        validation.ds=data.sets$validation,
+                        label=data.sets$class.label,
+                        is.simulated=TRUE,
+                        shortname=shortname,
+                        bias=bias,
+                        myrun=myrun,
+                        update.freq=update.freq,
+                        save.file=NULL,
+                        verbose=verbose,
+                        signal.names=data.sets$signal.names)
 
 ## ---- echo=FALSE---------------------------------------------------------
-knitr::kable(pec.results$plots.data, caption="Algorithm Iterations",
+knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",
              row.names=FALSE, digits=3)
 
 ## ---- echo=FALSE, fig.width=14, fig.width=7, fig.align='center'----------
 # library(ggplot2)
-# ggplot(pec.results$melted.data, aes(x=num.atts, y=value, colour=variable)) +
+# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
 #   geom_point(size=1) + geom_line()
-plot(pec.results$plots.data$num.atts, 
-     pec.results$plots.data$fholdo, 
+plot(pec.result$algo.acc$vars.remain, 
+     pec.result$algo.acc$holdout.acc, 
      col="red", pch=16, type='b', cex=0.75, 
      main="One run of privateEC",
      xlab="Number of Attributes in Model",
      ylab="Accuracy")
-points(pec.results$plots.data$num.atts, 
-       pec.results$plots.data$ftrain, 
+points(pec.result$algo.acc$vars.remain, 
+       pec.result$algo.acc$train.acc, 
        col="green", pch=1, type='b', cex=0.75)
-points(pec.results$plots.data$num.atts, 
-       pec.results$plots.data$ftest, 
+points(pec.result$algo.acc$vars.remain, 
+       pec.result$algo.acc$validation.acc, 
        col="blue", pch=4, type='b', cex=0.75)
-legend("topright", c("Train", "Holdout", "Test"), pch=c(16, 1, 4), col=c("red", "green", "blue"), cex=0.75)
+legend("topright", c("Train", "Holdout", "Test"), 
+       pch=c(16, 1, 4), col=c("red", "green", "blue"), cex=0.75)
 

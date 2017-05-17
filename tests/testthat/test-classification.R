@@ -104,14 +104,15 @@ test_that("standard random forest returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
-                               sim.type="mainEffect", verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               sim.type="mainEffect",
+                               verbose=FALSE)
   rra.results <- standardRF(train.ds=sim.data$train,
                             holdout.ds=sim.data$holdout,
                             validation.ds=sim.data$validation,
                             label=sim.data$class.label,
                             is.simulated=TRUE,
-                            sim.type=type,
                             verbose=FALSE,
                             signal.names=sim.data$signal.names)
 
@@ -124,8 +125,10 @@ test_that("privateECinbix returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
-                               sim.type="mainEffect", verbose=FALSE)
+  sim.data <- createSimulation(num.vars=num.variables,
+                               n=num.samples,
+                               sim.type="mainEffect",
+                               verbose=FALSE)
   pec.results <- privateECinbix(train.ds=sim.data$train,
                                 holdout.ds=sim.data$holdout,
                                 validation.ds=sim.data$validation,

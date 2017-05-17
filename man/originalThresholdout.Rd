@@ -6,9 +6,9 @@
 \usage{
 originalThresholdout(train.ds = NULL, holdout.ds = NULL,
   validation.ds = NULL, label = "phenos", is.simulated = TRUE,
-  sim.type = "mainEffect", myrun = "001", update.freq = 50,
-  pec.file = NULL, threshold = 4/sqrt(nrow(holdout)),
-  tolerance = 1/sqrt(nrow(holdout)), signal.names = NULL,
+  myrun = "001", update.freq = 50, pec.file = NULL,
+  threshold = 4/sqrt(nrow(holdout.ds)),
+  tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
   shortname = "paramstring", save.file = NULL, verbose = FALSE)
 }
 \arguments{
@@ -21,9 +21,6 @@ originalThresholdout(train.ds = NULL, holdout.ds = NULL,
 \item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
-
-\item{sim.type}{A character vector of the type of simulation:
-mainEffect/interactionErdos/interactionScalefree}
 
 \item{myrun}{A character vector of a unique run identifier}
 

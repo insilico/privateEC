@@ -5,7 +5,7 @@
 \title{Private random forests algorithm}
 \usage{
 privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, sim.type = "mainEffect",
+  label = "phenos", is.simulated = TRUE,
   rf.importance.measure = "MeanDecreaseGini", pec.file = NULL,
   update.freq = 50, threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
@@ -21,9 +21,6 @@ privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{label}{A character vector of the class variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
-
-\item{sim.type}{A character vector of the type of simulation:
-mainEffect/interactionErdos/interactionScalefree}
 
 \item{rf.importance.measure}{A character vector for the random forest importance measure}
 

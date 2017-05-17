@@ -42,8 +42,6 @@ getImportanceScores <- function(train.set=NULL,
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param sim.type A character vector of the type of simulation:
-#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq An integer the number of steps before update
 #' @param corelearn.estimator CORElearn Relief-F estimator
@@ -95,7 +93,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       label="phenos",
                       is.simulated=TRUE,
                       bias=0.4,
-                      sim.type="mainEffect",
                       myrun="001",
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
@@ -264,8 +261,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param sim.type A character vector of the type of simulation:
-#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param pec.file A character vector filename of privateEC results
@@ -316,12 +311,11 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                                 label="phenos",
                                 is.simulated=TRUE,
-                                sim.type="mainEffect",
                                 myrun="001",
                                 update.freq=50,
                                 pec.file=NULL,
-                                threshold=4 / sqrt(nrow(holdout)),
-                                tolerance=1 / sqrt(nrow(holdout)),
+                                threshold=4 / sqrt(nrow(holdout.ds)),
+                                tolerance=1 / sqrt(nrow(holdout.ds)),
                                 signal.names=NULL,
                                 shortname="paramstring",
                                 save.file=NULL,
@@ -443,8 +437,6 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param sim.type A character vector of the type of simulation:
-#' mainEffect/interactionErdos/interactionScalefree
 #' @param rf.importance.measure A character vector for the random forest importance measure
 #' @param pec.file A character vector filename of privateEC results
 #' @param update.freq A integer for the number of steps before update
@@ -494,7 +486,6 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
 privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       label="phenos",
                       is.simulated=TRUE,
-                      sim.type="mainEffect",
                       rf.importance.measure="MeanDecreaseGini",
                       pec.file=NULL,
                       update.freq=50,
@@ -631,8 +622,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param sim.type A character vector of the type of simulation:
-#' mainEffect/interactionErdos/interactionScalefree
 #' @param signal.names A character vector of signal names in simulated data
 #' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
@@ -645,7 +634,7 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
-#  num.samples <- 100
+#' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
 #' sim.data <- createSimulation(num.vars=num.variables, n=num.samples,
@@ -655,7 +644,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #'                           validation.ds=sim.data$validation,
 #'                           label=sim.data$class.label,
 #'                           is.simulated=TRUE,
-#'                           sim.type=type,
 #'                           verbose=FALSE,
 #'                           signal.names=sim.data$signal.names)
 #' @family classification
@@ -663,7 +651,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                        label="phenos",
                        is.simulated=TRUE,
-                       sim.type="mainEffect",
                        signal.names=NULL,
                        shortname="paramstring",
                        save.file=NULL,
@@ -716,8 +703,6 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param sim.type A character vector of the type of simulation:
-#' mainEffect/interactionErdos/interactionScalefree
 #' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param start.temp A numeric for EC starting temperature
@@ -750,7 +735,6 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                            label="phenos",
                            is.simulated=TRUE,
                            bias=0.4,
-                           sim.type="mainEffect",
                            myrun="001",
                            update.freq=50,
                            start.temp=0.1,
@@ -767,8 +751,7 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
     stop("inbix is not installed or not in the PATH")
   }
   ptm <- proc.time()
-  base.sim.prefix <- paste(sim.type, "_", shortname, sep="")
-  unique.sim.prefix <- paste(sim.type, "_", shortname, sep="")
+  unique.sim.prefix <- paste(myrun, shortname, sep="_")
   correct.detect.inbix <- vector(mode="numeric")
   # write simple tab-separated vales (tsv) files
   if(verbose) cat("Writing ", unique.sim.prefix, ".sim.(train|holdout|validation).tab files\n")
@@ -823,8 +806,7 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       cat("saving results to ", save.file, "\n")
     }
     save(fxplots, melted.fx, correct.detect.inbix, bias, shortname,
-         type, train.ds, holdout.ds, validation.ds,
-         file=save.file)
+         train.ds, holdout.ds, validation.ds, file=save.file)
   }
   if(verbose) cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")
 
