@@ -1,6 +1,8 @@
 # classification.R - Trang Le and Bill White - Fall 2016/Spring 2017
-# Privacy preserving evaporative cooling and comparison classification
-# algorithms used in the Bioinformatics paper.
+
+# Classification algorithms used in the Bioinformatics paper:
+# Differential privacy-based Evaporative Cooling feature selection and
+# classification with Relief-F and Random Forests
 
 #' Compute and return importance scores (Relief-F scores)
 #'
@@ -84,8 +86,8 @@ getImportanceScores <- function(train.set=NULL,
 #' material (Dwork, et al., 2015).
 #' @references
 #' Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
-#' and B. A. McKinney. “Privacy preserving evaporative cooling feature
-#' selection and classification with Relief-F and Random Forests,”
+#' and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection
+#' and classification with Relief-F and Random Forests,”
 #' Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
 #' @family classification
 #' @export

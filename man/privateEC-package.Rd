@@ -3,13 +3,18 @@
 \docType{package}
 \name{privateEC-package}
 \alias{privateEC-package}
-\title{Welcome to privateEC.}
+\title{Welcome to privateEC}
 \description{
-Methods are described in the following publication.
+Package Algorithms
+\describe{
+  \item{Simulation}{simulate data sets: mainEffect/interactionErdos/interactionScalefree}
+  \item{Classification}{privateEC and comparison algorithms}
+  \item{Workflow}{functions for reproducing paper analysis pipelines}
 }
-\details{
+}
+\references{
 Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and
-B. A. McKinney. “Privacy preserving evaporative cooling feature selection
+B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection
 and classification with Relief-F and Random Forests,” Bioinformatics.
 Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017.
 

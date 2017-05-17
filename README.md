@@ -1,6 +1,6 @@
 # privateEC
 
-## Private Evaporative Cooling (privateEC) feature selection and classification with Relief-F and Random Forests
+## Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests
 
 Written by Trang Le with Bill White
 [University of Tulsa McKinney Lab](http://insilico.utulsa.edu)
@@ -8,7 +8,7 @@ Written by Trang Le with Bill White
 Methods are described in the following publication.
 
 Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. 
-“Privacy preserving evaporative cooling feature selection and classification with Relief-F and Random Forests,” 
+“Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” 
 Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017.
 
 # Abstract

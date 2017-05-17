@@ -1,24 +1,4 @@
----
-title: "Example1"
-author: "Bill C. White"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-  
-vignette: >
-  %\VignetteIndexEntry{Example1}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-# Privacy preserving Evaporative Cooling feature selection and classification with Relief-F and Random Forests
-
-Methods are described in the following publication.
-
-Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. [Bioinformatics Abstract](https://doi.org/10.1093/bioinformatics/btx298). 2017.
-
-## Example Run and Results
-
-```{r}
+## ------------------------------------------------------------------------
 library(privateEC)
 myrun <- "001"
 n <- 100
@@ -52,14 +32,12 @@ pec.result <- privateEC(train.ds=data.sets$train,
                         save.file=NULL,
                         verbose=verbose,
                         signal.names=data.sets$signal.names)
-```
 
-```{r, echo=FALSE}
+## ---- echo=FALSE---------------------------------------------------------
 knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",
              row.names=FALSE, digits=3)
-```
 
-```{r, echo=FALSE, fig.width=14, fig.width=7, fig.align='center'}
+## ---- echo=FALSE, fig.width=14, fig.width=7, fig.align='center'----------
 # library(ggplot2)
 # ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
 #   geom_point(size=1) + geom_line()
@@ -77,4 +55,4 @@ points(pec.result$algo.acc$vars.remain,
        col="blue", pch=4, type='b', cex=0.75)
 legend("topright", c("Train", "Holdout", "Test"), 
        pch=c(16, 1, 4), col=c("red", "green", "blue"), cex=0.75)
-```
+
