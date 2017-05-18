@@ -20,3 +20,6 @@
 *.utf8.md
 *.knit.md
 .Rproj.user
+
+privateEC.Rproj
+

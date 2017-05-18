@@ -1,22 +1,18 @@
 Package: privateEC
 Type: Package
-Title: Privacy preserving evaporative cooling feature selection and 
-    classification with Relief-F and Random Forests
-Version: 0.4.0
-Date: May 2017
-Authors@R: c(person("Brett", "McKinney", email="brett-mckinney@utulsa.edu", role=c("aut", "cre")),
-             person("Trang", "Le", email="trang-le@utulsa.edu", role=c("aut")), 
-             person("Bill", "White", email="bill-white@utulsa.edu", role=c("aut")))
-Author: Bill White
+Title: Privacy Preserving Evaporative Cooling Feature Selection and Classification with 
+  Relief-F and Random Forests
+Version: 0.7.0
+Date: 2017-05-17
+Author: Bill White <bill-white@utulsa.edu>
 Maintainer: Brett McKinney <brett-mckinney@utulsa.edu>
-Description: Privacy preserving evaporative cooling algorithm along
-    with other comparison algorithms used in the Bioinformatics paper referenced 
-    below: 
+Description: The privateEC algorithm along with other comparison algorithms used in the 
+    Bioinformatics paper referenced below: 
     Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and 
     B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection 
     and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. 
     https://doi.org/10.1093/bioinformatics/btx298. 2017.
-License: file LICENSE
+License: GPL-3
 Depends: R (>= 3.1.0)
 Encoding: UTF-8
 LazyData: true
