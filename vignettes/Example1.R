@@ -1,6 +1,5 @@
 ## ------------------------------------------------------------------------
 library(privateEC)
-myrun <- "001"
 n <- 100
 num.vars <- 100
 bias <- 0.4
@@ -8,30 +7,25 @@ type <- "mainEffect"
 pct.signals <- 0.1
 update.freq <- 5
 verbose <- FALSE
-shortname <- "Example1"
 
 data.sets <- createSimulation(n=n,
                               num.vars=num.vars,
                               pct.signals=pct.signals,
                               bias=bias,
-                              shortname=shortname,
                               sim.type=type,
-                              myrun=myrun,
-                              verbose=verbose,
-                              save.file=FALSE)
+                              save.file=NULL,
+                              verbose=verbose)
 
 pec.result <- privateEC(train.ds=data.sets$train,
                         holdout.ds=data.sets$holdout,
                         validation.ds=data.sets$validation,
                         label=data.sets$class.label,
                         is.simulated=TRUE,
-                        shortname=shortname,
                         bias=bias,
-                        myrun=myrun,
                         update.freq=update.freq,
                         save.file=NULL,
-                        verbose=verbose,
-                        signal.names=data.sets$signal.names)
+                        signal.names=data.sets$signal.names,
+                        verbose=verbose)
 
 ## ---- echo=FALSE---------------------------------------------------------
 knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",

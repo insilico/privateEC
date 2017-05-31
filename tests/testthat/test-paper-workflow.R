@@ -9,11 +9,11 @@ test_that("run one workflow of a simulation plus an analysis step", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  one.step.result <- paperSimWorkflow(myrun="001",
-                                      n=num.samples,
+  upd.frq <- 0.1 * num.variables
+  one.step.result <- paperSimWorkflow(n=num.samples,
                                       num.vars=num.variables,
                                       pct.signals=pct.signals,
-                                      update.freq=5,
+                                      update.freq=upd.frq,
                                       verbose=FALSE)
   expect_equal(length(one.step.result), 2)
   expect_equal(length(one.step.result$run.results), 3)

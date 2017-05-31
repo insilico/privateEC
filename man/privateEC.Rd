@@ -5,12 +5,12 @@
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, bias = 0.4, myrun = "001",
-  update.freq = 50, corelearn.estimator = "ReliefFbestK",
-  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
+  label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
+  corelearn.estimator = "ReliefFbestK", start.temp = 0.1,
+  final.temp = 10^(-5), tau.param = 100,
   threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
-  shortname = "paramstring", save.file = NULL, verbose = FALSE)
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -24,8 +24,6 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{is.simulated}{Is the data simulated (or real?)}
 
 \item{bias}{A numeric for effect size in simulated signal variables}
-
-\item{myrun}{A character vector of a unique run identifier}
 
 \item{update.freq}{An integer the number of steps before update}
 
@@ -44,8 +42,6 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 thresholdout’s supplementary material (Dwork, et al.,2015)}
 
 \item{signal.names}{A character vector of signal names in simulated data}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 

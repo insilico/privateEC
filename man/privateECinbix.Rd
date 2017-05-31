@@ -5,10 +5,9 @@
 \title{Call C++ inbix Evaporative Cooling Privacy}
 \usage{
 privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, bias = 0.4, myrun = "001",
-  update.freq = 50, start.temp = 0.1, final.temp = 10^(-5),
-  tau.param = 100, shortname = "paramstring", save.file = NULL,
-  verbose = FALSE)
+  label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
+  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -23,8 +22,6 @@ privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{bias}{A numeric for effect size in simulated signal variables}
 
-\item{myrun}{A character vector of a unique run identifier}
-
 \item{update.freq}{A integer for the number of steps before update}
 
 \item{start.temp}{A numeric for EC starting temperature}
@@ -32,8 +29,6 @@ privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{final.temp}{A numeric for EC final temperature}
 
 \item{tau.param}{A numeric for tau to control reduction schedule}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 

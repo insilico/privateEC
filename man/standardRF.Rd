@@ -6,7 +6,7 @@
 \usage{
 standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, signal.names = NULL,
-  shortname = "paramstring", save.file = NULL, verbose = FALSE)
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -20,8 +20,6 @@ standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{is.simulated}{Is the data simulated (or real?)}
 
 \item{signal.names}{A character vector of signal names in simulated data}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 

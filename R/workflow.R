@@ -3,7 +3,6 @@
 #' Creates one simulation of train/holdout/validation data sets, then runs the
 #' four algorithms on that data. Returns a data frame of run results for each.
 #'
-#' @param myrun A character vector identifying the run
 #' @param n An integer for the number of samples
 #' @param num.vars An integer for the number of variables
 #' @param pct.signals A numeric for the significant variable bias
@@ -20,9 +19,12 @@
 #'   num.samples <- 100
 #'   num.variables <- 100
 #'   pct.signals <- 0.1
-#'   bias <- 0.4
-#'   one.step.result <- paperSimWorkflow(myrun="001", n=100, num.vars=100, pct.signals=0.1,
-#'   update.freq=50, verbose=FALSE)
+#'   upd.frq <- 0.1 * num.variables
+#'   one.step.result <- paperSimWorkflow(n=num.samples,
+#'                                       num.vars=num.variables,
+#'                                       pct.signals=pct.signals,
+#'                                       update.freq=upd.frq,
+#'                                       verbose=FALSE)
 #' @seealso The workflow consists of the sequence:
 #' \code{\link{createSimulation}}
 #' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
@@ -32,14 +34,12 @@
 #' \code{\link{compileResults}}. A comparison analysis with real data (fMRI)
 #' is in \code{\link{paperRealWorkflow}}.
 #' @export
-paperSimWorkflow <- function(myrun="001",
-                             n=100,
+paperSimWorkflow <- function(n=100,
                              num.vars=100,
                              pct.signals=0.1,
                              update.freq=50,
                              verbose=FALSE) {
   ptm <- proc.time()
-  if(verbose) cat("run ID:", myrun, "\n")
   types <- c("mainEffect", "interactionErdos", "interactionScalefree")
   biases <- c(0.4, 0.4, 0.4)
   alg.steps <- seq(num.vars + 1, 1, -update.freq)[-1]
@@ -55,17 +55,14 @@ paperSimWorkflow <- function(myrun="001",
     if(verbose) cat("begin type/sim/classification loop for type/bias",
                     simtype.num, bias, "\n")
     if(verbose) cat("running simulation with n num.vars pct.signals", n, num.vars, pct.signals, "\n")
-    shortname <- paste(round(bias, digits=1), pct.signals, num.vars, n, myrun, sep="_")
+    shortname <- paste(round(bias, digits=1), pct.signals, num.vars, n, sep="_")
     if(verbose) cat("--------------------------------------------\n")
     data.sets <- createSimulation(n=n,
                                   num.vars=num.vars,
                                   pct.signals=pct.signals,
                                   bias=bias,
-                                  shortname=shortname,
                                   sim.type=type,
-                                  myrun=myrun,
-                                  verbose=verbose,
-                                  save.file=FALSE)
+                                  verbose=verbose)
     if(verbose) cat("running private algorithms\n")
     if(verbose) cat("\nrunning privateEC\n")
     pec.result <- privateEC(train.ds=data.sets$train,
@@ -73,42 +70,37 @@ paperSimWorkflow <- function(myrun="001",
                             validation.ds=data.sets$validation,
                             label=data.sets$class.label,
                             is.simulated=TRUE,
-                            shortname=shortname,
                             bias=bias,
-                            myrun=myrun,
                             update.freq=update.freq,
                             save.file=temp.pec.file,
-                            verbose=verbose,
-                            signal.names=data.sets$signal.names)
+                            signal.names=data.sets$signal.names,
+                            verbose=verbose)
     if(verbose) cat("\nrunning originalThresholdout.R\n")
     por.result <- originalThresholdout(train.ds=data.sets$train,
                                        holdout.ds=data.sets$holdout,
                                        validation.ds=data.sets$validation,
                                        label=data.sets$class.label,
                                        is.simulated=TRUE,
-                                       shortname=shortname,
-                                       myrun=myrun,
-                                       verbose=verbose,
                                        signal.names=signal.names,
-                                       pec.file=temp.pec.file)
+                                       pec.file=temp.pec.file,
+                                       verbose=verbose)
     if(verbose) cat("\nrunning privaterf.R\n")
     pra.result <- privateRF(train.ds=data.sets$train,
                             holdout.ds=data.sets$holdout,
                             validation.ds=data.sets$validation,
                             label=data.sets$class.label,
-                            shortname=shortname,
-                            verbose=verbose,
+                            is.simulated=TRUE,
                             signal.names=signal.names,
-                            pec.file=temp.pec.file)
+                            pec.file=temp.pec.file,
+                            verbose=verbose)
     if(verbose) cat("\nrunning regularRF\n")
     rra.result <- standardRF(train.ds=data.sets$train,
                              holdout.ds=data.sets$holdout,
                              validation.ds=data.sets$validation,
                              label=data.sets$class.label,
                              is.simulated=TRUE,
-                             shortname=shortname,
-                             verbose=verbose,
-                             signal.names=signal.names)
+                             signal.names=signal.names,
+                             verbose=verbose)
 
     if(!is.null(temp.pec.file)) {
       file.remove(temp.pec.file)
@@ -165,6 +157,7 @@ compileResults <- function(run.results=NULL,
     if(verbose) cat("saving compiled results", save.file, "\n")
     save(all.acc, all.correct, all.ggplot, file=save.file)
   }
+
   list(algo.acc=all.acc,
        ggplot.data=all.ggplot,
        correct=all.correct)
@@ -223,8 +216,6 @@ paperRealWorkflow <- function(real.data=NULL,
                           validation.ds=NULL,
                           label=label,
                           is.simulated=FALSE,
-                          shortname="fmri",
-                          myrun="000",
                           update.freq=update.freq,
                           save.file=temp.pec.file,
                           verbose=verbose)
@@ -234,16 +225,13 @@ paperRealWorkflow <- function(real.data=NULL,
                                      validation.ds=NULL,
                                      label=label,
                                      is.simulated=FALSE,
-                                     shortname="fmri",
-                                     myrun="000",
-                                     verbose=verbose,
-                                     pec.file=temp.pec.file)
+                                     pec.file=temp.pec.file,
+                                     verbose=verbose)
   if(verbose) cat("\nrunning privaterf.R\n")
   pra.result <- privateRF(train.ds=real.data.sets$train,
                           holdout.ds=real.data.sets$holdout,
                           validation.ds=NULL,
                           label=label,
-                          shortname="fmri",
                           is.simulated=FALSE,
                           pec.file=temp.pec.file,
                           verbose=verbose)
@@ -253,7 +241,6 @@ paperRealWorkflow <- function(real.data=NULL,
                            validation.ds=NULL,
                            label=label,
                            is.simulated=FALSE,
-                           shortname="fmri",
                            verbose=verbose)
 
   file.remove(temp.pec.file)

@@ -11,8 +11,8 @@ test_that("createSimulation mainEffect returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   bias <- 0.4
-  sim.data <- createSimulation(num.vars=num.variables,
-                               n=num.samples,
+  sim.data <- createSimulation(n=num.samples,,
+                               num.vars=num.variables,
                                pct.signals=pct.signals,
                                bias=bias,
                                sim.type=sim.type,
@@ -45,8 +45,8 @@ test_that("createSimulation with interaction network returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   bias <- 0.4
-  sim.data <- createSimulation(num.vars=num.variables,
-                               n=num.samples,
+  sim.data <- createSimulation(n=num.samples,
+                               num.vars=num.variables,
                                pct.signals=pct.signals,
                                bias=bias,
                                sim.type=sim.type,

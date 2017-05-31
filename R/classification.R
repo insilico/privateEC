@@ -44,7 +44,6 @@ getImportanceScores <- function(train.set=NULL,
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param myrun A character vector of a unique run identifier
 #' @param update.freq An integer the number of steps before update
 #' @param corelearn.estimator CORElearn Relief-F estimator
 #' @param start.temp A numeric EC starting temperature
@@ -55,7 +54,6 @@ getImportanceScores <- function(train.set=NULL,
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with:
@@ -95,7 +93,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       label="phenos",
                       is.simulated=TRUE,
                       bias=0.4,
-                      myrun="001",
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
                       start.temp=0.1,
@@ -104,7 +101,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       threshold=4 / sqrt(nrow(holdout.ds)),
                       tolerance=1 / sqrt(nrow(holdout.ds)),
                       signal.names=NULL,
-                      shortname="paramstring",
                       save.file=NULL,
                       verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
@@ -218,10 +214,10 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       if(verbose) cat("\tcollecting results\n")
       cur.vars.remain <- length(att.names)
       vars.remain <- c(vars.remain, cur.vars.remain)
-      var.names[[i]] <- kept.atts
+      var.names[[num.updates]] <- kept.atts
       if(is.simulated) {
         correct.detect.ec <- c(correct.detect.ec,
-                               sum(var.names[[i]] %in% signal.names))
+                               sum(var.names[[num.updates]] %in% signal.names))
       }
     }
     i <- i + 1
@@ -242,7 +238,7 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       cat("saving results to ", save.file, "\n")
     }
     save(fplots, melted.fs, correct.detect.ec, n, d, signal.names,
-         bias, shortname, threshold, tolerance, bias, file=save.file)
+         threshold, tolerance, bias, file=save.file)
   }
 
   if(verbose) cat("privateEC elapsed time:", (proc.time() - ptm)[3], "\n")
@@ -263,7 +259,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
-#' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param pec.file A character vector filename of privateEC results
 #' @param threshold A numeric, default 4 / sqrt(n) suggested in the
@@ -271,7 +266,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -313,13 +307,11 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                                 label="phenos",
                                 is.simulated=TRUE,
-                                myrun="001",
                                 update.freq=50,
                                 pec.file=NULL,
                                 threshold=4 / sqrt(nrow(holdout.ds)),
                                 tolerance=1 / sqrt(nrow(holdout.ds)),
                                 signal.names=NULL,
-                                shortname="paramstring",
                                 save.file=NULL,
                                 verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
@@ -447,7 +439,6 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
 #' @param tolerance A numeric, default 1 / sqrt(n) suggested in the
 #'  thresholdout’s supplementary material (Dwork, et al.,2015)
 #' @param signal.names A character vector of signal names in simulated data
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -494,7 +485,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       threshold=4 / sqrt(nrow(holdout.ds)),
                       tolerance=1 / sqrt(nrow(holdout.ds)),
                       signal.names=NULL,
-                      shortname="paramstring",
                       save.file=NULL,
                       verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
@@ -625,7 +615,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param signal.names A character vector of signal names in simulated data
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -654,7 +643,6 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                        label="phenos",
                        is.simulated=TRUE,
                        signal.names=NULL,
-                       shortname="paramstring",
                        save.file=NULL,
                        verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
@@ -705,12 +693,10 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param myrun A character vector of a unique run identifier
 #' @param update.freq A integer for the number of steps before update
 #' @param start.temp A numeric for EC starting temperature
 #' @param final.temp A numeric for EC final temperature
 #' @param tau.param A numeric for tau to control reduction schedule
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @note inbix must be instaled in the path
@@ -737,12 +723,10 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                            label="phenos",
                            is.simulated=TRUE,
                            bias=0.4,
-                           myrun="001",
                            update.freq=50,
                            start.temp=0.1,
                            final.temp=10 ^ (-5),
                            tau.param=100,
-                           shortname="paramstring",
                            save.file=NULL,
                            verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
@@ -753,7 +737,7 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
     stop("inbix is not installed or not in the PATH")
   }
   ptm <- proc.time()
-  unique.sim.prefix <- paste(myrun, shortname, sep="_")
+  unique.sim.prefix <- paste(save.file, bias, sep="_")
   correct.detect.inbix <- vector(mode="numeric")
   # write simple tab-separated vales (tsv) files
   if(verbose) cat("Writing ", unique.sim.prefix, ".sim.(train|holdout|validation).tab files\n")
@@ -807,7 +791,7 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
     if(verbose) {
       cat("saving results to ", save.file, "\n")
     }
-    save(fxplots, melted.fx, correct.detect.inbix, bias, shortname,
+    save(fxplots, melted.fx, correct.detect.inbix, bias,
          train.ds, holdout.ds, validation.ds, file=save.file)
   }
   if(verbose) cat("privacyECinbix elapsed time:", (proc.time() - ptm)[3], "\n")

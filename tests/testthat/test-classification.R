@@ -113,8 +113,8 @@ test_that("standard random forest returns sane results", {
                             validation.ds=sim.data$validation,
                             label=sim.data$class.label,
                             is.simulated=TRUE,
-                            verbose=FALSE,
-                            signal.names=sim.data$signal.names)
+                            signal.names=sim.data$signal.names,
+                            verbose=FALSE)
 
   expect_equal(ncol(rra.results$algo.acc), 5)
   expect_equal(ncol(rra.results$ggplot.data), 4)
@@ -125,8 +125,8 @@ test_that("privateECinbix returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(num.vars=num.variables,
-                               n=num.samples,
+  sim.data <- createSimulation(n=num.samples,
+                               num.vars=num.variables,
                                sim.type="mainEffect",
                                verbose=FALSE)
   pec.results <- privateECinbix(train.ds=sim.data$train,

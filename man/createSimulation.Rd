@@ -5,9 +5,8 @@
 \title{Create a data simulation and return train/holdout/validation data sets.}
 \usage{
 createSimulation(n = 100, num.vars = 100, pct.signals = 0.1, bias = 0.4,
-  class.label = "class", shortname = "paramstring",
-  sim.type = "mainEffect", myrun = "001", verbose = FALSE,
-  save.file = FALSE)
+  class.label = "class", sim.type = "mainEffect", save.file = NULL,
+  verbose = FALSE)
 }
 \arguments{
 \item{n}{An integer for the number of samples}
@@ -20,16 +19,12 @@ createSimulation(n = 100, num.vars = 100, pct.signals = 0.1, bias = 0.4,
 
 \item{class.label}{A character vector for the name of the class column}
 
-\item{shortname}{A character vector of a parameters separated by '_'}
-
 \item{sim.type}{A character vector of the type of simulation:
 mainEffect/interactionErdos/interactionScalefree}
 
-\item{myrun}{A character vector of a unique run identifier}
+\item{save.file}{A filename or NULL indicating whether to save the simulations to file}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
-
-\item{save.file}{A flag indicating whther to save the results to file}
 }
 \value{
 A list with:

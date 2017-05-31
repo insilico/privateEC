@@ -24,7 +24,10 @@
 #' data.sets <- splitDataset(fullfMRI2)
 #' @family simulation
 #' @export
-splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdout=0.5, pct.validation=0,
+splitDataset <- function(all.data=NULL,
+                         pct.train=0.5,
+                         pct.holdout=0.5,
+                         pct.validation=0,
                          class.label="phenos") {
   if(is.null(all.data)) {
     # stop or warning and return list of length 0?
@@ -72,11 +75,12 @@ splitDataset <- function(all.data=NULL, pct.train=0.5, pct.holdout=0.5, pct.vali
   X_holdo <- rbind(data.case[partition.case == 2, ], data.ctrl[partition.ctrl == 2, ])
   X_validation <- rbind(data.case[partition.case == 3, ], data.ctrl[partition.ctrl == 3, ])
 
-  if(nrow(X_validation) == 0) {
-    data.sets <- list(train = X_train, holdout = X_holdo)
-  } else {
-    data.sets <- list(train = X_train, holdout = X_holdo, validation = X_validation)
-  }
+  # if(nrow(X_validation) == 0) {
+  #   data.sets <- list(train=X_train, holdout=X_holdo)
+  # } else {
+  data.sets <- list(train=X_train, holdout=X_holdo, validation=X_validation)
+  # }
+  #
   data.sets
 }
 
@@ -157,6 +161,7 @@ createDiffCoexpMatrixNoME <- function(M=100,
   newD <- cbind(t(D), phenos)
   colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep=""), class.label)
   rownames(newD) <- subIds
+
   data.frame(newD)
 }
 
@@ -314,7 +319,7 @@ simulateData <- function(n.e=1000,
                sd.b=sd.b, sd.gam=sd.gam, sd.u=sd.u, conf=conf,
                distr.db=distr.db, p.b=p.b, p.gam=p.gam, p.ov=p.ov)
 
-  return(list(db=db, new=new, vars=vars))
+  list(db=db, new=new, vars=vars)
 }
 
 #' Create a data simulation and return train/holdout/validation data sets.
@@ -324,12 +329,10 @@ simulateData <- function(n.e=1000,
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param class.label A character vector for the name of the class column
-#' @param shortname A character vector of a parameters separated by '_'
 #' @param sim.type A character vector of the type of simulation:
 #' mainEffect/interactionErdos/interactionScalefree
-#' @param myrun A character vector of a unique run identifier
 #' @param verbose A flag indicating whether verbose output be sent to stdout
-#' @param save.file A flag indicating whther to save the results to file
+#' @param save.file A filename or NULL indicating whether to save the simulations to file
 #' @return A list with:
 #' \describe{
 #'   \item{train}{traing data set}
@@ -358,11 +361,9 @@ createSimulation <- function(n=100,
                              pct.signals=0.1,
                              bias=0.4,
                              class.label="class",
-                             shortname="paramstring",
                              sim.type="mainEffect",
-                             myrun="001",
-                             verbose=FALSE,
-                             save.file=FALSE) {
+                             save.file=NULL,
+                             verbose=FALSE) {
   ptm <- proc.time()
   nbias <- pct.signals * num.vars
   if(sim.type == "mainEffect") {
@@ -413,18 +414,20 @@ createSimulation <- function(n=100,
                              pct.validation=1 / 3,
                              class.label=class.label)
 
-  if(save.file) {
-    myfile <- paste("data/", sim.type, "_", shortname, "_data.Rdata", sep="")
-    if(verbose) cat("saving to data/", myfile, ".Rdata\n", sep="")
-    save(n, num.vars, pct.signals, split.data$train, split.data$holdout, split.data$validation,
-         bias, sim.type, shortname, file=myfile)
+  if(!is.null(save.file)) {
+    if(verbose) cat("saving to data/", save.file, ".Rdata\n", sep="")
+    save(split.data, pct.signals, bias, sim.type, file=save.file)
   }
 
   elapsed <- (proc.time() - ptm)[3]
   if(verbose) cat("createSimulation elapsed time:", elapsed, "\n")
 
-  list(train=split.data$train, holdout=split.data$holdout, validation=split.data$validation,
-       class.label=class.label, elapsed=elapsed, signal.names=signal.names)
+  list(train=split.data$train,
+       holdout=split.data$holdout,
+       validation=split.data$validation,
+       class.label=class.label,
+       signal.names=signal.names,
+       elapsed=elapsed)
 }
 
 #' Write inbix numeric and phenotype files (PLINK format)

@@ -4,12 +4,10 @@
 \alias{paperSimWorkflow}
 \title{Workflow for running one simulation of the Bioinformatics paper workflow}
 \usage{
-paperSimWorkflow(myrun = "001", n = 100, num.vars = 100,
-  pct.signals = 0.1, update.freq = 50, verbose = FALSE)
+paperSimWorkflow(n = 100, num.vars = 100, pct.signals = 0.1,
+  update.freq = 50, verbose = FALSE)
 }
 \arguments{
-\item{myrun}{A character vector identifying the run}
-
 \item{n}{An integer for the number of samples}
 
 \item{num.vars}{An integer for the number of variables}
@@ -38,9 +36,12 @@ Default parameter values match those from the Bioinformatics paper.
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  bias <- 0.4
-  one.step.result <- paperSimWorkflow(myrun="001", n=100, num.vars=100, pct.signals=0.1,
-  update.freq=50, verbose=FALSE)
+  upd.frq <- 0.1 * num.variables
+  one.step.result <- paperSimWorkflow(n=num.samples,
+                                      num.vars=num.variables,
+                                      pct.signals=pct.signals,
+                                      update.freq=upd.frq,
+                                      verbose=FALSE)
 }
 \seealso{
 The workflow consists of the sequence:

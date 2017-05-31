@@ -9,7 +9,7 @@ privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   rf.importance.measure = "MeanDecreaseGini", pec.file = NULL,
   update.freq = 50, threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
-  shortname = "paramstring", save.file = NULL, verbose = FALSE)
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -35,8 +35,6 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 thresholdout’s supplementary material (Dwork, et al.,2015)}
 
 \item{signal.names}{A character vector of signal names in simulated data}
-
-\item{shortname}{A character vector of a parameters separated by '_'}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
