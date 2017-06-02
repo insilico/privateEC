@@ -2,8 +2,8 @@ Package: privateEC
 Type: Package
 Title: Privacy Preserving Evaporative Cooling Feature Selection and Classification with 
   Relief-F and Random Forests
-Version: 0.7.0
-Date: 2017-05-17
+Version: 0.8.0
+Date: 2017-06-01
 Author: Bill White <bill-white@utulsa.edu>
 Maintainer: Brett McKinney <brett-mckinney@utulsa.edu>
 Description: The privateEC algorithm along with other comparison algorithms used in the 
