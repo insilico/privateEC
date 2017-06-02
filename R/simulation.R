@@ -1,5 +1,10 @@
 # simulation.R - Trang Le and Bill White - Fall 2016/Spring 2017
-# Simulated data for comparison of classification algorithms.
+#
+# Simulated data for comparison of classification algorithms in:
+# Classification algorithms used in the Bioinformatics paper:
+# Differential privacy-based Evaporative Cooling feature selection and
+# classification with Relief-F and Random Forests
+# https://doi.org/10.1093/bioinformatics/btx298
 
 #' Split a data set for machine learning classification
 #'
@@ -113,9 +118,9 @@ createDiffCoexpMatrixNoME <- function(M=100,
     stop("privacyEC: No sample signal indices provided")
   }
   # create a random data matrix
-  D <- matrix(nrow=M, ncol=N, data=rnorm(M*N,
-                                         mean=meanExpression,
-                                         sd=randSdNoise))
+  D <- matrix(nrow=M, ncol=N, data=stats::rnorm(M*N,
+                                                mean=meanExpression,
+                                                sd=randSdNoise))
 
   # add co-expression
   already_modified <- rep(0, M)
@@ -125,13 +130,13 @@ createDiffCoexpMatrixNoME <- function(M=100,
       if(verbose) cat("Condidering A: row", i, "column", j, "\n")
       if((A[i, j] == 1) && (!already_modified[j])) {
         if(verbose) cat("Making row", j, "from row", i, "\n")
-        D[j, ] <- D[i, ] + rnorm(N, mean=0, sd=as.numeric(sdNoise))
+        D[j, ] <- D[i, ] + stats::rnorm(N, mean=0, sd=as.numeric(sdNoise))
         already_modified[j] <- 1
       } else {
         if(already_modified[j]==1 && !already_modified[i]) {
           # if j is already modified, we want to modify i,
           # unless i is already modified then do nothing
-          D[i,] <- D[j,] + rnorm(N, mean=0, sd=sdNoise)
+          D[i,] <- D[j,] + stats::rnorm(N, mean=0, sd=sdNoise)
         }
       }
     }
@@ -148,7 +153,7 @@ createDiffCoexpMatrixNoME <- function(M=100,
 
     # get the group 2 gene expression and randomly order for differential coexpression
     x <- D[geneIdxInteraction, 1:n1]
-    x <- x[order(runif(length(x)))]
+    x <- x[order(stats::runif(length(x)))]
     D[geneIdxInteraction, 1:n1] <- x
   }
 
@@ -192,9 +197,8 @@ createDiffCoexpMatrixNoME <- function(M=100,
 #' @param p.ov a numeric for p.ov?
 #' @return A list with:
 #' \describe{
-#'   \item{db}{?}
-#'   \item{new}{?}
-#'   \item{varst}{?}
+#'   \item{db}{database creation variables}
+#'   \item{vars}{variables used in simulation}
 #' }
 #' @family simulation
 simulateData <- function(n.e=1000,
@@ -212,7 +216,7 @@ simulateData <- function(n.e=1000,
                          p.ov=p.b / 2) {
   n <- n.db + n.ns
   # Create random error
-  U <- matrix(nrow=n.e, ncol=n, rnorm(n.e * n, sd=sd.u))
+  U <- matrix(nrow=n.e, ncol=n, stats::rnorm(n.e * n, sd=sd.u))
 
   # Create index for database vs. new sample #
   ind <- as.factor(c(rep("db", n.db), rep("ns", n.ns)))
@@ -276,7 +280,7 @@ simulateData <- function(n.e=1000,
   # added confounding
   x4 <- x3
   G <- c(x1, x2, x3, x4)
-  G <- t(model.matrix(~ as.factor(G)))[-1, ]
+  G <- t(stats::model.matrix(~ as.factor(G)))[-1, ]
   if(is.null(dim(G))) {
     G <- matrix(G, nrow=1, ncol=n)
   }
@@ -287,15 +291,15 @@ simulateData <- function(n.e=1000,
   ind.B <- rep(0, n.e)
   ind.B[1:round(p.b * n.e)] <- 1
   # Probes 20% thru 50% will be affected by surrogate variable
-  ind.Gam <- rep(0,n.e)
+  ind.Gam <- rep(0, n.e)
   ind.Gam[round((p.b-p.ov) * n.e):round((p.b - p.ov + p.gam) * n.e)] <- 1
 
   # figure out dimensions for Gamma
 
   # create parameters for signal, noise
-  B <- matrix(nrow=n.e, ncol=1, rnorm(n.e, mean=0, sd=sd.b) * ind.B)
+  B <- matrix(nrow=n.e, ncol=1, stats::rnorm(n.e, mean=0, sd=sd.b) * ind.B)
   Gam <- matrix(nrow=n.e, ncol=dim(G)[1],
-                rnorm(n.e * dim(G)[1], mean=0, sd=sd.gam) * ind.Gam)
+                stats::rnorm(n.e * dim(G)[1], mean=0, sd=sd.gam) * ind.Gam)
 
   # simulate the data
   sim.dat <- B %*% S + Gam %*% G + U
@@ -319,13 +323,13 @@ simulateData <- function(n.e=1000,
                sd.b=sd.b, sd.gam=sd.gam, sd.u=sd.u, conf=conf,
                distr.db=distr.db, p.b=p.b, p.gam=p.gam, p.ov=p.ov)
 
-  list(db=db, new=new, vars=vars)
+  list(db=db, vars=vars)
 }
 
 #' Create a data simulation and return train/holdout/validation data sets.
 #'
-#' @param n An integer for the number of samples
-#' @param num.vars An integer for the number of variables
+#' @param num.variables An integer for the number of variables
+#' @param num.samples An integer for the number of samples
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param class.label A character vector for the name of the class column
@@ -343,21 +347,21 @@ simulateData <- function(n.e=1000,
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
-#' sim.type <- "mainEffect"
-#' num.samples <- 100
 #' num.variables <- 100
+#' num.samples <- 100
 #' pct.signals <- 0.1
 #' bias <- 0.4
-#' sim.data <- createSimulation(num.vars=num.variables,
-#'                              n=num.samples,
+#' sim.type <- "mainEffect"
+#' sim.data <- createSimulation(num.samples=num.samples,
+#'                              num.variables=num.variables,
 #'                              pct.signals=pct.signals,
 #'                              bias=bias,
 #'                              sim.type=sim.type,
 #'                              verbose=FALSE)
 #' @family simulation
 #' @export
-createSimulation <- function(n=100,
-                             num.vars=100,
+createSimulation <- function(num.samples=100,
+                             num.variables=100,
                              pct.signals=0.1,
                              bias=0.4,
                              class.label="class",
@@ -365,23 +369,23 @@ createSimulation <- function(n=100,
                              save.file=NULL,
                              verbose=FALSE) {
   ptm <- proc.time()
-  nbias <- pct.signals * num.vars
+  nbias <- pct.signals * num.variables
   if(sim.type == "mainEffect") {
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- simulateData(n.e=num.vars,
-                                n.db=3 * n,
+    my.sim.data <- simulateData(n.e=num.variables,
+                                n.db=3 * num.samples,
                                 sd.b=bias,
                                 p.b=pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
   } else if(sim.type == "interactionScalefree") {
     # interaction simulation: scale-free
-    g <- igraph::barabasi.game(num.vars, directed=F)
+    g <- igraph::barabasi.game(num.variables, directed=F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.vars,
-                                         N=3 * n,
+    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+                                         N=3 * num.samples,
                                          meanExpression=7,
                                          A=myA,
                                          randSdNoise=1,
@@ -389,13 +393,13 @@ createSimulation <- function(n=100,
                                          sampleIndicesInteraction=1:nbias)
   } else if(sim.type == "interactionErdos") {
     attach.prob <- 0.1
-    g <- igraph::erdos.renyi.game(num.vars, attach.prob)
+    g <- igraph::erdos.renyi.game(num.variables, attach.prob)
     #   foo <- printIGraphStats(g)
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.vars,
-                                         N=3 * n,
+    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+                                         N=3 * num.samples,
                                          meanExpression=7,
                                          A=myA,
                                          randSdNoise=1,
@@ -405,7 +409,7 @@ createSimulation <- function(n=100,
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)
   signal.names <- paste("sig.var", 1:nbias, sep="")
-  background.names <- paste("var", 1:(num.vars - nbias), sep="")
+  background.names <- paste("var", 1:(num.variables - nbias), sep="")
   var.names <- c(signal.names, background.names, class.label)
   colnames(dataset) <- var.names
   split.data <- splitDataset(all.data=dataset,
@@ -454,11 +458,11 @@ saveSimAsInbixNative <- function(data.sets=NULL,
   train.phenotype <- ifelse(X_train[, ncol(X_train)] == -1, 0, 1)
   train.inbix <- cbind(train.subj.names, train.subj.names, train.expr.matrix)
   colnames(train.inbix) <- c("FID", "IID", var.names)
-  write.table(train.inbix, file=paste(base.sim.prefix, ".train.sim.num", sep=""),
-              quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
+  utils::write.table(train.inbix, file=paste(base.sim.prefix, ".train.sim.num", sep=""),
+                     quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
   train.inbix.pheno <- cbind(train.subj.names, train.subj.names, train.phenotype)
-  write.table(train.inbix.pheno, file=paste(base.sim.prefix, ".train.sim.pheno", sep=""),
-              quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
+  utils::write.table(train.inbix.pheno, file=paste(base.sim.prefix, ".train.sim.pheno", sep=""),
+                     quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
   # holdout
   holdo.expr.matrix <- X_holdo[, 1:(ncol(X_holdo)-1)]
   var.names <- colnames(holdo.expr.matrix)
@@ -467,11 +471,11 @@ saveSimAsInbixNative <- function(data.sets=NULL,
   holdo.phenotype <- ifelse(X_holdo[, ncol(X_holdo)] == -1, 0, 1)
   holdo.inbix <- cbind(holdo.subj.names, holdo.subj.names, holdo.expr.matrix)
   colnames(holdo.inbix) <- c("FID", "IID", var.names)
-  write.table(holdo.inbix, file=paste(base.sim.prefix, ".holdo.sim.num", sep=""),
-              quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
+  utils::write.table(holdo.inbix, file=paste(base.sim.prefix, ".holdo.sim.num", sep=""),
+                     quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
   holdo.inbix.pheno <- cbind(holdo.subj.names, holdo.subj.names, holdo.phenotype)
-  write.table(holdo.inbix.pheno, file=paste(base.sim.prefix, ".holdo.sim.pheno", sep=""),
-              quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
+  utils::write.table(holdo.inbix.pheno, file=paste(base.sim.prefix, ".holdo.sim.pheno", sep=""),
+                     quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
   # validation
   validation.expr.matrix <- X_test[, 1:(ncol(X_test)-1)]
   var.names <- colnames(validation.expr.matrix)
@@ -480,9 +484,9 @@ saveSimAsInbixNative <- function(data.sets=NULL,
   validation.phenotype <- ifelse(X_test[, ncol(X_test)] == -1, 0, 1)
   validation.inbix <- cbind(validation.subj.names, validation.subj.names, validation.expr.matrix)
   colnames(validation.inbix) <- c("FID", "IID", var.names)
-  write.table(validation.inbix, file=paste(base.sim.prefix, ".validation.sim.num", sep=""),
-              quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
+  utils::write.table(validation.inbix, file=paste(base.sim.prefix, ".validation.sim.num", sep=""),
+                     quote=FALSE, sep="\t", col.names=TRUE, row.names=FALSE)
   validation.inbix.pheno <- cbind(validation.subj.names, validation.subj.names, validation.phenotype)
-  write.table(validation.inbix.pheno, file=paste(base.sim.prefix, ".validation.sim.pheno", sep=""),
-              quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
+  utils::write.table(validation.inbix.pheno, file=paste(base.sim.prefix, ".validation.sim.pheno", sep=""),
+                     quote=FALSE, sep="\t", col.names=FALSE, row.names=FALSE)
 }

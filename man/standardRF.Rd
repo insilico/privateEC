@@ -5,8 +5,8 @@
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
 standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+  label = "phenos", rf.ntree = 500, rf.mtry = NULL, is.simulated = TRUE,
+  signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -16,6 +16,10 @@ standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{validation.ds}{A data frame with validation data and class labels}
 
 \item{label}{A character vector of the class variable column name}
+
+\item{rf.ntree}{An integer the number of trees in the random forest}
+
+\item{rf.mtry}{An integer the number of variables sampled at each random forest node split}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 

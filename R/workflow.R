@@ -1,10 +1,17 @@
+# workflow.R - Bill White - May 2017
+#
+# Worflow algorithms replicating those in the Bioinformatics paper:
+# Differential privacy-based Evaporative Cooling feature selection and
+# classification with Relief-F and Random Forests
+# https://doi.org/10.1093/bioinformatics/btx298
+
 #' Workflow for running one simulation of the Bioinformatics paper workflow
 #'
 #' Creates one simulation of train/holdout/validation data sets, then runs the
 #' four algorithms on that data. Returns a data frame of run results for each.
 #'
-#' @param n An integer for the number of samples
-#' @param num.vars An integer for the number of variables
+#' @param n.samples An integer for the number of samples
+#' @param n.variables An integer for the number of variables
 #' @param pct.signals A numeric for the significant variable bias
 #' @param update.freq A integer for the number of steps before update
 #' @param verbose A flag indicating whether verbose output be sent to stdout
@@ -20,8 +27,8 @@
 #'   num.variables <- 100
 #'   pct.signals <- 0.1
 #'   upd.frq <- 0.1 * num.variables
-#'   one.step.result <- paperSimWorkflow(n=num.samples,
-#'                                       num.vars=num.variables,
+#'   one.step.result <- paperSimWorkflow(n.samples=num.samples,
+#'                                       n.variables=num.variables,
 #'                                       pct.signals=pct.signals,
 #'                                       update.freq=upd.frq,
 #'                                       verbose=FALSE)
@@ -34,31 +41,30 @@
 #' \code{\link{compileResults}}. A comparison analysis with real data (fMRI)
 #' is in \code{\link{paperRealWorkflow}}.
 #' @export
-paperSimWorkflow <- function(n=100,
-                             num.vars=100,
+paperSimWorkflow <- function(n.samples=100,
+                             n.variables=100,
                              pct.signals=0.1,
-                             update.freq=50,
+                             update.freq=10,
                              verbose=FALSE) {
   ptm <- proc.time()
   types <- c("mainEffect", "interactionErdos", "interactionScalefree")
   biases <- c(0.4, 0.4, 0.4)
-  alg.steps <- seq(num.vars + 1, 1, -update.freq)[-1]
+  alg.steps <- seq(n.variables + 1, 1, -update.freq)[-1]
   num.steps <- length(alg.steps)
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
-  nbias <- pct.signals * num.vars
-  num.sigs <- pct.signals * num.vars
-  signal.names <- sprintf("gene%04d", 1:nbias)
+  num.sigs <- pct.signals * n.variables
+  signal.names <- sprintf("gene%04d", 1:num.sigs)
 
   all.run.results <- lapply(1:length(types), FUN=function(simtype.num) {
     type <- types[[simtype.num]]
     bias <- biases[[simtype.num]]
     if(verbose) cat("begin type/sim/classification loop for type/bias",
                     simtype.num, bias, "\n")
-    if(verbose) cat("running simulation with n num.vars pct.signals", n, num.vars, pct.signals, "\n")
-    shortname <- paste(round(bias, digits=1), pct.signals, num.vars, n, sep="_")
+    if(verbose) cat("running simulation with n num.vars pct.signals",
+                    n, n.variables, pct.signals, "\n")
     if(verbose) cat("--------------------------------------------\n")
-    data.sets <- createSimulation(n=n,
-                                  num.vars=num.vars,
+    data.sets <- createSimulation(num.samples=n.samples,
+                                  num.variables=n.variables,
                                   pct.signals=pct.signals,
                                   bias=bias,
                                   sim.type=type,
@@ -70,7 +76,6 @@ paperSimWorkflow <- function(n=100,
                             validation.ds=data.sets$validation,
                             label=data.sets$class.label,
                             is.simulated=TRUE,
-                            bias=bias,
                             update.freq=update.freq,
                             save.file=temp.pec.file,
                             signal.names=data.sets$signal.names,
@@ -112,8 +117,7 @@ paperSimWorkflow <- function(n=100,
                        pra=pra.result,
                        rra=rra.result)
     run.results <- compileResults(run.results=all.results, verbose=verbose)
-    if(verbose) cat("end sim/classification loop for type/bias",
-                    type, bias, "\n")
+    if(verbose) cat("end sim/classification loop for type/bias", type, bias, "\n")
     run.results
   }) # end simtype.num loop 1:3 for sva. er, inte
 
@@ -200,7 +204,6 @@ paperRealWorkflow <- function(real.data=NULL,
   ptm <- proc.time()
 
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
-
   # transform the data to fit the workflow expectations
   n <- nrow(real.data)
   num.vars <- ncol(real.data) - 1
@@ -209,7 +212,6 @@ paperRealWorkflow <- function(real.data=NULL,
                                  pct.holdout=0.5,
                                  pct.validation=0,
                                  class.label="phenos")
-
   if(verbose) cat("\nrunning privateEC\n")
   pec.result <- privateEC(train.ds=real.data.sets$train,
                           holdout.ds=real.data.sets$holdout,

@@ -4,13 +4,13 @@
 \alias{paperSimWorkflow}
 \title{Workflow for running one simulation of the Bioinformatics paper workflow}
 \usage{
-paperSimWorkflow(n = 100, num.vars = 100, pct.signals = 0.1,
-  update.freq = 50, verbose = FALSE)
+paperSimWorkflow(n.samples = 100, n.variables = 100, pct.signals = 0.1,
+  update.freq = 10, verbose = FALSE)
 }
 \arguments{
-\item{n}{An integer for the number of samples}
+\item{n.samples}{An integer for the number of samples}
 
-\item{num.vars}{An integer for the number of variables}
+\item{n.variables}{An integer for the number of variables}
 
 \item{pct.signals}{A numeric for the significant variable bias}
 
@@ -37,8 +37,8 @@ Default parameter values match those from the Bioinformatics paper.
   num.variables <- 100
   pct.signals <- 0.1
   upd.frq <- 0.1 * num.variables
-  one.step.result <- paperSimWorkflow(n=num.samples,
-                                      num.vars=num.variables,
+  one.step.result <- paperSimWorkflow(n.samples=num.samples,
+                                      n.variables=num.variables,
                                       pct.signals=pct.signals,
                                       update.freq=upd.frq,
                                       verbose=FALSE)

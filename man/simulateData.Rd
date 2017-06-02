@@ -38,9 +38,8 @@ simulateData(n.e = 1000, n.db = 70, n.ns = 30, sv.db = c("A", "B"),
 \value{
 A list with:
 \describe{
-  \item{db}{?}
-  \item{new}{?}
-  \item{varst}{?}
+  \item{db}{database creation variables}
+  \item{vars}{variables used in simulation}
 }
 }
 \description{

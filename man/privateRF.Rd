@@ -6,8 +6,9 @@
 \usage{
 privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE,
-  rf.importance.measure = "MeanDecreaseGini", pec.file = NULL,
-  update.freq = 50, threshold = 4/sqrt(nrow(holdout.ds)),
+  rf.importance.measure = "MeanDecreaseGini", rf.ntree = 500,
+  rf.mtry = NULL, pec.file = NULL, update.freq = 50,
+  threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
   save.file = NULL, verbose = FALSE)
 }
@@ -23,6 +24,10 @@ privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{is.simulated}{Is the data simulated (or real?)}
 
 \item{rf.importance.measure}{A character vector for the random forest importance measure}
+
+\item{rf.ntree}{An integer the number of trees in the random forest}
+
+\item{rf.mtry}{An integer the number of variables sampled at each random forest node split}
 
 \item{pec.file}{A character vector filename of privateEC results}
 

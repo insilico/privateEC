@@ -1,8 +1,9 @@
 # classification.R - Trang Le and Bill White - Fall 2016/Spring 2017
-
+#
 # Classification algorithms used in the Bioinformatics paper:
 # Differential privacy-based Evaporative Cooling feature selection and
 # classification with Relief-F and Random Forests
+# https://doi.org/10.1093/bioinformatics/btx298
 
 #' Compute and return importance scores (Relief-F scores)
 #'
@@ -46,6 +47,8 @@ getImportanceScores <- function(train.set=NULL,
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
 #' @param corelearn.estimator CORElearn Relief-F estimator
+#' @param rf.ntree An integer the number of trees in the random forest
+#' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param start.temp A numeric EC starting temperature
 #' @param final.temp A numeric EC final temperature
 #' @param tau.param A numeric tau to control temperature reduction schedule
@@ -95,6 +98,8 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       bias=0.4,
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
+                      rf.ntree=500,
+                      rf.mtry=NULL,
                       start.temp=0.1,
                       final.temp=10 ^ (-5),
                       tau.param=100,
@@ -109,6 +114,16 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
   if(is.simulated & is.null(signal.names)) {
     warning("No signal names provided")
   }
+  n <- nrow(train.ds)
+  d <- ncol(train.ds) - 1
+  param.mtry <- rf.mtry
+  if(is.null(rf.mtry)) {
+    param.mtry <- floor(sqrt(d))
+  } else {
+    if((param.mtry < 1) | (param.mtry > d)) {
+      stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < d"))
+    }
+  }
   ptm <- proc.time()
   if(verbose) cat("running Relief-F importance for training and holdout sets\n")
   important.scores <- getImportanceScores(train.set=train.ds,
@@ -118,9 +133,6 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                                           verbose=verbose)
   if(verbose) cat("private EC importance:", corelearn.estimator,
                   "elapsed time:", (proc.time() - ptm)[3], "\n")
-
-  n <- nrow(train.ds)
-  d <- ncol(train.ds) - 1
 
   q1.scores <- important.scores[[1]]
   q2.scores <- important.scores[[2]]
@@ -149,17 +161,17 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 
   if(verbose) cat("private EC optimization loop\n")
   num.updates <- 0
-  while ((myT > Tmin) && (tail(vars.remain,1) > 2) &&
-         (tail(vars.remain,2)[1] != tail(vars.remain,2)[2])) {
+  while ((myT > Tmin) && (utils::tail(vars.remain, 1) > 2) &&
+         (utils::tail(vars.remain, 2)[1] != utils::tail(vars.remain, 2)[2])) {
 
     diff <- diff.scores * (diff.scores > 10^(-3)) + 10^(-3) * (diff.scores < 10^(-3))
     PAs <- exp(-q1.scores / (2 * diff * myT))
-    PAs <- PAs[kept.atts,]
+    PAs <- PAs[kept.atts, ]
     sumPAs <- sum(PAs)
     scaled.PAs <- PAs / sum(PAs)
     cum.scaled.PAs <- cumsum(scaled.PAs)
     num.remv <- 1 # only remove 1 attribute
-    prob.rands <- sort(runif(num.remv, min=0, max=1))
+    prob.rands <- sort(stats::runif(num.remv, min=0, max=1))
     remv.atts <- kept.atts[prob.rands < cum.scaled.PAs][1]
     if (num.remv >= length(kept.atts)){
       kept.atts <- NULL
@@ -170,7 +182,7 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 
     # Compute train and holdout accuracy for new S_A attributes:
     att.names <- kept.atts
-    if ((i %% update.freq) == 1) {
+    if((i %% update.freq) == 1) {
       num.updates <- num.updates + 1
       if(verbose) cat("step", i, "update", num.updates, "myT > Tmin",
                       myT, Tmin, "?\n")
@@ -184,23 +196,37 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
       if(verbose) cat("\trunning randomForest\n")
-      result.rf <- randomForest::randomForest(as.formula(paste(label, "~ .", sep="")),
-                                              data=new.X_train)
+      if(param.mtry >= ncol(new.X_train) - 1) {
+        kept.atts <- NULL
+        break
+        # param.mtry <- floor(sqrt(ncol(new.X_train) - 1))
+        #attempted.mtry <- param.mtry
+        # param.mtry <-  floor((ncol(new.X_train) - 1) / 2)
+        # cat("random forest mtry setting", attempted.mtry,
+        #     ">= ", ncol(new.X_train) - 1,
+        #     ", so setting to half the number of variables",
+        #     param.mtry, "\n")
+      }
+      model.formula <- stats::as.formula(paste(label, "~.", sep=""))
+      result.rf <- randomForest::randomForest(formula=model.formula,
+                                              data=new.X_train,
+                                              ntree=rf.ntree,
+                                              mtry=param.mtry)
       ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
       if(verbose) cat("\tpredict\n")
-      holdout.pred <- predict(result.rf, newdata=new.X_holdout)
+      holdout.pred <- stats::predict(result.rf, newdata=new.X_holdout)
       fholdout <- mean(holdout.pred == holdout.ds[, label])
       if(is.simulated) {
-        validation.pred <- predict(result.rf, newdata=new.X_validation)
+        validation.pred <- stats::predict(result.rf, newdata=new.X_validation)
         fvalidation <- mean(validation.pred == validation.ds[, label])
       } else {
         fvalidation <- 0
       }
-      if(abs(ftrain - fholdout) < (threshold + rnorm(1, 0, tolerance))) {
+      if(abs(ftrain - fholdout) < (threshold + stats::rnorm(1, 0, tolerance))) {
         fholdout <- ftrain
       } else {
-        if(verbose) cat("\tadjust holdout with rnorm\n")
-        fholdout <- fholdout + rnorm(1, 0, tolerance)
+        if(verbose) cat("\tadjust holdout with stats::rnorm\n")
+        fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
       }
 
       ftrains <- c(ftrains, ftrain)
@@ -353,11 +379,11 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
   trainanswers <- (t(predictors.train) %*% train.pheno) / nrow(train.ds)
   holdoutanswers <- (t(predictors.holdout) %*% holdout.pheno) / nrow(holdout.ds)
   diffs <- abs(trainanswers - holdoutanswers)
-  noise <- rnorm(d, 0, tolerance)
+  noise <- stats::rnorm(d, 0, tolerance)
   abovethr <- diffs > threshold + noise
   holdoutanswers[!abovethr] <- trainanswers[!abovethr]
   holdoutanswers[abovethr] <- (holdoutanswers +
-                               rnorm(d, 0, tolerance))[abovethr]
+                               stats::rnorm(d, 0, tolerance))[abovethr]
   trainpos <- trainanswers > 1 / sqrt(n)
   holdoutpos <- holdoutanswers > 1 / sqrt(n)
   trainneg <- trainanswers < -1 / sqrt(n)
@@ -376,15 +402,15 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
 
   for (i in 1:numks){
     k <- vars.remain[i]
-    topk <- tail(sortanswers, k)
+    topk <- utils::tail(sortanswers, k)
     weights <- matrix(0, d, 1)
     weights[topk] <- sign(trainanswers[topk])
     ftrain <- mean((sign(predictors.train %*% weights)) == train.pheno)
     fholdout <- mean((sign(predictors.holdout %*% weights)) == holdout.pheno)
-    if(abs(ftrain - fholdout) < threshold + rnorm(1, 0, tolerance)){
+    if(abs(ftrain - fholdout) < threshold + stats::rnorm(1, 0, tolerance)){
       fholdout <- ftrain
     } else {
-      fholdout <- fholdout + rnorm(1, 0, tolerance)
+      fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
     }
     if(is.simulated) {
       fvalidation <- mean((sign(predictors.validation %*% weights)) == validation.pheno)
@@ -432,6 +458,8 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
 #' @param label A character vector of the class variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param rf.importance.measure A character vector for the random forest importance measure
+#' @param rf.ntree An integer the number of trees in the random forest
+#' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param pec.file A character vector filename of privateEC results
 #' @param update.freq A integer for the number of steps before update
 #' @param threshold A numeric, default 4 / sqrt(n) suggested in the
@@ -480,6 +508,8 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       label="phenos",
                       is.simulated=TRUE,
                       rf.importance.measure="MeanDecreaseGini",
+                      rf.ntree=500,
+                      rf.mtry=NULL,
                       pec.file=NULL,
                       update.freq=50,
                       threshold=4 / sqrt(nrow(holdout.ds)),
@@ -489,6 +519,15 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                       verbose=FALSE) {
   if(is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
+  }
+  n <- nrow(train.ds)
+  d <- ncol(train.ds) - 1
+  param.mtry <- rf.mtry
+  if(is.null(rf.mtry)) {
+    param.mtry <- floor(sqrt(d))
+  }
+  if(param.mtry < 1 | param.mtry > d) {
+    stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < d"))
   }
   if(is.simulated & is.null(signal.names)) {
     stop("privateRF: No signal names provided")
@@ -502,9 +541,6 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 
   ptm <- proc.time()
 
-  n <- nrow(train.ds)
-  d <- ncol(train.ds) - 1
-
   if(verbose) cat("loading resuls from privacy EC", pec.file, "\n")
   load(pec.file)
 
@@ -516,20 +552,24 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 
   train.rf <- randomForest::randomForest(x=predictors.train,
                                          y=train.ds[, label],
+                                         ntree=rf.ntree,
+                                         mtry=param.mtry,
                                          importance=T)
   train.imp <- train.rf$importance[, rf.importance.measure]
   holdout.rf <- randomForest::randomForest(x=predictors.holdout,
-                                         y=holdout.ds[, label],
-                                         importance=T)
+                                           y=holdout.ds[, label],
+                                           ntree=rf.ntree,
+                                           mtry=param.mtry,
+                                           importance=T)
   holdout.imp <- holdout.rf$importance[, rf.importance.measure]
   trainanswers <- train.imp
   holdoutanswers <- holdout.imp
 
   diffs <- abs(trainanswers - holdoutanswers)
-  noise <- rnorm(d, 0, tolerance)
+  noise <- stats::rnorm(d, 0, tolerance)
   abovethr <- diffs > threshold + noise
   holdoutanswers[!abovethr] <- trainanswers[!abovethr]
-  holdoutanswers[abovethr] <- (holdoutanswers + rnorm(d, 0, tolerance))[abovethr]
+  holdoutanswers[abovethr] <- (holdoutanswers + stats::rnorm(d, 0, tolerance))[abovethr]
   trainpos <- trainanswers > 1 / sqrt(n)
   holdoutpos <- holdoutanswers > 1 / sqrt(n)
   trainneg <- trainanswers < -1 / sqrt(n)
@@ -553,26 +593,31 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       fholdout <- 0.5
       fvalidation <- 0.5
     } else {
-      topk <- tail(sortanswers, k)
+      topk <- utils::tail(sortanswers, k)
       var.names[[i]] <- colnames(train.ds)[topk]
       # rf classifier:
       data.k <- train.ds[, topk, drop=F]
+      if(param.mtry >= ncol(data.k)) {
+        break
+      }
       rf.model.k <- randomForest::randomForest(x=data.k,
-                                               y=train.ds[, label])
-      # ytrain.pred <- predict(rf.model.k, newdata=train.ds)
-      yholdout.pred <- predict(rf.model.k, newdata=holdout.ds)
+                                               y=train.ds[, label],
+                                               ntree=rf.ntree,
+                                               mtry=param.mtry)
+      # ytrain.pred <- stats::predict(rf.model.k, newdata=train.ds)
+      yholdout.pred <- stats::predict(rf.model.k, newdata=holdout.ds)
       if(is.simulated) {
-        yvalidation.pred <- predict(rf.model.k, newdata=validation.ds)
+        yvalidation.pred <- stats::predict(rf.model.k, newdata=validation.ds)
       }
       ftrain <- 1 - mean(rf.model.k$confusion[, "class.error"])
       # ftrain <- mean(ytrain.pred == train.ds[, label])
       # ftrain <- 1- rf.model.k$prediction.error
       fholdout <- mean(yholdout.pred == holdout.ds[, label])
 
-      if (abs(ftrain - fholdout) < threshold + rnorm(1, 0, tolerance)) {
+      if (abs(ftrain - fholdout) < threshold + stats::rnorm(1, 0, tolerance)) {
         fholdout <- ftrain
       } else {
-        fholdout <- fholdout + rnorm(1, 0, tolerance)
+        fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
       }
       #   fvalidation <- sum((sign(predictors.validation %*% weights)) == pheno.validation)/n
       if(is.simulated) {
@@ -613,6 +658,8 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
+#' @param rf.ntree An integer the number of trees in the random forest
+#' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param is.simulated Is the data simulated (or real?)
 #' @param signal.names A character vector of signal names in simulated data
 #' @param save.file A character vector for results filename or NULL to skip
@@ -641,6 +688,8 @@ privateRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @export
 standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                        label="phenos",
+                       rf.ntree=500,
+                       rf.mtry=NULL,
                        is.simulated=TRUE,
                        signal.names=NULL,
                        save.file=NULL,
@@ -648,17 +697,28 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
   if(is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
   }
+  n <- nrow(train.ds)
+  d <- ncol(train.ds) - 1
+  param.mtry <- rf.mtry
+  if(is.null(rf.mtry)) {
+    param.mtry <- floor(sqrt(d))
+  }
+  if(param.mtry < 1 | param.mtry > d) {
+    stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < d"))
+  }
   if(is.simulated & is.null(signal.names)) {
     stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
-  bag.simul <- randomForest::randomForest(as.formula(paste(label, "~ .", sep="")),
+  bag.simul <- randomForest::randomForest(stats::as.formula(paste(label, "~ .", sep="")),
                                           data=rbind(train.ds, holdout.ds),
+                                          ntree=rf.ntree,
+                                          mtry=param.mtry,
                                           importance=T)
   # rf.holdo.accu <- 1- bag.simul$prediction.error
   rf.holdout.accu <- 1 - mean(bag.simul$confusion[, "class.error"])
   if(is.simulated) {
-    rf.pred <- predict(bag.simul, newdata=validation.ds)
+    rf.pred <- stats::predict(bag.simul, newdata=validation.ds)
     rf.validation.accu <- mean(rf.pred == validation.ds[, label])
   } else {
     rf.validation.accu  <- 0
@@ -697,6 +757,8 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 #' @param start.temp A numeric for EC starting temperature
 #' @param final.temp A numeric for EC final temperature
 #' @param tau.param A numeric for tau to control reduction schedule
+#' @param rf.ntree An integer the number of trees in the random forest
+#' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @note inbix must be instaled in the path
@@ -727,26 +789,37 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                            start.temp=0.1,
                            final.temp=10 ^ (-5),
                            tau.param=100,
+                           rf.ntree=500,
+                           rf.mtry=NULL,
                            save.file=NULL,
                            verbose=FALSE) {
-  if(is.null(train.ds) | is.null(holdout.ds)) {
-    stop("At least train and holdout data sets must be provided")
-  }
   # check for inbix in the PATH or stop with an error
   if(Sys.which("inbix") == "") {
     stop("inbix is not installed or not in the PATH")
+  }
+  # check input parameters
+  if(is.null(train.ds) | is.null(holdout.ds)) {
+    stop("At least train and holdout data sets must be provided")
+  }
+  d <- ncol(train.ds) - 1
+  param.mtry <- rf.mtry
+  if(is.null(rf.mtry)) {
+    param.mtry <- floor(sqrt(d))
+  }
+  if(param.mtry < 1 | param.mtry > d) {
+    stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < d"))
   }
   ptm <- proc.time()
   unique.sim.prefix <- paste(save.file, bias, sep="_")
   correct.detect.inbix <- vector(mode="numeric")
   # write simple tab-separated vales (tsv) files
   if(verbose) cat("Writing ", unique.sim.prefix, ".sim.(train|holdout|validation).tab files\n")
-  write.table(train.ds, paste(unique.sim.prefix, ".sim.train.tab", sep=""), sep="\t",
-              row.names=FALSE, col.names=TRUE, quote=FALSE)
-  write.table(holdout.ds, paste(unique.sim.prefix, ".sim.holdout.tab", sep=""), sep="\t",
-              row.names=FALSE, col.names=TRUE, quote=FALSE)
-  write.table(validation.ds, paste(unique.sim.prefix, ".sim.test.tab", sep=""), sep="\t",
-              row.names=FALSE, col.names=TRUE, quote=FALSE)
+  utils::write.table(train.ds, paste(unique.sim.prefix, ".sim.train.tab", sep=""), sep="\t",
+                     row.names=FALSE, col.names=TRUE, quote=FALSE)
+  utils::write.table(holdout.ds, paste(unique.sim.prefix, ".sim.holdout.tab", sep=""), sep="\t",
+                     row.names=FALSE, col.names=TRUE, quote=FALSE)
+  utils::write.table(validation.ds, paste(unique.sim.prefix, ".sim.test.tab", sep=""), sep="\t",
+                     row.names=FALSE, col.names=TRUE, quote=FALSE)
   if(verbose) cat("Running inbix privacy EC on saved simulation data sets\n")
   system.command <- paste("OMP_NUM_THREADS=4 inbix ",
                           "--ec-privacy ",
@@ -758,18 +831,20 @@ privateECinbix <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
                           "--ec-privacy-final-temp ", final.temp, " ",
                           "--ec-privacy-tau ", tau.param, " ",
                           "--ec-privacy-update-frequency ", update.freq, " ",
+                          "--ntree ", rf.ntree, " ",
+                          "--mtry ", param.mtry, " ",
                           "--out ", unique.sim.prefix, ".privateec", sep="")
   if(verbose) cat(system.command, "\n")
   system(system.command, intern=FALSE, ignore.stdout=TRUE, ignore.stderr=TRUE)
   # if(verbose) cat("Reading inbix privacy EC attributes used results\n")
   # attrs.file <- paste(unique.sim.prefix, ".privateec.selected.attributes.tab", sep="")
   # if(verbose) cat(attrs.file, "\n")
-  # attrs.table <- read.table(attrs.file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
+  # attrs.table <- utils::read.table(attrs.file, sep="\t", header=FALSE, stringsAsFactors=FALSE)
 
   if(verbose) cat("Reading inbix privacy EC algorithm run details\n")
   iters.file <- paste(unique.sim.prefix, ".privateec.privacy.iterations.tab", sep="")
   if(verbose) cat(iters.file, "\n")
-  iters.table <- read.table(iters.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+  iters.table <- utils::read.table(iters.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   if(is.simulated) {
     correct.detect.inbix <- as.integer(iters.table$Correct)
   }

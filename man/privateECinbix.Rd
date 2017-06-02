@@ -7,7 +7,7 @@
 privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
   start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
-  save.file = NULL, verbose = FALSE)
+  rf.ntree = 500, rf.mtry = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -29,6 +29,10 @@ privateECinbix(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{final.temp}{A numeric for EC final temperature}
 
 \item{tau.param}{A numeric for tau to control reduction schedule}
+
+\item{rf.ntree}{An integer the number of trees in the random forest}
+
+\item{rf.mtry}{An integer the number of variables sampled at each random forest node split}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 

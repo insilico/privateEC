@@ -9,8 +9,8 @@ test_that("privateEC returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(n=num.samples,
-                               num.vars=num.variables,
+  sim.data <- createSimulation(num.samples=num.samples,
+                               num.variables=num.variables,
                                pct.signals=pct.signals,
                                sim.type="mainEffect",
                                verbose=FALSE)
@@ -31,9 +31,8 @@ test_that("originalThresholdout returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
-
-  sim.data <- createSimulation(num.vars=num.variables,
-                               n=num.samples,
+  sim.data <- createSimulation(num.variables=num.variables,
+                               num.samples=num.samples,
                                sim.type="mainEffect",
                                verbose=FALSE)
   pec.results <- privateEC(train.ds=sim.data$train,
@@ -68,11 +67,10 @@ test_that("privateRF returns sane results", {
   num.variables <- 100
   pct.signals <- 0.1
   temp.pec.file <- tempfile(pattern="pEc_temp", tmpdir=tempdir())
-
-  sim.data <- createSimulation(num.vars=num.variables,
-                                n=num.samples,
-                                sim.type="mainEffect",
-                                verbose=FALSE)
+  sim.data <- createSimulation(num.variables=num.variables,
+                               num.samples=num.samples,
+                               sim.type="mainEffect",
+                               verbose=FALSE)
   pec.results <- privateEC(train.ds=sim.data$train,
                            holdout.ds=sim.data$holdout,
                            validation.ds=sim.data$validation,
@@ -104,8 +102,8 @@ test_that("standard random forest returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(num.vars=num.variables,
-                               n=num.samples,
+  sim.data <- createSimulation(num.variables=num.variables,
+                               num.samples=num.samples,
                                sim.type="mainEffect",
                                verbose=FALSE)
   rra.results <- standardRF(train.ds=sim.data$train,
@@ -125,8 +123,8 @@ test_that("privateECinbix returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  sim.data <- createSimulation(n=num.samples,
-                               num.vars=num.variables,
+  sim.data <- createSimulation(num.samples=num.samples,
+                               num.variables=num.variables,
                                sim.type="mainEffect",
                                verbose=FALSE)
   pec.results <- privateECinbix(train.ds=sim.data$train,

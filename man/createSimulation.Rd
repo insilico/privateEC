@@ -4,14 +4,14 @@
 \alias{createSimulation}
 \title{Create a data simulation and return train/holdout/validation data sets.}
 \usage{
-createSimulation(n = 100, num.vars = 100, pct.signals = 0.1, bias = 0.4,
-  class.label = "class", sim.type = "mainEffect", save.file = NULL,
-  verbose = FALSE)
+createSimulation(num.samples = 100, num.variables = 100,
+  pct.signals = 0.1, bias = 0.4, class.label = "class",
+  sim.type = "mainEffect", save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{n}{An integer for the number of samples}
+\item{num.samples}{An integer for the number of samples}
 
-\item{num.vars}{An integer for the number of variables}
+\item{num.variables}{An integer for the number of variables}
 
 \item{pct.signals}{A numeric for proportion of simulated signal variables}
 
@@ -41,13 +41,13 @@ A list with:
 Create a data simulation and return train/holdout/validation data sets.
 }
 \examples{
-sim.type <- "mainEffect"
-num.samples <- 100
 num.variables <- 100
+num.samples <- 100
 pct.signals <- 0.1
 bias <- 0.4
-sim.data <- createSimulation(num.vars=num.variables,
-                             n=num.samples,
+sim.type <- "mainEffect"
+sim.data <- createSimulation(num.samples=num.samples,
+                             num.variables=num.variables,
                              pct.signals=pct.signals,
                              bias=bias,
                              sim.type=sim.type,

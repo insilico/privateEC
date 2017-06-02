@@ -10,8 +10,8 @@ test_that("run one workflow of a simulation plus an analysis step", {
   num.variables <- 100
   pct.signals <- 0.1
   upd.frq <- 0.1 * num.variables
-  one.step.result <- paperSimWorkflow(n=num.samples,
-                                      num.vars=num.variables,
+  one.step.result <- paperSimWorkflow(n.samples=num.samples,
+                                      n.variables=num.variables,
                                       pct.signals=pct.signals,
                                       update.freq=upd.frq,
                                       verbose=FALSE)
