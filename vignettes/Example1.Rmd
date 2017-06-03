@@ -20,16 +20,16 @@ Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A.
 
 ```{r}
 library(privateEC)
-n <- 100
-num.vars <- 100
+n.samples <- 100
+n.variables <- 100
 bias <- 0.4
 type <- "mainEffect"
 pct.signals <- 0.1
 update.freq <- 5
 verbose <- FALSE
 
-data.sets <- createSimulation(n=n,
-                              num.vars=num.vars,
+data.sets <- createSimulation(num.samples=n.samples,
+                              num.variables=n.variables,
                               pct.signals=pct.signals,
                               bias=bias,
                               sim.type=type,
@@ -53,7 +53,7 @@ knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",
              row.names=FALSE, digits=3)
 ```
 
-```{r, echo=FALSE, fig.width=14, fig.width=7, fig.align='center'}
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
 # library(ggplot2)
 # ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
 #   geom_point(size=1) + geom_line()
@@ -61,6 +61,7 @@ plot(pec.result$algo.acc$vars.remain,
      pec.result$algo.acc$holdout.acc, 
      col="red", pch=16, type='b', cex=0.75, 
      main="One run of privateEC",
+     ylim=c(0.05, 1.0), 
      xlab="Number of Attributes in Model",
      ylab="Accuracy")
 points(pec.result$algo.acc$vars.remain, 
