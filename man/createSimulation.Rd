@@ -6,7 +6,8 @@
 \usage{
 createSimulation(num.samples = 100, num.variables = 100,
   pct.signals = 0.1, bias = 0.4, class.label = "class",
-  sim.type = "mainEffect", save.file = NULL, verbose = FALSE)
+  sim.type = "mainEffect", pct.train = 0.5, pct.holdout = 0.5,
+  pct.validation = 0, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{num.samples}{An integer for the number of samples}
@@ -21,6 +22,12 @@ createSimulation(num.samples = 100, num.variables = 100,
 
 \item{sim.type}{A character vector of the type of simulation:
 mainEffect/interactionErdos/interactionScalefree}
+
+\item{pct.train}{A numeric percentage of samples to use for traning}
+
+\item{pct.holdout}{A numeric percentage of samples to use for holdout}
+
+\item{pct.validation}{A numeric percentage of samples to use for testing}
 
 \item{save.file}{A filename or NULL indicating whether to save the simulations to file}
 

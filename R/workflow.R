@@ -55,7 +55,7 @@ paperSimWorkflow <- function(n.samples=100,
   num.sigs <- pct.signals * n.variables
   signal.names <- sprintf("gene%04d", 1:num.sigs)
 
-  all.run.results <- lapply(1:length(types), FUN=function(simtype.num) {
+  all.run.results <- lapply(seq_along(types), FUN=function(simtype.num) {
     type <- types[[simtype.num]]
     bias <- biases[[simtype.num]]
     if(verbose) cat("begin type/sim/classification loop for type/bias",
@@ -112,10 +112,10 @@ paperSimWorkflow <- function(n.samples=100,
     }
 
     # compile and return results
-    all.results = list(pec=pec.result,
-                       por=por.result,
-                       pra=pra.result,
-                       rra=rra.result)
+    all.results <- list(pec=pec.result,
+                        por=por.result,
+                        pra=pra.result,
+                        rra=rra.result)
     run.results <- compileResults(run.results=all.results, verbose=verbose)
     if(verbose) cat("end sim/classification loop for type/bias", type, bias, "\n")
     run.results
@@ -248,7 +248,7 @@ paperRealWorkflow <- function(real.data=NULL,
   file.remove(temp.pec.file)
 
   # compile and return results
-  all.results = list(pec=pec.result, por=por.result, pra=pra.result, rra=rra.result)
+  all.results <- list(pec=pec.result, por=por.result, pra=pra.result, rra=rra.result)
   final.results <- compileResults(run.results=all.results, verbose=verbose)
 
   elapsed <- (proc.time() - ptm)[3]

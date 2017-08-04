@@ -38,8 +38,8 @@ splitDataset <- function(all.data=NULL,
     # stop or warning and return list of length 0?
     stop("No data passed")
   }
-  if(pct.train + pct.holdout + pct.validation != 1) {
-    stop("Proportions of training, holdout and testing have to sum to 1")
+  if(1.0 - (pct.train + pct.holdout + pct.validation) > 0.001 ) {
+    stop("Proportions of training, holdout and testing must to sum to 1")
   }
   if(!(class.label %in% colnames(all.data))) {
     stop("Class label is not in the column names or used more than once in data set column names")
@@ -143,7 +143,7 @@ createDiffCoexpMatrixNoME <- function(M=100,
   }
 
   # perturb to get differential coexpression
-  n1 <- N / 2;
+  n1 <- N / 2
   mGenesToPerturb <- length(sampleIndicesInteraction)
   for(i in 1:mGenesToPerturb) {
     geneIdxInteraction <- sampleIndicesInteraction[i]
@@ -216,7 +216,7 @@ simulateData <- function(n.e=1000,
                          p.ov=p.b / 2) {
   n <- n.db + n.ns
   # Create random error
-  U <- matrix(nrow=n.e, ncol=n, stats::rnorm(n.e * n, sd=sd.u))
+  U <- matrix(nrow = n.e, ncol = n, stats::rnorm(n.e * n, sd = sd.u))
 
   # Create index for database vs. new sample #
   ind <- as.factor(c(rep("db", n.db), rep("ns", n.ns)))
@@ -233,7 +233,7 @@ simulateData <- function(n.e=1000,
   len0 <- sum(S.db == 0)
   len1 <- sum(S.db == 1)
 
-  if(conf == FALSE){
+  if (conf == FALSE){
     # surrogate variable (no confounding in this function)
     n.sv.db <- length(sv.db)
     prop.db <- 1 / n.sv.db
@@ -335,6 +335,9 @@ simulateData <- function(n.e=1000,
 #' @param class.label A character vector for the name of the class column
 #' @param sim.type A character vector of the type of simulation:
 #' mainEffect/interactionErdos/interactionScalefree
+#' @param pct.train A numeric percentage of samples to use for traning
+#' @param pct.holdout A numeric percentage of samples to use for holdout
+#' @param pct.validation A numeric percentage of samples to use for testing
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @param save.file A filename or NULL indicating whether to save the simulations to file
 #' @return A list with:
@@ -366,6 +369,9 @@ createSimulation <- function(num.samples=100,
                              bias=0.4,
                              class.label="class",
                              sim.type="mainEffect",
+                             pct.train=0.5,
+                             pct.holdout=0.5,
+                             pct.validation=0,
                              save.file=NULL,
                              verbose=FALSE) {
   ptm <- proc.time()
@@ -413,9 +419,9 @@ createSimulation <- function(num.samples=100,
   var.names <- c(signal.names, background.names, class.label)
   colnames(dataset) <- var.names
   split.data <- splitDataset(all.data=dataset,
-                             pct.train=1 / 3,
-                             pct.holdout=1 / 3,
-                             pct.validation=1 / 3,
+                             pct.train=pct.train,
+                             pct.holdout=pct.holdout,
+                             pct.validation=pct.validation,
                              class.label=class.label)
 
   if(!is.null(save.file)) {
