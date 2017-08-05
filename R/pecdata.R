@@ -11,8 +11,8 @@
 #'
 #' @docType data
 #' @keywords datasets
-#' @name fullfMRI2
-#' @usage data(fullfMRI2)
+#' @name rsfMRIcorrMDD
+#' @usage data(rsfMRIcorrMDD)
 #' @references
 #' Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
 #' and B. A. McKinney. “Privacy preserving evaporative cooling feature

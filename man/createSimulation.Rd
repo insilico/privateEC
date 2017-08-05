@@ -61,6 +61,7 @@ sim.data <- createSimulation(num.samples=num.samples,
                              verbose=FALSE)
 }
 \seealso{
-Other simulation: \code{\link{createDiffCoexpMatrixNoME}},
-  \code{\link{simulateData}}, \code{\link{splitDataset}}
+Other simulation: \code{\link{createInteractions}},
+  \code{\link{createMainEffects}},
+  \code{\link{splitDataset}}
 }

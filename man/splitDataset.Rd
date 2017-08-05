@@ -37,7 +37,7 @@ data("fullfMRI2")
 data.sets <- splitDataset(fullfMRI2)
 }
 \seealso{
-Other simulation: \code{\link{createDiffCoexpMatrixNoME}},
-  \code{\link{createSimulation}},
-  \code{\link{simulateData}}
+Other simulation: \code{\link{createInteractions}},
+  \code{\link{createMainEffects}},
+  \code{\link{createSimulation}}
 }

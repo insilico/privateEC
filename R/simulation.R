@@ -102,15 +102,15 @@ splitDataset <- function(all.data=NULL,
 #' @param verbose A flag for sending verbose output to stdout
 #' @family simulation
 #' @return A matrix representing the new new data set.
-createDiffCoexpMatrixNoME <- function(M=100,
-                                      N=100,
-                                      class.label="class",
-                                      meanExpression=7,
-                                      A=NULL,
-                                      randSdNoise=1,
-                                      sdNoise=0.4,
-                                      sampleIndicesInteraction=NULL,
-                                      verbose=FALSE) {
+createInteractions <- function(M=100,
+                               N=100,
+                               class.label="class",
+                               meanExpression=7,
+                               A=NULL,
+                               randSdNoise=1,
+                               sdNoise=0.4,
+                               sampleIndicesInteraction=NULL,
+                               verbose=FALSE) {
   if(is.null(A)) {
     stop("privacyEC: No adjacency matrix provided")
   }
@@ -170,9 +170,12 @@ createDiffCoexpMatrixNoME <- function(M=100,
   data.frame(newD)
 }
 
-#' Create a simulated data set
+#' Create a simulated data set with main effects
 #'
-#' simulating \eqn{X = BS + \Gamma G + U}
+#' Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
+#' studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
+#'
+#' \eqn{X = BS + \Gamma G + U}
 #'
 #' S = Biological group                                                                                                                   m
 #' G = Batch
@@ -201,7 +204,7 @@ createDiffCoexpMatrixNoME <- function(M=100,
 #'   \item{vars}{variables used in simulation}
 #' }
 #' @family simulation
-simulateData <- function(n.e=1000,
+createMainEffects <- function(n.e=1000,
                          n.db=70,
                          n.ns=30,
                          sv.db=c("A", "B"),
@@ -380,7 +383,7 @@ createSimulation <- function(num.samples=100,
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- simulateData(n.e=num.variables,
+    my.sim.data <- createMainEffects(n.e=num.variables,
                                 n.db=3 * num.samples,
                                 sd.b=bias,
                                 p.b=pct.signals)$db
@@ -390,7 +393,7 @@ createSimulation <- function(num.samples=100,
     g <- igraph::barabasi.game(num.variables, directed=F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+    dataset <- createInteractions(M=num.variables,
                                          N=3 * num.samples,
                                          meanExpression=7,
                                          A=myA,
@@ -404,7 +407,7 @@ createSimulation <- function(num.samples=100,
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+    dataset <- createInteractions(M=num.variables,
                                          N=3 * num.samples,
                                          meanExpression=7,
                                          A=myA,
