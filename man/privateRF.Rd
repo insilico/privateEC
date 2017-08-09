@@ -85,3 +85,7 @@ prf.results <- privateRF(train.ds=sim.data$train,
                          pec.file=temp.pec.file,
                          verbose=FALSE)
 }
+\seealso{
+Other classification: \code{\link{originalThresholdout}},
+  \code{\link{privateEC}}, \code{\link{standardRF}}
+}

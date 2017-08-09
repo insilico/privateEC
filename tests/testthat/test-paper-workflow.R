@@ -10,11 +10,11 @@ test_that("run one workflow of a simulation plus an analysis step", {
   num.variables <- 100
   pct.signals <- 0.1
   upd.frq <- 0.1 * num.variables
-  one.step.result <- paperSimWorkflow(n.samples=num.samples,
-                                      n.variables=num.variables,
-                                      pct.signals=pct.signals,
-                                      update.freq=upd.frq,
-                                      verbose=FALSE)
+  one.step.result <- paperSimWorkflow(n.samples = num.samples,
+                                      n.variables = num.variables,
+                                      pct.signals = pct.signals,
+                                      update.freq = upd.frq,
+                                      verbose = FALSE)
   expect_equal(length(one.step.result), 2)
   expect_equal(length(one.step.result$run.results), 3)
 })
@@ -23,10 +23,10 @@ test_that("run one workflow for a real data analysis", {
   data(fullfMRI2)
   # ~100 variables for a test
   test.mat <- fullfMRI2[, 2900:ncol(fullfMRI2)]
-  real.result <- paperRealWorkflow(real.data=test.mat,
-                                   label="phenos",
-                                   update.freq=5,
-                                   verbose=FALSE)
+  real.result <- paperRealWorkflow(real.data = test.mat,
+                                   label = "phenos",
+                                   update.freq = 5,
+                                   verbose = FALSE)
   expect_equal(length(real.result), 2)
   expect_equal(length(real.result$run.results), 3)
 })

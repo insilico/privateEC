@@ -57,5 +57,5 @@ rra.results <- standardRF(train.ds=sim.data$train,
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},
-  \code{\link{privateECinbix}}, \code{\link{privateEC}}
+  \code{\link{privateEC}}, \code{\link{privateRF}}
 }

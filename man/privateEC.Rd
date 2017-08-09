@@ -93,5 +93,5 @@ Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},
-  \code{\link{privateECinbix}}, \code{\link{standardRF}}
+  \code{\link{privateRF}}, \code{\link{standardRF}}
 }

@@ -37,11 +37,11 @@ Default parameter values match those from the Bioinformatics paper.
   num.variables <- 100
   pct.signals <- 0.1
   upd.frq <- 0.1 * num.variables
-  one.step.result <- paperSimWorkflow(n.samples=num.samples,
-                                      n.variables=num.variables,
-                                      pct.signals=pct.signals,
-                                      update.freq=upd.frq,
-                                      verbose=FALSE)
+  one.step.result <- paperSimWorkflow(n.samples = num.samples,
+                                      n.variables = num.variables,
+                                      pct.signals = pct.signals,
+                                      update.freq = upd.frq,
+                                      verbose = FALSE)
 }
 \seealso{
 The workflow consists of the sequence:

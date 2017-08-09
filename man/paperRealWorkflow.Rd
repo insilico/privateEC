@@ -30,10 +30,10 @@ Returns a data frame of run results for each.
 }
 \examples{
   data(fullfMRI2)
-  real.result <- paperRealWorkflow(real.data=fullfMRI2[, 2900:ncol(fullfMRI2)],
-                                   label="phenos",
-                                   update.freq=50,
-                                   verbose=FALSE)
+  real.result <- paperRealWorkflow(real.data = fullfMRI2[, 2900:ncol(fullfMRI2)],
+                                   label = "phenos",
+                                   update.freq = 50,
+                                   verbose = FALSE)
 }
 \seealso{
 The workflow consists of the sequence:

@@ -79,6 +79,6 @@ por.results <- originalThresholdout(train.ds=sim.data$train,
 file.remove(temp.pec.file)
 }
 \seealso{
-Other classification: \code{\link{privateECinbix}},
-  \code{\link{privateEC}}, \code{\link{standardRF}}
+Other classification: \code{\link{privateEC}},
+  \code{\link{privateRF}}, \code{\link{standardRF}}
 }
