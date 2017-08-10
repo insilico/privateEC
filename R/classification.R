@@ -190,10 +190,10 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
       if (verbose) cat("step", i, "update", num.updates, "myT > Tmin",
                       myT, Tmin, "?\n")
       if (verbose) cat("\trecomputing scores with evaporated attributes removed\n")
-      new.X_train <- train.ds[, c(kept.atts, label), drop=F]
-      new.X_holdout <- holdout.ds[, c(kept.atts, label), drop=F]
-      new.X_validation <- validation.ds[, c(kept.atts, label), drop=F]
-      new.scores <- getImportanceScores(new.X_train, new.X_holdout, label=label)
+      new.X_train <- train.ds[, c(kept.atts, label), drop = F]
+      new.X_holdout <- holdout.ds[, c(kept.atts, label), drop = F]
+      new.X_validation <- validation.ds[, c(kept.atts, label), drop = F]
+      new.scores <- getImportanceScores(new.X_train, new.X_holdout, label = label)
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
       diff.scores <- abs(q1.scores - q2.scores)
@@ -210,17 +210,17 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
         #     ", so setting to half the number of variables",
         #     param.mtry, "\n")
       }
-      model.formula <- stats::as.formula(paste(label, "~.", sep=""))
-      result.rf <- randomForest::randomForest(formula=model.formula,
-                                              data=new.X_train,
-                                              ntree=rf.ntree,
-                                              mtry=param.mtry)
+      model.formula <- stats::as.formula(paste(label, "~.", sep = ""))
+      result.rf <- randomForest::randomForest(formula = model.formula,
+                                              data = new.X_train,
+                                              ntree = rf.ntree,
+                                              mtry = param.mtry)
       ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
       if (verbose) cat("\tpredict\n")
-      holdout.pred <- stats::predict(result.rf, newdata=new.X_holdout)
+      holdout.pred <- stats::predict(result.rf, newdata = new.X_holdout)
       fholdout <- mean(holdout.pred == holdout.ds[, label])
       if (is.simulated) {
-        validation.pred <- stats::predict(result.rf, newdata=new.X_validation)
+        validation.pred <- stats::predict(result.rf, newdata = new.X_validation)
         fvalidation <- mean(validation.pred == validation.ds[, label])
       } else {
         fvalidation <- 0
@@ -256,26 +256,27 @@ privateEC <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
 
   vars.remain <- vars.remain[-1] # remove the first value 0
   fplots <- data.frame(vars.remain,
-                       train.acc=ftrains,
-                       holdout.acc=fholds,
-                       validation.acc=fvalidations,
-                       alg=1)
+                       train.acc = ftrains,
+                       holdout.acc = fholds,
+                       validation.acc = fvalidations,
+                       alg = 1)
   fplots <- fplots[-1, ] # remove the first row
-  melted.fs <- reshape2::melt(fplots, id=c("vars.remain", "alg"))
+  melted.fs <- reshape2::melt(fplots, id = c("vars.remain", "alg"))
+
   if (!is.null(save.file)) {
     if (verbose) {
       cat("saving results to ", save.file, "\n")
     }
     save(fplots, melted.fs, correct.detect.ec, n, d, signal.names,
-         threshold, tolerance, bias, file=save.file)
+         threshold, tolerance, bias, file = save.file)
   }
 
   if (verbose) cat("privateEC elapsed time:", (proc.time() - ptm)[3], "\n")
 
-  list(algo.acc=fplots,
-       ggplot.data=melted.fs,
-       correct=correct.detect.ec,
-       elasped=(proc.time() - ptm)[3])
+  list(algo.acc = fplots,
+       ggplot.data = melted.fs,
+       correct = correct.detect.ec,
+       elasped = (proc.time() - ptm)[3])
 }
 
 #' Original Thresholdout algorithm
@@ -400,17 +401,17 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
   vars.remain <- alg.steps
   numks <- length(vars.remain)
   noisy_vals <- matrix(-1, numks, 3)
-  correct.detect.ori <- vector(mode="numeric")
+  correct.detect.ori <- vector(mode = "numeric")
   var.names <- list()
 
-  for (i in 1:numks){
+  for (i in 1:numks) {
     k <- vars.remain[i]
     topk <- utils::tail(sortanswers, k)
     weights <- matrix(0, d, 1)
     weights[topk] <- sign(trainanswers[topk])
     ftrain <- mean((sign(predictors.train %*% weights)) == train.pheno)
     fholdout <- mean((sign(predictors.holdout %*% weights)) == holdout.pheno)
-    if (abs(ftrain - fholdout) < threshold + stats::rnorm(1, 0, tolerance)){
+    if (abs(ftrain - fholdout) < threshold + stats::rnorm(1, 0, tolerance)) {
       fholdout <- ftrain
     } else {
       fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
@@ -434,20 +435,20 @@ originalThresholdout <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=N
   }
 
   colnames(noisy_vals) <- c("train.acc", "holdout.acc", "validation.acc")
-  pplots <- data.frame(vars.remain, noisy_vals, alg=2)
-  melted.ps <- reshape2::melt(pplots, id=c("vars.remain", "alg"))
+  pplots <- data.frame(vars.remain, noisy_vals, alg = 2)
+  melted.ps <- reshape2::melt(pplots, id = c("vars.remain", "alg"))
 
   if (!is.null(save.file)) {
     if (verbose) cat("saving to", save.file, "\n")
-    save(pplots, melted.ps, correct.detect.ori, file=save.file)
+    save(pplots, melted.ps, correct.detect.ori, file = save.file)
   }
 
   if (verbose) cat("originalThresholout elapsed time:", (proc.time() - ptm)[3], "\n")
 
-  list(algo.acc=pplots,
-       ggplot.data=melted.ps,
-       correct=correct.detect.ori,
-       elasped=(proc.time() - ptm)[3])
+  list(algo.acc = pplots,
+       ggplot.data = melted.ps,
+       correct = correct.detect.ori,
+       elasped = (proc.time() - ptm)[3])
 }
 
 #' Private random forests algorithm
@@ -710,6 +711,7 @@ standardRF <- function(train.ds=NULL, holdout.ds=NULL, validation.ds=NULL,
   if (is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
   }
+  # BOTE: bcw, 'n' not used?
   n <- nrow(train.ds)
   d <- ncol(train.ds) - 1
   param.mtry <- rf.mtry
