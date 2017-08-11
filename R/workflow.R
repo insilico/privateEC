@@ -34,7 +34,7 @@
 #'                                       verbose = FALSE)
 #' @seealso The workflow consists of the sequence:
 #' \code{\link{createSimulation}}
-#' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
+#' \code{\link{privateEC}}
 #' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and
@@ -61,9 +61,9 @@ paperSimWorkflow <- function(n.samples=100,
     type <- types[[simtype.num]]
     bias <- biases[[simtype.num]]
     if (verbose) cat("begin type/sim/classification loop for type/bias",
-                    simtype.num, bias, "\n")
+                     simtype.num, bias, "\n")
     if (verbose) cat("running simulation with n num.vars pct.signals",
-                    n, n.variables, pct.signals, "\n")
+                     n.variables, pct.signals, "\n")
     if (verbose) cat("--------------------------------------------\n")
     data.sets <- createSimulation(num.samples = n.samples,
                                   num.variables = n.variables,
@@ -185,13 +185,13 @@ compileResults <- function(run.results = NULL,
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
-#'   data(fullfMRI2)
-#'   real.result <- paperRealWorkflow(real.data = fullfMRI2[, 2900:ncol(fullfMRI2)],
+#'   data(rsfMRIcorrMDD)
+#'   real.result <- paperRealWorkflow(real.data = rsfMRIcorrMDD[, 2900:ncol(rsfMRIcorrMDD)],
 #'                                    label = "phenos",
 #'                                    update.freq = 50,
 #'                                    verbose = FALSE)
 #' @seealso The workflow consists of the sequence:
-#' \code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
+#' \code{\link{privateEC}}
 #' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and

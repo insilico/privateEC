@@ -57,9 +57,9 @@ test_that("createSimulation with interaction network returns sane results", {
 })
 
 test_that("splitDataset makes the correct sized train, holdout sized splits", {
-  data("fullfMRI2")
-  n <- nrow(fullfMRI2)
-  data.sets <- splitDataset(all.data = fullfMRI2,
+  data("rsfMRIcorrMDD")
+  n <- nrow(rsfMRIcorrMDD)
+  data.sets <- splitDataset(all.data = rsfMRIcorrMDD,
                             pct.train = 0.5,
                             pct.holdout = 0.5,
                             pct.validation = 0,
@@ -70,19 +70,19 @@ test_that("splitDataset makes the correct sized train, holdout sized splits", {
   expect_equal(nrow(data.sets$validation), 0)
   # total
   if (is.null(nrow(data.sets$validation))) {
-    expect_equal(nrow(data.sets$train) + nrow(data.sets$holdout), nrow(fullfMRI2))
+    expect_equal(nrow(data.sets$train) + nrow(data.sets$holdout), nrow(rsfMRIcorrMDD))
   } else {
     expect_equal(nrow(data.sets$train) +
                    nrow(data.sets$holdout) +
                    nrow(data.sets$validation),
-                 nrow(fullfMRI2))
+                 nrow(rsfMRIcorrMDD))
   }
 })
 
 test_that("splitDataset makes the correct sized train, holdout AND validation sized splits", {
-  data("fullfMRI2")
-  n <- nrow(fullfMRI2)
-  data.sets <- splitDataset(all.data = fullfMRI2,
+  data("rsfMRIcorrMDD")
+  n <- nrow(rsfMRIcorrMDD)
+  data.sets <- splitDataset(all.data = rsfMRIcorrMDD,
                             pct.train = 1 / 3,
                             pct.holdout = 1 / 3,
                             pct.validation = 1 / 3,
@@ -97,11 +97,11 @@ test_that("splitDataset makes the correct sized train, holdout AND validation si
   if (is.null(nrow(data.sets$validation))) {
     expect_equal(nrow(data.sets$train) +
                    nrow(data.sets$holdout),
-                 nrow(fullfMRI2))
+                 nrow(rsfMRIcorrMDD))
   } else {
     expect_equal(nrow(data.sets$train) +
                    nrow(data.sets$holdout) +
                    nrow(data.sets$validation),
-                 nrow(fullfMRI2))
+                 nrow(rsfMRIcorrMDD))
   }
 })

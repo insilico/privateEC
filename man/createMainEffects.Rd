@@ -43,12 +43,9 @@ A list with:
 }
 }
 \description{
-Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
-studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
+\eqn{X = BS + \Gamma G + U}
 }
 \details{
-\eqn{X = BS + \Gamma G + U}
-
 S = Biological group                                                                                                                   m
 G = Batch
 U = random error
@@ -56,6 +53,10 @@ U = random error
 NOTE:  If you use conf=TRUE, then you must have exactly two surrogate
 variables in the database this function only allows for confounding in
 the database, not confounding in the new samples
+}
+\references{
+Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
+studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 }
 \seealso{
 Other simulation: \code{\link{createInteractions}},

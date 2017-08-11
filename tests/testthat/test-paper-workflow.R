@@ -20,9 +20,9 @@ test_that("run one workflow of a simulation plus an analysis step", {
 })
 
 test_that("run one workflow for a real data analysis", {
-  data(fullfMRI2)
+  data(rsfMRIcorrMDD)
   # ~100 variables for a test
-  test.mat <- fullfMRI2[, 2900:ncol(fullfMRI2)]
+  test.mat <- rsfMRIcorrMDD[, 2900:ncol(rsfMRIcorrMDD)]
   real.result <- paperRealWorkflow(real.data = test.mat,
                                    label = "phenos",
                                    update.freq = 5,

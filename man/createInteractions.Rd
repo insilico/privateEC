@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{createInteractions}
 \alias{createInteractions}
-\title{Create a differentially coexpressed data set without main effects}
+\title{Create a differentially coexpressed data set with interactions}
 \usage{
 createInteractions(M = 100, N = 100, class.label = "class",
   meanExpression = 7, A = NULL, randSdNoise = 1, sdNoise = 0.4,
@@ -31,7 +31,7 @@ createInteractions(M = 100, N = 100, class.label = "class",
 A matrix representing the new new data set.
 }
 \description{
-Create a differentially coexpressed data set without main effects
+Create a differentially coexpressed data set with interactions
 }
 \seealso{
 Other simulation: \code{\link{createMainEffects}},

@@ -8,9 +8,8 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
   corelearn.estimator = "ReliefFbestK", rf.ntree = 500, rf.mtry = NULL,
   start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
-  threshold = 4/sqrt(nrow(holdout.ds)),
-  tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
+  signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -72,11 +71,13 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
-sim.data <- createSimulation(n=num.samples,
-                             num.vars=num.variables,
-                             pct.signals=pct.signals,
-                             sim.type="mainEffect",
-                             verbose=FALSE)
+sim.data <- createSimulation(num.variables = num.variables,
+                             num.samples = num.samples,
+                             sim.type = "mainEffect",
+                             pct.train = 1 / 3,
+                             pct.holdout = 1 / 3,
+                             pct.validation = 1 / 3,
+                             verbose = FALSE)
 pec.results <- privateEC(train.ds=sim.data$train,
                          holdout.ds=sim.data$holdout,
                          validation.ds=sim.data$validation,
@@ -89,7 +90,10 @@ pec.results <- privateEC(train.ds=sim.data$train,
 Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka,
 and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection
 and classification with Relief-F and Random Forests,”
-Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017
+Bioinformatics. Accepted. \url{https://doi.org/10.1093/bioinformatics/btx298}. 2017
+
+For more information see:
+\href{http://insilico.utulsa.edu/index.php/privateec/}{Insilico Lab privateEC Page}
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},

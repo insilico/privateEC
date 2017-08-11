@@ -46,7 +46,7 @@ Default parameter values match those from the Bioinformatics paper.
 \seealso{
 The workflow consists of the sequence:
 \code{\link{createSimulation}}
-\code{\link{privateEC}} (optionally \code{\link{privateECinbix}})
+\code{\link{privateEC}}
 \code{\link{originalThresholdout}}
 \code{\link{privateRF}}
 \code{\link{standardRF}} and

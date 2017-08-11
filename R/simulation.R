@@ -25,8 +25,8 @@
 #'   \item{validation}{validation data set}
 #' }
 #' @examples
-#' data("fullfMRI2")
-#' data.sets <- splitDataset(fullfMRI2)
+#' data("rsfMRIcorrMDD")
+#' data.sets <- splitDataset(rsfMRIcorrMDD)
 #' @family simulation
 #' @export
 splitDataset <- function(all.data=NULL,
@@ -89,7 +89,7 @@ splitDataset <- function(all.data=NULL,
   data.sets
 }
 
-#' Create a differentially coexpressed data set without main effects
+#' Create a differentially coexpressed data set with interactions
 #'
 #' @param M An integer for the number of samples (rows)
 #' @param N An integer for the number of variables (columns)
@@ -118,7 +118,7 @@ createInteractions <- function(M=100,
     stop("privacyEC: No sample signal indices provided")
   }
   # create a random data matrix
-  D <- matrix(nrow = M, ncol = N, data = stats::rnorm(M*N,
+  D <- matrix(nrow = M, ncol = N, data = stats::rnorm(M * N,
                                                       mean = meanExpression,
                                                       sd = randSdNoise))
 
@@ -149,8 +149,8 @@ createInteractions <- function(M=100,
     geneIdxInteraction <- sampleIndicesInteraction[i]
 
     # NOTE: bcw, these are never used?
-    g0 <- D[sampleIndicesInteraction, (n1 + 1):N]
-    g1 <- D[sampleIndicesInteraction, 1:n1]
+    # g0 <- D[sampleIndicesInteraction, (n1 + 1):N]
+    # g1 <- D[sampleIndicesInteraction, 1:n1]
 
     # get the group 2 gene expression and randomly order for differential coexpression
     x <- D[geneIdxInteraction, 1:n1]
@@ -172,9 +172,6 @@ createInteractions <- function(M=100,
 }
 
 #' Create a simulated data set with main effects
-#'
-#' Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
-#' studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 #'
 #' \eqn{X = BS + \Gamma G + U}
 #'
@@ -204,6 +201,9 @@ createInteractions <- function(M=100,
 #'   \item{db}{database creation variables}
 #'   \item{vars}{variables used in simulation}
 #' }
+#' @references
+#' Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
+#' studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 #' @family simulation
 #' @export
 createMainEffects <- function(n.e=1000,
@@ -382,66 +382,66 @@ createSimulation <- function(num.samples=100,
                              verbose=FALSE) {
   ptm <- proc.time()
   nbias <- pct.signals * num.variables
-  if(sim.type == "mainEffect") {
+  if (sim.type == "mainEffect") {
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- createMainEffects(n.e=num.variables,
-                                n.db=3 * num.samples,
-                                sd.b=bias,
-                                p.b=pct.signals)$db
+    my.sim.data <- createMainEffects(n.e = num.variables,
+                                     n.db = 3 * num.samples,
+                                     sd.b = bias,
+                                     p.b = pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
-  } else if(sim.type == "interactionScalefree") {
+  } else if (sim.type == "interactionScalefree") {
     # interaction simulation: scale-free
-    g <- igraph::barabasi.game(num.variables, directed=F)
+    g <- igraph::barabasi.game(num.variables, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M=num.variables,
-                                         N=3 * num.samples,
-                                         meanExpression=7,
-                                         A=myA,
-                                         randSdNoise=1,
-                                         sdNoise=bias,
-                                         sampleIndicesInteraction=1:nbias)
-  } else if(sim.type == "interactionErdos") {
+    dataset <- createInteractions(M = num.variables,
+                                  N = 3 * num.samples,
+                                  meanExpression = 7,
+                                  A = myA,
+                                  randSdNoise = 1,
+                                  sdNoise = bias,
+                                  sampleIndicesInteraction = 1:nbias)
+  } else if (sim.type == "interactionErdos") {
     attach.prob <- 0.1
     g <- igraph::erdos.renyi.game(num.variables, attach.prob)
     #   foo <- printIGraphStats(g)
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M=num.variables,
-                                         N=3 * num.samples,
-                                         meanExpression=7,
-                                         A=myA,
-                                         randSdNoise=1,
-                                         sdNoise=bias,
-                                         sampleIndicesInteraction=1:nbias)
+    dataset <- createInteractions(M = num.variables,
+                                  N = 3 * num.samples,
+                                  meanExpression = 7,
+                                  A = myA,
+                                  randSdNoise = 1,
+                                  sdNoise = bias,
+                                  sampleIndicesInteraction = 1:nbias)
   }
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)
-  signal.names <- paste("sig.var", 1:nbias, sep="")
-  background.names <- paste("var", 1:(num.variables - nbias), sep="")
+  signal.names <- paste("sig.var", 1:nbias, sep = "")
+  background.names <- paste("var", 1:(num.variables - nbias), sep = "")
   var.names <- c(signal.names, background.names, class.label)
   colnames(dataset) <- var.names
-  split.data <- splitDataset(all.data=dataset,
-                             pct.train=pct.train,
-                             pct.holdout=pct.holdout,
-                             pct.validation=pct.validation,
-                             class.label=class.label)
+  split.data <- splitDataset(all.data = dataset,
+                             pct.train = pct.train,
+                             pct.holdout = pct.holdout,
+                             pct.validation = pct.validation,
+                             class.label = class.label)
 
   if(!is.null(save.file)) {
-    if(verbose) cat("saving to data/", save.file, ".Rdata\n", sep="")
-    save(split.data, pct.signals, bias, sim.type, file=save.file)
+    if(verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
+    save(split.data, pct.signals, bias, sim.type, file = save.file)
   }
 
   elapsed <- (proc.time() - ptm)[3]
   if(verbose) cat("createSimulation elapsed time:", elapsed, "\n")
 
-  list(train=split.data$train,
-       holdout=split.data$holdout,
-       validation=split.data$validation,
-       class.label=class.label,
-       signal.names=signal.names,
-       elapsed=elapsed)
+  list(train = split.data$train,
+       holdout = split.data$holdout,
+       validation = split.data$validation,
+       class.label = class.label,
+       signal.names = signal.names,
+       elapsed = elapsed)
 }
