@@ -6,8 +6,9 @@
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
-  corelearn.estimator = "ReliefFbestK", rf.ntree = 500, rf.mtry = NULL,
-  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
+  corelearn.estimator = "ReliefFbestK", rf.method = "randomforest",
+  rf.ntree = 500, rf.mtry = NULL, start.temp = 0.1,
+  final.temp = 10^(-5), tau.param = 100,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
   signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
@@ -27,6 +28,8 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{update.freq}{An integer the number of steps before update}
 
 \item{corelearn.estimator}{CORElearn Relief-F estimator}
+
+\item{rf.method}{An character vector random forest method}
 
 \item{rf.ntree}{An integer the number of trees in the random forest}
 

@@ -47,6 +47,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
 #' @param corelearn.estimator CORElearn Relief-F estimator
+#' @param rf.method An character vector random forest method
 #' @param rf.ntree An integer the number of trees in the random forest
 #' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param start.temp A numeric EC starting temperature
@@ -106,6 +107,7 @@ privateEC <- function(train.ds=NULL,
                       bias=0.4,
                       update.freq=50,
                       corelearn.estimator="ReliefFbestK",
+                      rf.method="randomforest",
                       rf.ntree=500,
                       rf.mtry=NULL,
                       start.temp=0.1,
@@ -203,38 +205,50 @@ privateEC <- function(train.ds=NULL,
       q2.scores <- new.scores[[2]]
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
-      if (verbose) cat("\trunning randomForest\n")
       if (param.mtry >= ncol(new.X_train) - 1) {
         kept.atts <- NULL
         break
-        # param.mtry <- floor(sqrt(ncol(new.X_train) - 1))
-        #attempted.mtry <- param.mtry
-        # param.mtry <-  floor((ncol(new.X_train) - 1) / 2)
-        # cat("random forest mtry setting", attempted.mtry,
-        #     ">= ", ncol(new.X_train) - 1,
-        #     ", so setting to half the number of variables",
-        #     param.mtry, "\n")
       }
-      model.formula <- stats::as.formula(paste(label, "~.", sep = ""))
-      result.rf <- randomForest::randomForest(formula = model.formula,
-                                              data = new.X_train,
-                                              ntree = rf.ntree,
-                                              mtry = param.mtry)
-      ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
-      if (verbose) cat("\tpredict\n")
-      holdout.pred <- stats::predict(result.rf, newdata = new.X_holdout)
-      fholdout <- mean(holdout.pred == holdout.ds[, label])
-      if (is.simulated) {
-        validation.pred <- stats::predict(result.rf, newdata = new.X_validation)
-        fvalidation <- mean(validation.pred == validation.ds[, label])
-      } else {
-        fvalidation <- 0
+      method.valid <- FALSE
+      if (rf.method == "randomforest") {
+        if (verbose) cat("\trunning randomForest\n")
+        model.formula <- stats::as.formula(paste(label, "~.", sep = ""))
+        result.rf <- randomForest::randomForest(formula = model.formula,
+                                                data = new.X_train,
+                                                ntree = rf.ntree,
+                                                mtry = param.mtry)
+        ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
+        if (verbose) cat("\tpredict\n")
+        holdout.pred <- stats::predict(result.rf, newdata = new.X_holdout)
+        fholdout <- mean(holdout.pred == holdout.ds[, label])
+        if (is.simulated) {
+          validation.pred <- stats::predict(result.rf, newdata = new.X_validation)
+          fvalidation <- mean(validation.pred == validation.ds[, label])
+        } else {
+          fvalidation <- 0
+        }
+        if (abs(ftrain - fholdout) < (threshold + stats::rnorm(1, 0, tolerance))) {
+          fholdout <- ftrain
+        } else {
+          if (verbose) cat("\tadjust holdout with stats::rnorm\n")
+          fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
+        }
+        method.valid <- TRUE
       }
-      if (abs(ftrain - fholdout) < (threshold + stats::rnorm(1, 0, tolerance))) {
-        fholdout <- ftrain
-      } else {
-        if (verbose) cat("\tadjust holdout with stats::rnorm\n")
-        fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
+      # bcw - 1/31/18 - xgboost package
+      if (rf.method == "xgboost") {
+        if (verbose) cat("\trunning xgboost\n")
+        xgbResults <- xgboostRF(train.ds = new.X_train,
+                                holdout.ds = new.X_holdout,
+                                validation.ds = new.X_validation,
+                                label = label)
+        ftrain <- xgbResults$train.acc
+        fholdout <- xgbResults$holdout.acc
+        fvalidation <- xgbResults$validation.acc
+        method.valid <- TRUE
+      }
+      if (!method.valid) {
+        stop("Invalid method [ ", rf.method, " ]")
       }
 
       ftrains <- c(ftrains, ftrain)
@@ -797,8 +811,6 @@ standardRF <- function(train.ds=NULL,
 #' @param num.threads An integer for OpenMP number of cores
 #' @param max.depth An integer aximum tree depth
 #' @param learn.rate A numeric gradient learning rate 0-1
-#' @param is.simulated Is the data simulated (or real?)
-#' @param signal.names A character vector of signal names in simulated data
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
@@ -840,8 +852,6 @@ xgboostRF <- function(train.ds=NULL,
                       num.threads=1,
                       max.depth=4,
                       learn.rate=1,
-                      is.simulated=TRUE,
-                      signal.names=NULL,
                       save.file=NULL,
                       verbose=FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
@@ -853,9 +863,6 @@ xgboostRF <- function(train.ds=NULL,
   }
   if ((pheno.col < 1) | (pheno.col > ncol(train.ds))) {
     stop("Could not find phenotype column with label [ ", label, " ]")
-  }
-  if (is.simulated & is.null(signal.names)) {
-    stop("xgboostRF: No signal names provided")
   }
   ptm <- proc.time()
   if (verbose) cat("Running xgboost\n")
@@ -889,7 +896,7 @@ xgboostRF <- function(train.ds=NULL,
   if (verbose) cat("Computing variable importance\n")
   importance_matrix <- xgboost::xgb.importance(model = bst)
   if (verbose) print(importance_matrix)
-  if (is.simulated) {
+  if (!is.null(validation.ds)) {
     validation.pheno <- as.integer(validation.ds[, label]) - 1
     validation.data <- as.matrix(validation.ds[, -pheno.col])
     colnames(validation.data) <- var.names
@@ -917,6 +924,5 @@ xgboostRF <- function(train.ds=NULL,
 
   list(algo.acc = xgb.plots,
        ggplot.data = melted.rra,
-       correct = ifelse(is.simulated, ncol(train.ds), 0),
        elasped = elapsed.time)
 }
