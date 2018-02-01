@@ -89,5 +89,6 @@ prf.results <- privateRF(train.ds = sim.data$train,
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{standardRF}}
+  \code{\link{privateEC}}, \code{\link{standardRF}},
+  \code{\link{xgboostRF}}
 }

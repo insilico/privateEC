@@ -97,5 +97,6 @@ For more information see:
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},
-  \code{\link{privateRF}}, \code{\link{standardRF}}
+  \code{\link{privateRF}}, \code{\link{standardRF}},
+  \code{\link{xgboostRF}}
 }

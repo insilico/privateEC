@@ -62,5 +62,6 @@ rra.results <- standardRF(train.ds=sim.data$train,
 }
 \seealso{
 Other classification: \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{privateRF}}
+  \code{\link{privateEC}}, \code{\link{privateRF}},
+  \code{\link{xgboostRF}}
 }

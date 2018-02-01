@@ -23,6 +23,7 @@ LazyData: true
 RoxygenNote: 6.0.1
 Imports:
     randomForest,
+    xgboost,
     CORElearn,
     reshape2,
     igraph,

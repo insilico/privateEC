@@ -82,5 +82,6 @@ file.remove(temp.pec.file)
 }
 \seealso{
 Other classification: \code{\link{privateEC}},
-  \code{\link{privateRF}}, \code{\link{standardRF}}
+  \code{\link{privateRF}}, \code{\link{standardRF}},
+  \code{\link{xgboostRF}}
 }

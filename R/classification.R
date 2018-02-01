@@ -733,7 +733,7 @@ standardRF <- function(train.ds=NULL,
   if (is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
   }
-  # BOTE: bcw, 'n' not used?
+  # NOTE: bcw, 'n' not used?
   # n <- nrow(train.ds)
   d <- ncol(train.ds) - 1
   param.mtry <- rf.mtry
@@ -776,6 +776,146 @@ standardRF <- function(train.ds=NULL,
   if (verbose) cat("regularRF elapsed time:", elapsed.time, "\n")
 
   list(algo.acc = rRaplots,
+       ggplot.data = melted.rra,
+       correct = ifelse(is.simulated, ncol(train.ds), 0),
+       elasped = elapsed.time)
+}
+
+#' xgboost random forests algorithm
+#'
+#' Scalable and Flexible Gradient Boosting
+#' XGBoost is short for “Extreme Gradient Boosting”, where the term “Gradient Boosting” is proposed in the paper
+#' Greedy Function Approximation: A Gradient Boosting Machine, by Friedman. XGBoost is based on this original model.
+#' This is a function using gradient boosted trees for privacyEC.
+#' .
+#' @param train.ds A data frame with training data and class labels
+#' @param holdout.ds A data frame with holdout data and class labels
+#' @param validation.ds A data frame with validation data and class labels
+#' @param label A character vector of the class variable column name
+#' @param rf.ntree An integer the number of trees in the random forest
+#' @param num.iter An integer number of xgboost iterations
+#' @param num.threads An integer for OpenMP number of cores
+#' @param max.depth An integer aximum tree depth
+#' @param learn.rate A numeric gradient learning rate 0-1
+#' @param is.simulated Is the data simulated (or real?)
+#' @param signal.names A character vector of signal names in simulated data
+#' @param save.file A character vector for results filename or NULL to skip
+#' @param verbose A flag indicating whether verbose output be sent to stdout
+#' @return A list containing:
+#' \describe{
+#'   \item{algo.acc}{data frame of results, a row for each update}
+#'   \item{ggplot.data}{melted results data frame for plotting}
+#'   \item{correct}{number of variables detected correctly in each data set}
+#'   \item{elapsed}{total elapsed time}
+#' }
+#' @examples
+#' num.samples <- 100
+#' num.variables <- 100
+#' pct.signals <- 0.1
+#' sim.data <- createSimulation(num.variables = num.variables,
+#'                              num.samples = num.samples,
+#'                              sim.type = "mainEffect",
+#'                              pct.train = 1 / 3,
+#'                              pct.holdout = 1 / 3,
+#'                              pct.validation = 1 / 3,
+#'                              verbose = FALSE)
+#' rra.results <- xgboostRF(train.ds=sim.data$train,
+#'                          holdout.ds=sim.data$holdout,
+#'                          validation.ds=sim.data$validation,
+#'                          label=sim.data$class.label,
+#'                          num.iter = 3,
+#'                          rf.ntree = 500,
+#'                          max.depth = 10,
+#'                          is.simulated=TRUE,
+#'                          verbose=FALSE,
+#'                          signal.names=sim.data$signal.names)
+#' @family classification
+#' @export
+xgboostRF <- function(train.ds=NULL,
+                      holdout.ds=NULL,
+                      validation.ds=NULL,
+                      label="phenos",
+                      rf.ntree=500,
+                      num.iter=1,
+                      num.threads=1,
+                      max.depth=4,
+                      learn.rate=1,
+                      is.simulated=TRUE,
+                      signal.names=NULL,
+                      save.file=NULL,
+                      verbose=FALSE) {
+  if (is.null(train.ds) | is.null(holdout.ds)) {
+    stop("At least train and holdout data sets must be provided")
+  }
+  pheno.col <- which(colnames(train.ds) == label)
+  if (length(pheno.col) > 1) {
+    stop("More than one phenotype column with label [ ", label, " ]")
+  }
+  if ((pheno.col < 1) | (pheno.col > ncol(train.ds))) {
+    stop("Could not find phenotype column with label [ ", label, " ]")
+  }
+  if (is.simulated & is.null(signal.names)) {
+    stop("xgboostRF: No signal names provided")
+  }
+  ptm <- proc.time()
+  if (verbose) cat("Running xgboost\n")
+  var.names <- colnames(train.ds[, -pheno.col])
+  train.data <- as.matrix(train.ds[, -pheno.col])
+  colnames(train.data) <- var.names
+  holdout.data <- as.matrix(holdout.ds[, -pheno.col])
+  colnames(holdout.data) <- var.names
+  train.pheno <- as.integer(train.ds[, label]) - 1
+  print(table(train.pheno))
+  holdo.pheno <- as.integer(holdout.ds[, label]) - 1
+  print(table(holdo.pheno))
+  dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
+  dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
+  bst <- xgboost::xgboost(data = dtrain,
+                          eta = learn.rate,
+                          nthread = num.threads,
+                          nrounds = num.iter,
+                          max.depth = max.depth,
+                          num_parallel_tree = rf.ntree,
+                          objective = "binary:logistic")
+  if (verbose) cat("Predict using the best tree\n")
+  pred.prob <- predict(bst, dholdo)
+  # The most important thing to remember is that to do a classification, you just do a
+  # regression to the label and then apply a threshold.
+  pred.bin <- as.numeric(pred.prob > 0.5)
+  if (verbose) print(table(pred.bin))
+  # compute classification accuracy
+  rf.holdo.accu <- mean(pred.bin != holdo.pheno)
+  print(paste("holdout-error:", rf.holdo.accu))
+  if (verbose) cat("Computing variable importance\n")
+  importance_matrix <- xgboost::xgb.importance(model = bst)
+  if (verbose) print(importance_matrix)
+  if (is.simulated) {
+    validation.pheno <- as.integer(validation.ds[, label]) - 1
+    validation.data <- as.matrix(validation.ds[, -pheno.col])
+    colnames(validation.data) <- var.names
+    dvalidation <- xgboost::xgb.DMatrix(data = validation.data, label = validation.pheno)
+    rf.prob <- stats::predict(bst, newdata = dvalidation)
+    rf.bin <- as.numeric(rf.prob > 0.5)
+    if (verbose) print(table(rf.bin))
+    rf.validation.accu <- mean(rf.bin != validation.pheno)
+    print(paste("validation-error:", rf.validation.accu))
+  } else {
+    rf.validation.accu  <- 0
+  }
+  if (verbose) cat("accuracies", rf.holdo.accu, rf.validation.accu, "\n")
+  if (!is.null(save.file)) {
+    save(rf.validation.accu, rf.holdout.accu, file = save.file)
+  }
+  xgb.plots <- data.frame(vars.remain = ncol(train.ds),
+                          train.acc = 1,
+                          holdout.acc = rf.holdo.accu,
+                          validation.acc = rf.validation.accu,
+                          alg = 5)
+  melted.rra <- reshape2::melt(xgb.plots, id = c("vars.remain", "alg"))
+  elapsed.time <- (proc.time() - ptm)[3]
+  if (verbose) cat("xgboostRF elapsed time:", elapsed.time, "\n")
+
+  list(algo.acc = xgb.plots,
        ggplot.data = melted.rra,
        correct = ifelse(is.simulated, ncol(train.ds), 0),
        elasped = elapsed.time)
