@@ -23,6 +23,7 @@ test_that("privateEC returns sane results", {
                            label = sim.data$class.label,
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
+                           rf.method = "randomforest",
                            verbose = FALSE)
   expect_equal(ncol(pec.results$algo.acc), 5)
   expect_equal(ncol(pec.results$ggplot.data), 4)
