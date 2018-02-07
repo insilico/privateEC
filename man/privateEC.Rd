@@ -71,23 +71,37 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
-sim.data <- createSimulation(num.variables = num.variables,
-                             num.samples = num.samples,
-                             sim.type = "mainEffect",
+sim.data <- createSimulation(num.samples = num.samples,
+                             num.variables = num.variables,
+                             pct.signals = pct.signals,
                              pct.train = 1 / 3,
                              pct.holdout = 1 / 3,
-                             pct.validation = 1 / 3,
+                             pct.validation = 1 /3,
+                             sim.type = "mainEffect",
                              verbose = FALSE)
 pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         learner.options=list(name = "randomforest",
-                                              rf.ntree = 500,
-                                              rf.mtry = NULL),
-                         importance.options=list(name = "relieff",
-                                                 feature.names = colnames(sim.data$train),
-                                                 corelearn.estimator = "ReliefFbestK"),
+                         learner.options = list(name = "randomforest",
+                                                rf.ntree = 500,
+                                                rf.mtry = NULL),
+                         importance.options = list(name = "relieff",
+                                                   feature.names = colnames(sim.data$train),
+                                                   corelearn.estimator = "ReliefFbestK"),
+                         is.simulated = TRUE,
+                         signal.names = sim.data$signal.names,
+                         verbose = FALSE)
+pec.results <- privateEC(train.ds = sim.data$train,
+                         holdout.ds = sim.data$holdout,
+                         validation.ds = sim.data$validation,
+                         label = sim.data$class.label,
+                         learner.options = list(name = "xgboost",
+                                                rf.ntree = 500,
+                                                rf.mtry = NULL),
+                         importance.options = list(name = "relieff",
+                                                   feature.names = colnames(sim.data$train),
+                                                   corelearn.estimator = "ReliefFbestK"),
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)
@@ -102,7 +116,9 @@ For more information see:
 \href{http://insilico.utulsa.edu/index.php/privateec/}{Insilico Lab privateEC Page}
 }
 \seealso{
-Other classification: \code{\link{originalThresholdout}},
+Other classification: \code{\link{epistasisRank}},
+  \code{\link{getImportanceScores}},
+  \code{\link{originalThresholdout}},
   \code{\link{privateRF}}, \code{\link{standardRF}},
   \code{\link{xgboostRF}}
 }

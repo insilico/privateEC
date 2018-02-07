@@ -5,7 +5,7 @@
 library(privateEC)
 context("Classification")
 
-test_that("privateEC returns sane results - Relief-F", {
+test_that("privateEC returns sane results - RF + Relief-F", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -35,7 +35,7 @@ test_that("privateEC returns sane results - Relief-F", {
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })
 
-test_that("privateEC returns sane results - xgboost", {
+test_that("privateEC returns sane results - xgboost + Relief-F", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1

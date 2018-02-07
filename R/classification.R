@@ -5,6 +5,53 @@
 # classification with Relief-F and Random Forests
 # https://doi.org/10.1093/bioinformatics/btx298
 
+#' Compute and return epistasis rank scores
+#'
+#' Modified SNPrank function
+#'
+#' @param G Am adjacency matrix
+#' @param Gamma_vec A vector of prior knowledge
+#' @family classification
+#' @export
+epistasisRank <- function(G, Gamma_vec) {
+  n <- nrow(G)
+  geneNames <- colnames(G)
+  Gdiag <- diag(G)
+  Gtrace <- sum(Gdiag)
+  #colsum <- colSums(G)
+  diag(G) <- 0
+  Gtrace <- Gtrace * n
+  colsumG <- colSums(G)
+  #rowSumG <- rowSums(G)
+  rowsum_denom <- matrix(0, n, 1)
+  for (i in 1:n) {
+    localSum <- 0
+    for (j in 1:n) {
+      factor <- ifelse(G[i, j] != 0, 1, 0)
+      localSum <- localSum + (factor * colsumG[j])
+    }
+    rowsum_denom[i] <- localSum
+  }
+  #   gamma_vec <- rep(gamma, n)
+  gamma_vec <- Gamma_vec
+  gamma_matrix <- matrix(nrow = n, ncol = n, data = rep(gamma_vec, n))
+  if (Gtrace) {
+    b <- ((1 - gamma_vec)/n) + (Gdiag/Gtrace)
+  }
+  else {
+    b <- ((1 - gamma_vec)/n)
+  }
+  D <- matrix(nrow = n, ncol = n, data = c(0))
+  diag(D) <- 1/colsumG
+  I <- diag(n)
+  temp <- I - gamma_matrix * G %*% D
+  r <- solve(temp, b)
+  snpranks <- r/sum(r)
+  saveTable <- data.frame(gene = geneNames, snprank = snpranks)
+  sortedTable <- saveTable[order(saveTable$snprank, decreasing = TRUE), ]
+  sortedTable
+}
+
 #' Compute and return importance scores (Relief-F scores)
 #'
 #' @param train.set A training data frame with last column as class
@@ -14,6 +61,8 @@
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
 #' (Relief-F scores) for the train and holdout data sets.
+#' @family classification
+#' @export
 getImportanceScores <- function(train.set=NULL,
                                 holdout.set=NULL,
                                 label="phenos",
@@ -21,7 +70,10 @@ getImportanceScores <- function(train.set=NULL,
                                                         corelearn.estimator = "ReliefFbestK",
                                                         xgb.train.model = NULL,
                                                         xgb.holdout.model = NULL,
-                                                        feature.names = NULL),
+                                                        feature.names = NULL,
+                                                        train.regain = NULL,
+                                                        holdout.regain = NULL,
+                                                        priorknowledge = NULL),
                                 verbose=FALSE) {
   if (is.null(train.set)) {
     stop("getImportanceScores: No training data set provided")
@@ -64,6 +116,12 @@ getImportanceScores <- function(train.set=NULL,
                                                   model = xgbResults)
     good.results <- TRUE
   }
+  if (importance.options$name == "epistasisrank") {
+    if (verbose) cat("\tEpistasisRank train\n")
+    train.importance <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
+    if (verbose) cat("\tEpistasisRank holdout\n")
+    holdout.importance <- epistasisRank(importance.options$holdout.regain, importance.options$priorknowledge)
+  }
   if (!good.results) {
     stop("Invalid feature importance ranker name [ ", importance.options$name, " ]")
   }
@@ -103,23 +161,37 @@ getImportanceScores <- function(train.set=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
-#' sim.data <- createSimulation(num.variables = num.variables,
-#'                              num.samples = num.samples,
-#'                              sim.type = "mainEffect",
+#' sim.data <- createSimulation(num.samples = num.samples,
+#'                              num.variables = num.variables,
+#'                              pct.signals = pct.signals,
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
-#'                              pct.validation = 1 / 3,
+#'                              pct.validation = 1 /3,
+#'                              sim.type = "mainEffect",
 #'                              verbose = FALSE)
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          learner.options=list(name = "randomforest",
-#'                                               rf.ntree = 500,
-#'                                               rf.mtry = NULL),
-#'                          importance.options=list(name = "relieff",
-#'                                                  feature.names = colnames(sim.data$train),
-#'                                                  corelearn.estimator = "ReliefFbestK"),
+#'                          learner.options = list(name = "randomforest",
+#'                                                 rf.ntree = 500,
+#'                                                 rf.mtry = NULL),
+#'                          importance.options = list(name = "relieff",
+#'                                                    feature.names = colnames(sim.data$train),
+#'                                                    corelearn.estimator = "ReliefFbestK"),
+#'                          is.simulated = TRUE,
+#'                          signal.names = sim.data$signal.names,
+#'                          verbose = FALSE)
+#' pec.results <- privateEC(train.ds = sim.data$train,
+#'                          holdout.ds = sim.data$holdout,
+#'                          validation.ds = sim.data$validation,
+#'                          label = sim.data$class.label,
+#'                          learner.options = list(name = "xgboost",
+#'                                                 rf.ntree = 500,
+#'                                                 rf.mtry = NULL),
+#'                          importance.options = list(name = "relieff",
+#'                                                    feature.names = colnames(sim.data$train),
+#'                                                    corelearn.estimator = "ReliefFbestK"),
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -175,12 +247,16 @@ privateEC <- function(train.ds=NULL,
   }
   ptm <- proc.time()
   if (verbose) cat("running Relief-F importance for training and holdout sets\n")
-  if (importance.options$name == "relieff" | importance.options$name == "xgboost") {
+  if (importance.options$name == "relieff" |
+      importance.options$name == "xgboost" |
+      importance.options$name == "epistasisrank") {
     important.scores <- getImportanceScores(train.set = train.ds,
                                             holdout.set = holdout.ds,
                                             label = label,
                                             importance.options = importance.options,
                                             verbose = verbose)
+  } else {
+    stop("Importance method [", importance.options$name, "] is not recognized")
   }
   if (verbose) cat("private EC importance:", importance.options$name,
                    "elapsed time:", (proc.time() - ptm)[3], "\n")
@@ -239,14 +315,19 @@ privateEC <- function(train.ds=NULL,
       new.X_holdout <- holdout.ds[, c(kept.atts, label), drop = F]
       new.X_validation <- validation.ds[, c(kept.atts, label), drop = F]
       # new.scores <- getImportanceScores(new.X_train, new.X_holdout, label = label)
-      if (importance.options$name == "relieff" | importance.options$name == "xgboost") {
+      if (importance.options$name == "relieff" |
+          importance.options$name == "xgboost" |
+          importance.options$name == "epistasisrank") {
         importance.options$feature.names <- colnames(new.X_train)
         new.scores <- getImportanceScores(train.set = new.X_train,
                                           holdout.set = new.X_holdout,
                                           label = label,
                                           importance.options = importance.options,
                                           verbose = verbose)
+      } else {
+        stop("Importance method [", importance.options$name, "] is not recognized")
       }
+
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
       diff.scores <- abs(q1.scores - q2.scores)
@@ -289,7 +370,7 @@ privateEC <- function(train.ds=NULL,
         method.valid <- TRUE
       }
       if (!method.valid) {
-        stop("Invalid method [ ", learner.options$name, " ]")
+        stop("Learner method [ ", learner.options$name, " ] is not recognized")
       }
 
       if (verbose) {

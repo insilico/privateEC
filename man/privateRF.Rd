@@ -88,7 +88,9 @@ prf.results <- privateRF(train.ds = sim.data$train,
                          verbose = FALSE)
 }
 \seealso{
-Other classification: \code{\link{originalThresholdout}},
+Other classification: \code{\link{epistasisRank}},
+  \code{\link{getImportanceScores}},
+  \code{\link{originalThresholdout}},
   \code{\link{privateEC}}, \code{\link{standardRF}},
   \code{\link{xgboostRF}}
 }

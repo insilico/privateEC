@@ -81,7 +81,8 @@ por.results <- originalThresholdout(train.ds = sim.data$train,
 file.remove(temp.pec.file)
 }
 \seealso{
-Other classification: \code{\link{privateEC}},
-  \code{\link{privateRF}}, \code{\link{standardRF}},
-  \code{\link{xgboostRF}}
+Other classification: \code{\link{epistasisRank}},
+  \code{\link{getImportanceScores}},
+  \code{\link{privateEC}}, \code{\link{privateRF}},
+  \code{\link{standardRF}}, \code{\link{xgboostRF}}
 }

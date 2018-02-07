@@ -7,7 +7,8 @@
 getImportanceScores(train.set = NULL, holdout.set = NULL,
   label = "phenos", importance.options = list(name = "relieff",
   corelearn.estimator = "ReliefFbestK", xgb.train.model = NULL,
-  xgb.holdout.model = NULL, feature.names = NULL), verbose = FALSE)
+  xgb.holdout.model = NULL, feature.names = NULL, train.regain = NULL,
+  holdout.regain = NULL, priorknowledge = NULL), verbose = FALSE)
 }
 \arguments{
 \item{train.set}{A training data frame with last column as class}
@@ -26,4 +27,10 @@ A list with two data frames representing the importance scores
 }
 \description{
 Compute and return importance scores (Relief-F scores)
+}
+\seealso{
+Other classification: \code{\link{epistasisRank}},
+  \code{\link{originalThresholdout}},
+  \code{\link{privateEC}}, \code{\link{privateRF}},
+  \code{\link{standardRF}}, \code{\link{xgboostRF}}
 }

@@ -2,6 +2,8 @@
 
 export(createMainEffects)
 export(createSimulation)
+export(epistasisRank)
+export(getImportanceScores)
 export(originalThresholdout)
 export(paperRealWorkflow)
 export(paperSimWorkflow)
