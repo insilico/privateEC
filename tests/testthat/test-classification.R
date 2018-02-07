@@ -5,7 +5,7 @@
 library(privateEC)
 context("Classification")
 
-test_that("privateEC returns sane results", {
+test_that("privateEC returns sane results - Relief-F", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -21,9 +21,44 @@ test_that("privateEC returns sane results", {
                            holdout.ds = sim.data$holdout,
                            validation.ds = sim.data$validation,
                            label = sim.data$class.label,
+                           learner.options = list(name = "randomforest",
+                                                rf.ntree = 500,
+                                                rf.mtry = NULL),
+                           importance.options = list(name = "relieff",
+                                                   feature.names = colnames(sim.data$train),
+                                                   corelearn.estimator = "ReliefFbestK"),
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
-                           rf.method = "randomforest",
+                           verbose = FALSE)
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
+})
+
+test_that("privateEC returns sane results - xgboost", {
+  num.samples <- 100
+  num.variables <- 100
+  pct.signals <- 0.1
+  sim.data <- createSimulation(num.samples = num.samples,
+                               num.variables = num.variables,
+                               pct.signals = pct.signals,
+                               pct.train = 1 / 3,
+                               pct.holdout = 1 / 3,
+                               pct.validation = 1 / 3,
+                               sim.type = "mainEffect",
+                               verbose = FALSE)
+  pec.results <- privateEC(train.ds = sim.data$train,
+                           holdout.ds = sim.data$holdout,
+                           validation.ds = sim.data$validation,
+                           label = sim.data$class.label,
+                           learner.options = list(name = "xgboost",
+                                                  rf.ntree = 500,
+                                                  rf.mtry = NULL),
+                           importance.options = list(name = "relieff",
+                                                     feature.names = colnames(sim.data$train),
+                                                     corelearn.estimator = "ReliefFbestK"),
+                           is.simulated = TRUE,
+                           signal.names = sim.data$signal.names,
                            verbose = FALSE)
   expect_equal(ncol(pec.results$algo.acc), 5)
   expect_equal(ncol(pec.results$ggplot.data), 4)

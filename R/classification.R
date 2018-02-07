@@ -110,19 +110,19 @@ getImportanceScores <- function(train.set=NULL,
 #'                              pct.holdout = 1 / 3,
 #'                              pct.validation = 1 / 3,
 #'                              verbose = FALSE)
-#' pec.results <- privateEC(train.ds=sim.data$train,
-#'                          holdout.ds=sim.data$holdout,
-#'                          validation.ds=sim.data$validation,
-#'                          label=sim.data$class.label,
-#'                          learner.options=list(name="randomforest",
-#'                                               rf.ntree=500,
-#'                                               rf.mtry=NULL),
-#'                          importance.options=list(name="relieff",
-#'                                                  feature.names=colnames(sim.data$train),
-#'                                                  corelearn.estimator="ReliefFbestK"),
-#'                          is.simulated=TRUE,
-#'                          signal.names=sim.data$signal.names,
-#'                          verbose=FALSE)
+#' pec.results <- privateEC(train.ds = sim.data$train,
+#'                          holdout.ds = sim.data$holdout,
+#'                          validation.ds = sim.data$validation,
+#'                          label = sim.data$class.label,
+#'                          learner.options=list(name = "randomforest",
+#'                                               rf.ntree = 500,
+#'                                               rf.mtry = NULL),
+#'                          importance.options=list(name = "relieff",
+#'                                                  feature.names = colnames(sim.data$train),
+#'                                                  corelearn.estimator = "ReliefFbestK"),
+#'                          is.simulated = TRUE,
+#'                          signal.names = sim.data$signal.names,
+#'                          verbose = FALSE)
 #' @note
 #' Within thresholdout, we choose a threshold of 4 / sqrt(n) and
 #' tolerance of 1 / sqrt(n) as suggested in the thresholdout’s supplementary
@@ -281,20 +281,32 @@ privateEC <- function(train.ds=NULL,
         xgbResults <- xgboostRF(train.ds = new.X_train,
                                 holdout.ds = new.X_holdout,
                                 validation.ds = new.X_validation,
+                                rf.ntree = learner.options$rf.ntree,
                                 label = label)
-        ftrain <- xgbResults$train.acc
-        fholdout <- xgbResults$holdout.acc
-        fvalidation <- xgbResults$validation.acc
+        ftrain <- xgbResults$algo.acc$train.acc
+        fholdout <- xgbResults$algo.acc$holdout.acc
+        fvalidation <- xgbResults$algo.acc$validation.acc
         method.valid <- TRUE
       }
       if (!method.valid) {
         stop("Invalid method [ ", learner.options$name, " ]")
       }
 
+      if (verbose) {
+        cat("\tthreshold: ", threshold, "\n")
+        cat("\ttolerance:", threshold, "\n")
+        cat("\tftrain:    ", ftrain, "\n")
+        cat("\tfholdout:  ", fholdout, "\n")
+      }
+
       if (abs(ftrain - fholdout) < (threshold + stats::rnorm(1, 0, tolerance))) {
+        if (verbose) {
+          cat("\tClassification error difference is less than threshold + random tolerance\n")
+          cat("\tAdjusting holdout error to training error\n")
+        }
         fholdout <- ftrain
       } else {
-        if (verbose) cat("\tadjust holdout with stats::rnorm\n")
+        if (verbose) cat("\tadjust holdout by adding normal random value 0 to tolerance\n")
         fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
       }
       ftrains <- c(ftrains, ftrain)
@@ -918,9 +930,9 @@ xgboostRF <- function(train.ds=NULL,
   holdout.data <- as.matrix(holdout.ds[, -pheno.col])
   colnames(holdout.data) <- var.names
   train.pheno <- as.integer(train.ds[, label]) - 1
-  print(table(train.pheno))
+  if (verbose) print(table(train.pheno))
   holdo.pheno <- as.integer(holdout.ds[, label]) - 1
-  print(table(holdo.pheno))
+  if (verbose) print(table(holdo.pheno))
   dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
   dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
   bst <- xgboost::xgboost(data = dtrain,
@@ -930,6 +942,10 @@ xgboostRF <- function(train.ds=NULL,
                           max.depth = max.depth,
                           num_parallel_tree = rf.ntree,
                           objective = "binary:logistic")
+  pred.prob <- predict(bst, dtrain)
+  pred.bin <- as.numeric(pred.prob > 0.5)
+  rf.train.accu <- 1 - mean(pred.bin != train.pheno)
+  cat("training-accuracy:", rf.train.accu, "\n")
   if (verbose) cat("Predict using the best tree\n")
   pred.prob <- predict(bst, dholdo)
   # The most important thing to remember is that to do a classification, you just do a
@@ -937,8 +953,8 @@ xgboostRF <- function(train.ds=NULL,
   pred.bin <- as.numeric(pred.prob > 0.5)
   if (verbose) print(table(pred.bin))
   # compute classification accuracy
-  rf.holdo.accu <- mean(pred.bin != holdo.pheno)
-  print(paste("holdout-error:", rf.holdo.accu))
+  rf.holdo.accu <- 1 - mean(pred.bin != holdo.pheno)
+  cat("holdout-accuracy:", rf.holdo.accu, "\n")
   if (verbose) cat("Computing variable importance\n")
   importance_matrix <- xgboost::xgb.importance(model = bst)
   if (verbose) print(importance_matrix)
@@ -950,17 +966,17 @@ xgboostRF <- function(train.ds=NULL,
     rf.prob <- stats::predict(bst, newdata = dvalidation)
     rf.bin <- as.numeric(rf.prob > 0.5)
     if (verbose) print(table(rf.bin))
-    rf.validation.accu <- mean(rf.bin != validation.pheno)
-    print(paste("validation-error:", rf.validation.accu))
+    rf.validation.accu <- 1 - mean(rf.bin != validation.pheno)
+    cat("validation-accuracy:", rf.validation.accu, "\n")
   } else {
     rf.validation.accu  <- 0
   }
-  if (verbose) cat("accuracies", rf.holdo.accu, rf.validation.accu, "\n")
+  if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
     save(rf.validation.accu, rf.holdout.accu, file = save.file)
   }
   xgb.plots <- data.frame(vars.remain = ncol(train.ds),
-                          train.acc = 1,
+                          train.acc = rf.train.accu,
                           holdout.acc = rf.holdo.accu,
                           validation.acc = rf.validation.accu,
                           alg = 5)
