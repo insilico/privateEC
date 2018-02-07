@@ -117,6 +117,7 @@ getImportanceScores <- function(train.set=NULL,
     good.results <- TRUE
   }
   if (importance.options$name == "epistasisrank") {
+    # TODO: compute reGAIN here; use Rinbix?
     if (verbose) cat("\tEpistasisRank train\n")
     train.importance <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
     if (verbose) cat("\tEpistasisRank holdout\n")
