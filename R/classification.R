@@ -24,13 +24,13 @@ epistasisRank <- function(G, Gamma_vec) {
   colsumG <- colSums(G)
   #rowSumG <- rowSums(G)
   rowsum_denom <- matrix(0, n, 1)
-  for (i in 1:n) {
+  for (current.iteration in 1:n) {
     localSum <- 0
     for (j in 1:n) {
-      factor <- ifelse(G[i, j] != 0, 1, 0)
+      factor <- ifelse(G[current.iteration, j] != 0, 1, 0)
       localSum <- localSum + (factor * colsumG[j])
     }
-    rowsum_denom[i] <- localSum
+    rowsum_denom[current.iteration] <- localSum
   }
   #   gamma_vec <- rep(gamma, n)
   gamma_vec <- Gamma_vec
@@ -46,8 +46,8 @@ epistasisRank <- function(G, Gamma_vec) {
   I <- diag(n)
   temp <- I - gamma_matrix * G %*% D
   r <- solve(temp, b)
-  snpranks <- r/sum(r)
-  saveTable <- data.frame(gene = geneNames, snprank = snpranks)
+  final.ranks <- r/sum(r)
+  saveTable <- data.frame(gene = geneNames, rank = final.ranks)
   sortedTable <- saveTable[order(saveTable$snprank, decreasing = TRUE), ]
   sortedTable
 }
@@ -75,6 +75,7 @@ getImportanceScores <- function(train.set=NULL,
                                                         holdout.regain = NULL,
                                                         priorknowledge = NULL),
                                 verbose=FALSE) {
+  # ----------------------------------------------------------------
   if (is.null(train.set)) {
     stop("getImportanceScores: No training data set provided")
   }
@@ -84,50 +85,66 @@ getImportanceScores <- function(train.set=NULL,
   if (is.null(importance.options$feature.names)) {
     stop("getImportanceScores: No feature names provided")
   }
+  # ----------------------------------------------------------------
+  pheno.col <- which(colnames(train.set) == label)
   if (verbose) cat("\tComputing importance scores\n")
   good.results <- FALSE
+  # ----------------------------------------------------------------
   if (importance.options$name == "relieff") {
     if (verbose) cat("\tRelief-F train\n")
-    train.importance <- CORElearn::attrEval(label,
-                                            data = train.set,
+    train.importance <- CORElearn::attrEval(label, data = train.set,
                                             estimator = importance.options$corelearn.estimator)
     if (verbose) cat("\tRelief-F holdout\n")
-    holdout.importance <- CORElearn::attrEval(label,
-                                              data = holdout.set,
+    holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
                                               estimator = importance.options$corelearn.estimator)
     good.results <- TRUE
   }
+  # ----------------------------------------------------------------
   if (importance.options$name == "xgboost") {
+    var.names <- colnames(train.set[, -pheno.col])
+    train.data <- as.matrix(train.set[, -pheno.col])
+    colnames(train.data) <- var.names
+    holdout.data <- as.matrix(holdout.set[, -pheno.col])
+    colnames(holdout.data) <- var.names
+    train.pheno <- as.integer(train.set[, pheno.col]) - 1
+    if (verbose) print(table(train.pheno))
+    holdo.pheno <- as.integer(holdout.set[, pheno.col]) - 1
+    if (verbose) print(table(holdo.pheno))
+    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
     if (verbose) cat("\txgboost train\n")
-    if (is.null(importance.options$xgb.train.model)) {
-      stop("xgboost feature ranker [ ", importance.options$name, " ] requires a training model")
-    }
-    xgbResults <- xgboostRF(train.ds = train.set,
-                            holdout.ds = holdout.set,
-                            validation.ds = NULL,
-                            label = label)
-    train.importance <- xgboost::xgb.importance(feature_names = importance.options$feature.names,
-                                                model = importance.options$xgb.train.model)
+    train.model <- xgboost::xgboost(data = dtrain, objective = "binary:logistic", nrounds = 1)
+    if (verbose) cat("\tvariable importance\n")
+    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = var.names)
+    if (verbose) print(importance.train)
+    train.importance <- as.numeric(importance.train$Gain)
+    names(train.importance) <- as.character(importance.train$Feature)
     if (verbose) cat("\txgboost holdout\n")
-    if (is.null(importance.options$xgb.holdout.model)) {
-      stop("xgboost feature ranker [ ", importance.options$name, " ] requires a holdout model")
-    }
-    holdout.importance <- xgboost::xgb.importance(feature_names = importance.options$feature.names,
-                                                  model = xgbResults)
+    dholdout <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
+    holdout.model <- xgboost::xgboost(data = dholdout, objective = "binary:logistic", nrounds = 1)
+    if (verbose) cat("\tvariable importance\n")
+    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = var.names)
+    if (verbose) print(importance.holdout)
+    holdout.importance <- as.numeric(importance.holdout$Gain)
+    names(holdout.importance) <- as.character(importance.holdout$Feature)
     good.results <- TRUE
   }
+  # ----------------------------------------------------------------
   if (importance.options$name == "epistasisrank") {
-    # TODO: compute reGAIN here; use Rinbix?
     if (verbose) cat("\tEpistasisRank train\n")
-    train.importance <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
+    train.imp <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
+    train.importance <- as.numeric(train.imp$rank)
+    names(train.importance) <- importance.options$feature.names
     if (verbose) cat("\tEpistasisRank holdout\n")
-    holdout.importance <- epistasisRank(importance.options$holdout.regain, importance.options$priorknowledge)
+    holdout.imp <- epistasisRank(importance.options$holdout.regain, importance.options$priorknowledge)
+    holdout.importance <- as.numeric(holdout.imp)
+    names(holdout.importance) <- importance.options$feature.names
+    good.results <- TRUE
   }
+  # ----------------------------------------------------------------
   if (!good.results) {
     stop("Invalid feature importance ranker name [ ", importance.options$name, " ]")
   }
-
-  list(data.frame(train.importance), data.frame(holdout.importance))
+  list(train.scores = train.importance, holdout.scores = holdout.importance)
 }
 
 #' Private Evaporative Cooling feature selection and classification
@@ -162,6 +179,7 @@ getImportanceScores <- function(train.set=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' ntree <- 500
 #' sim.data <- createSimulation(num.samples = num.samples,
 #'                              num.variables = num.variables,
 #'                              pct.signals = pct.signals,
@@ -174,12 +192,11 @@ getImportanceScores <- function(train.set=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          learner.options = list(name = "randomforest",
-#'                                                 rf.ntree = 500,
-#'                                                 rf.mtry = NULL),
 #'                          importance.options = list(name = "relieff",
 #'                                                    feature.names = colnames(sim.data$train),
 #'                                                    corelearn.estimator = "ReliefFbestK"),
+#'                          learner.options = list(name = "randomforest",
+#'                                                 rf.ntree = ntree),
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -187,12 +204,10 @@ getImportanceScores <- function(train.set=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          learner.options = list(name = "xgboost",
-#'                                                 rf.ntree = 500,
-#'                                                 rf.mtry = NULL),
 #'                          importance.options = list(name = "relieff",
 #'                                                    feature.names = colnames(sim.data$train),
 #'                                                    corelearn.estimator = "ReliefFbestK"),
+#'                          learner.options = list(name = "xgboost", rf.ntree = ntree),
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -219,7 +234,7 @@ privateEC <- function(train.ds=NULL,
                       update.freq=50,
                       learner.options=list(name = "randomforest",
                                            rf.ntree = 500,
-                                           rf.mtry = NULL),
+                                           rf.mtry = 5),
                       importance.options=list(name = "relieff",
                                               feature.names = colnames(train.ds),
                                               corelearn.estimator = "ReliefFbestK"),
@@ -231,214 +246,232 @@ privateEC <- function(train.ds=NULL,
                       signal.names=NULL,
                       save.file=NULL,
                       verbose=FALSE) {
+  options(warn = 2)
   if (is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
   }
   if (is.simulated & is.null(signal.names)) {
     warning("For correct detection of signals, 'signal.names' parameter is required")
   }
-  n <- nrow(train.ds)
-  d <- ncol(train.ds) - 1
-  param.mtry <- floor(sqrt(d))
+  num.data.rows <- nrow(train.ds)
+  num.data.cols <- ncol(train.ds) - 1
+  param.mtry <- floor(sqrt(num.data.cols))
+  orig.var.names <- colnames(train.ds)
   if (!is.null(learner.options$rf.mtry)) {
     param.mtry <- learner.options$rf.mtry
   }
-  if ((param.mtry < 1) | (param.mtry > d)) {
-      stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < d"))
+  if ((param.mtry < 1) | (param.mtry > num.data.cols)) {
+      stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < num.data.cols"))
   }
+  if (is.null(importance.options$feature.names)) {
+    cat("WARNING: No features names in importance options list, using column names of training data set\n")
+    importance.options$feature.names <- colnames(train.ds)
+  }
+  # ---------------------------------------------------------------------------
   ptm <- proc.time()
-  if (verbose) cat("running Relief-F importance for training and holdout sets\n")
+  cat("\nRunning the privateEC algorithm...\n")
+  if (verbose) cat("running [", importance.options$name, "] importance for training and holdout sets\n")
   if (importance.options$name == "relieff" |
       importance.options$name == "xgboost" |
       importance.options$name == "epistasisrank") {
-    important.scores <- getImportanceScores(train.set = train.ds,
-                                            holdout.set = holdout.ds,
-                                            label = label,
-                                            importance.options = importance.options,
-                                            verbose = verbose)
+    # pass-through the importance function options list
+    initial.scores <- getImportanceScores(train.set = train.ds,
+                                          holdout.set = holdout.ds,
+                                          label = label,
+                                          importance.options = importance.options,
+                                          verbose = verbose)
   } else {
     stop("Importance method [", importance.options$name, "] is not recognized")
   }
+  if (length(initial.scores) != 2) {
+    stop("Could not get importance scores")
+  }
   if (verbose) cat("private EC importance:", importance.options$name,
                    "elapsed time:", (proc.time() - ptm)[3], "\n")
-
-  q1.scores <- important.scores[[1]]
-  q2.scores <- important.scores[[2]]
-  att.names <- rownames(q1.scores)
+  q1.scores <- initial.scores[[1]]
+  q2.scores <- initial.scores[[2]]
+  orig.var.names <- names(q1.scores)
   diff.scores <- abs(q1.scores - q2.scores)
   delta.q <- max(diff.scores)
-  # NOTE: bcw, below not used?
-  # q1.scores.plot <- q1.scores
-  fholds <- 0.5
-  fvalidations <- 0.5
-  ftrains <- 0.5
+  all.train.acc <- vector(mode = "numeric")
+  all.holdout.acc <- vector(mode = "numeric")
+  all.validation.acc <- vector(mode = "numeric")
+  vars.remain.per.update <- vector(mode = "numeric")
   correct.detect.ec <- vector(mode = "numeric")
-  # NOTE: bcw, below not used?
-  # oldAccuracy <- 0.5
-  cur.vars.remain <- length(att.names)
-  vars.remain <- c(0, cur.vars.remain)
-  kept.atts <- att.names
-  var.names <- list()
-
+  current.var.names <- orig.var.names
+  prev.var.names <- current.var.names
   if (verbose) cat("private EC optimization loop\n")
   T0 <- start.temp
   Tmin <- final.temp
   tau <- tau.param
-  i <- 1
-  myT <- T0
+  current.temp <- T0
+  current.iteration <- 1
   num.updates <- 0
-  while ((myT > Tmin) && (utils::tail(vars.remain, 1) > 2) &&
-         (utils::tail(vars.remain, 2)[1] != utils::tail(vars.remain, 2)[2])) {
+  keep.looping <- ifelse(length(current.var.names) > 1, TRUE, FALSE)
+  while (keep.looping & (current.temp > Tmin)) {
     diff <- diff.scores * (diff.scores > 10^(-3)) + 10^(-3) * (diff.scores < 10^(-3))
-    PAs <- exp(-q1.scores / (2 * diff * myT))
-    PAs <- PAs[kept.atts, ]
-    # NOTE: bcw, sumPAs not used?
+    PAs <- exp(-q1.scores / (2 * diff * current.temp))
+    PAs <- PAs[current.var.names]
     sumPAs <- sum(PAs)
     scaled.PAs <- PAs / sumPAs
     cum.scaled.PAs <- cumsum(scaled.PAs)
     num.remv <- 1 # only remove 1 attribute
     prob.rands <- sort(stats::runif(num.remv, min = 0, max = 1))
-    remv.atts <- kept.atts[prob.rands < cum.scaled.PAs][1]
-    if (num.remv >= length(kept.atts)) {
-      kept.atts <- NULL
-      break
+    var.names.to.remove <- current.var.names[prob.rands < cum.scaled.PAs][1]
+    if (length(var.names.to.remove) != num.remv) {
+      cat("\tremove by probability distribution: cannot remove any variables")
+      keep.looping <- FALSE
+      next
     } else {
-      kept.atts <- setdiff(kept.atts, remv.atts)
+      current.var.names <- setdiff(current.var.names, var.names.to.remove)
+      if (length(current.var.names) < 2) {
+        cat("\tsetdiff remove: last variable removed\n")
+        keep.looping <- FALSE
+        next
+      }
     }
-    # Compute train and holdout accuracy for new S_A attributes:
-    att.names <- kept.atts
-    if ((i %% update.freq) == 1) {
+    if (length(prev.var.names) == length(current.var.names)) {
+      cat("\tCONVERGENCE to a set of variables that are unchanging\n")
+      keep.looping <- FALSE
+      break
+    }
+    # run EC on the current set of variables - "update"
+    if ((current.iteration %% update.freq) == 1) {
       num.updates <- num.updates + 1
-      if (verbose) cat("step", i, "update", num.updates, "myT > Tmin",
-                      myT, Tmin, "?\n")
+      if (verbose) cat("iteration [", current.iteration, " ] UPDATE [", num.updates,
+                       "] current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
+      # re-compute imnportance
       if (verbose) cat("\trecomputing scores with evaporated attributes removed\n")
-      new.X_train <- train.ds[, c(kept.atts, label), drop = F]
-      new.X_holdout <- holdout.ds[, c(kept.atts, label), drop = F]
-      new.X_validation <- validation.ds[, c(kept.atts, label), drop = F]
-      # new.scores <- getImportanceScores(new.X_train, new.X_holdout, label = label)
+      new.train.ds <- train.ds[, c(current.var.names, label)]
+      new.holdout.ds <- holdout.ds[, c(current.var.names, label)]
+      new.validation.ds <- validation.ds[, c(current.var.names, label)]
       if (importance.options$name == "relieff" |
           importance.options$name == "xgboost" |
           importance.options$name == "epistasisrank") {
-        importance.options$feature.names <- colnames(new.X_train)
-        new.scores <- getImportanceScores(train.set = new.X_train,
-                                          holdout.set = new.X_holdout,
+        importance.options$feature.names <- current.var.names
+        new.scores <- getImportanceScores(train.set = new.train.ds,
+                                          holdout.set = new.holdout.ds,
                                           label = label,
                                           importance.options = importance.options,
                                           verbose = verbose)
       } else {
         stop("Importance method [", importance.options$name, "] is not recognized")
       }
-
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
-      if (param.mtry >= ncol(new.X_train) - 1) {
-        kept.atts <- NULL
-        break
-      }
+      # run the learner
       method.valid <- FALSE
       if (learner.options$name == "randomforest") {
         if (verbose) cat("\trunning randomForest\n")
         model.formula <- stats::as.formula(paste(label, "~.", sep = ""))
         result.rf <- randomForest::randomForest(formula = model.formula,
-                                                data = new.X_train,
+                                                data = new.train.ds,
                                                 ntree = learner.options$rf.ntree,
                                                 mtry = param.mtry)
-        ftrain <- 1 - mean(result.rf$confusion[,"class.error"])
+        current.train.acc <- 1 - mean(result.rf$confusion[,"class.error"])
         if (verbose) cat("\tpredict\n")
-        holdout.pred <- stats::predict(result.rf, newdata = new.X_holdout)
-        fholdout <- mean(holdout.pred == holdout.ds[, label])
-        if (is.simulated) {
-          validation.pred <- stats::predict(result.rf, newdata = new.X_validation)
-          fvalidation <- mean(validation.pred == validation.ds[, label])
+        holdout.pred <- stats::predict(result.rf, newdata = new.holdout.ds)
+        current.holdout.acc <- mean(holdout.pred == holdout.ds[, label])
+        if (is.simulated | (!is.null(new.validation.ds))) {
+          validation.pred <- stats::predict(result.rf, newdata = new.validation.ds)
+          current.validation.acc <- mean(validation.pred == validation.ds[, label])
         } else {
-          fvalidation <- 0
+          current.validation.acc <- 0
         }
         method.valid <- TRUE
       }
-      # bcw - 1/31/18 - xgboost package
       if (learner.options$name == "xgboost") {
         if (verbose) cat("\trunning xgboost\n")
-        xgbResults <- xgboostRF(train.ds = new.X_train,
-                                holdout.ds = new.X_holdout,
-                                validation.ds = new.X_validation,
-                                rf.ntree = learner.options$rf.ntree,
-                                label = label)
-        ftrain <- xgbResults$algo.acc$train.acc
-        fholdout <- xgbResults$algo.acc$holdout.acc
-        fvalidation <- xgbResults$algo.acc$validation.acc
+        xgb.results <- xgboostRF(train.ds = new.train.ds,
+                                 holdout.ds = new.holdout.ds,
+                                 validation.ds = new.validation.ds,
+                                 rf.ntree = learner.options$rf.ntree,
+                                 label = label,
+                                 verbose = verbose)
+        current.train.acc <- xgb.results$algo.acc$train.acc
+        current.holdout.acc <- xgb.results$algo.acc$holdout.acc
+        current.validation.acc <- xgb.results$algo.acc$validation.acc
         method.valid <- TRUE
       }
       if (!method.valid) {
         stop("Learner method [ ", learner.options$name, " ] is not recognized")
       }
-
       if (verbose) {
-        cat("\tthreshold: ", threshold, "\n")
-        cat("\ttolerance:", threshold, "\n")
-        cat("\tftrain:    ", ftrain, "\n")
-        cat("\tfholdout:  ", fholdout, "\n")
+        cat("\tthreshold:          ", threshold, "\n")
+        cat("\ttolerance:          ", threshold, "\n")
+        cat("\tlearner function:   ", learner.options$name, "\n")
+        cat("\timportance function:", learner.options$name, "\n")
+        cat("\tftrain:             ", current.train.acc, "\n")
+        cat("\tfholdout:           ", current.holdout.acc, "\n")
       }
-
-      if (abs(ftrain - fholdout) < (threshold + stats::rnorm(1, 0, tolerance))) {
+      # make adjustments
+      lil.bit <- stats::rnorm(1, 0, tolerance)
+      if (abs(current.train.acc - current.holdout.acc) < (threshold + lil.bit)) {
         if (verbose) {
           cat("\tClassification error difference is less than threshold + random tolerance\n")
           cat("\tAdjusting holdout error to training error\n")
         }
-        fholdout <- ftrain
+        current.holdout.acc <- current.train.acc
       } else {
         if (verbose) cat("\tadjust holdout by adding normal random value 0 to tolerance\n")
-        fholdout <- fholdout + stats::rnorm(1, 0, tolerance)
+        current.holdout.acc <- current.holdout.acc + lil.bit
       }
-      ftrains <- c(ftrains, ftrain)
-      fholds <- c(fholds, fholdout)
-      fvalidations <- c(fvalidations, fvalidation)
-
+      # save results
+      all.train.acc <- c(all.train.acc, current.train.acc)
+      all.holdout.acc <- c(all.holdout.acc, current.holdout.acc)
+      all.validation.acc <- c(all.validation.acc, current.validation.acc)
+      vars.remain.per.update <- c(vars.remain.per.update, length(current.var.names))
+      # adjust the temperature
       if (verbose) cat("\tadjusting temperature\n")
-      myT <- myT * exp(-1 / tau) # dropping T
-      if (verbose) cat("\t", i - 1, ': ', myT, '\n')
-
+      current.temp <- current.temp * exp(-1 / tau) # dropping T
+      if (verbose) cat("\t", current.iteration - 1, ': ', current.temp, '\n')
+      # check for simulated variables
       if (verbose) cat("\tcollecting results\n")
-      cur.vars.remain <- length(att.names)
-      vars.remain <- c(vars.remain, cur.vars.remain)
-      var.names[[num.updates]] <- kept.atts
       if (is.simulated) {
-        correct.detect.ec <- c(correct.detect.ec,
-                               sum(var.names[[num.updates]] %in% signal.names))
+        correct.detect.ec <- c(correct.detect.ec, sum(current.var.names %in% signal.names))
+      }
+      if (length(current.var.names) < 2) {
+        cat("\tvariables list exhausted: no more variables to remove\n")
+        keep.looping <- FALSE
+      } else {
+
       }
     }
-    i <- i + 1
+    current.iteration <- current.iteration + 1
+    prev.var.names <- current.var.names
   }
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("private EC optimization loop performed", num.updates,
                    "updates in", elapsed.time, " seconds\n")
 
   # prepare results for returning to caller
-  vars.remain <- vars.remain[-1] # remove the first value 0
-  fplots <- data.frame(vars.remain,
-                       train.acc = ftrains,
-                       holdout.acc = fholds,
-                       validation.acc = fvalidations,
-                       alg = 1)
-  fplots <- fplots[-1, ] # remove the first row
-  melted.fs <- reshape2::melt(fplots, id = c("vars.remain", "alg"))
+  plot.data <- data.frame(vars.remain = vars.remain.per.update,
+                          train.acc = all.train.acc,
+                          holdout.acc = all.holdout.acc,
+                          validation.acc = all.validation.acc,
+                          alg = 1)
+  print(plot.data)
+  plot.data.narrow <- reshape2::melt(plot.data, id = c("vars.remain", "alg"))
 
   # save the results to an Rdata file if requested
   if (!is.null(save.file)) {
     if (verbose) {
-      cat("saving results to ", save.file, "\n")
+      cat("saving results to [", save.file, "] \n")
     }
-    save(fplots, melted.fs, correct.detect.ec, elapsed.time, n, d,
-         signal.names, threshold, tolerance, bias, file = save.file)
+    save(plot.data, plot.data.narrow, correct.detect.ec, num.data.cols, num.data.rows,
+         signal.names, threshold, tolerance, bias, elapsed.time, file = save.file)
   }
 
+  elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("privateEC elapsed time:", elapsed.time, "\n")
 
-  list(algo.acc = fplots,
-       ggplot.data = melted.fs,
+  list(algo.acc = plot.data,
+       ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
-       elasped = elapsed.time)
+       elasped = elapsed.time,
+       atts.remain = current.var.names)
 }
 
 #' Original Thresholdout algorithm
@@ -1004,69 +1037,78 @@ xgboostRF <- function(train.ds=NULL,
   if ((pheno.col < 1) | (pheno.col > ncol(train.ds))) {
     stop("Could not find phenotype column with label [ ", label, " ]")
   }
+  # ----------------------------------------------------------------
+  if (verbose) cat("Running xgboostRF\n")
   ptm <- proc.time()
-  if (verbose) cat("Running xgboost\n")
   var.names <- colnames(train.ds[, -pheno.col])
   train.data <- as.matrix(train.ds[, -pheno.col])
   colnames(train.data) <- var.names
   holdout.data <- as.matrix(holdout.ds[, -pheno.col])
   colnames(holdout.data) <- var.names
-  train.pheno <- as.integer(train.ds[, label]) - 1
+  train.pheno <- as.integer(train.ds[, pheno.col]) - 1
   if (verbose) print(table(train.pheno))
-  holdo.pheno <- as.integer(holdout.ds[, label]) - 1
+  holdo.pheno <- as.integer(holdout.ds[, pheno.col]) - 1
   if (verbose) print(table(holdo.pheno))
+  # ----------------------------------------------------------------
   dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
   dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
-  bst <- xgboost::xgboost(data = dtrain,
-                          eta = learn.rate,
-                          nthread = num.threads,
-                          nrounds = num.iter,
-                          max.depth = max.depth,
-                          num_parallel_tree = rf.ntree,
-                          objective = "binary:logistic")
-  pred.prob <- predict(bst, dtrain)
+  train.model <- xgboost::xgboost(data = dtrain,
+                                  eta = learn.rate,
+                                  nthread = num.threads,
+                                  nrounds = num.iter,
+                                  max.depth = max.depth,
+                                  num_parallel_tree = rf.ntree,
+                                  objective = "binary:logistic")
+  if (verbose) cat("Computing variable importance\n")
+  importance.xgb <- xgboost::xgb.importance(model = train.model, feature_names = colnames(train.data))
+  if (verbose) print(importance.xgb)
+  importance.values <- as.numeric(importance.xgb$Gain)
+  names(importance.values) <- as.character(importance.xgb$Feature)
+  pred.prob <- predict(train.model, dtrain)
   pred.bin <- as.numeric(pred.prob > 0.5)
   rf.train.accu <- 1 - mean(pred.bin != train.pheno)
   cat("training-accuracy:", rf.train.accu, "\n")
+  # ----------------------------------------------------------------
   if (verbose) cat("Predict using the best tree\n")
-  pred.prob <- predict(bst, dholdo)
-  # The most important thing to remember is that to do a classification, you just do a
-  # regression to the label and then apply a threshold.
+  pred.prob <- predict(train.model, dholdo)
   pred.bin <- as.numeric(pred.prob > 0.5)
   if (verbose) print(table(pred.bin))
-  # compute classification accuracy
   rf.holdo.accu <- 1 - mean(pred.bin != holdo.pheno)
   cat("holdout-accuracy:", rf.holdo.accu, "\n")
-  if (verbose) cat("Computing variable importance\n")
-  importance_matrix <- xgboost::xgb.importance(model = bst)
-  if (verbose) print(importance_matrix)
+  # ----------------------------------------------------------------
   if (!is.null(validation.ds)) {
-    validation.pheno <- as.integer(validation.ds[, label]) - 1
+    validation.pheno <- as.integer(validation.ds[, pheno.col]) - 1
     validation.data <- as.matrix(validation.ds[, -pheno.col])
     colnames(validation.data) <- var.names
     dvalidation <- xgboost::xgb.DMatrix(data = validation.data, label = validation.pheno)
-    rf.prob <- stats::predict(bst, newdata = dvalidation)
+    rf.prob <- predict(train.model, dvalidation)
     rf.bin <- as.numeric(rf.prob > 0.5)
     if (verbose) print(table(rf.bin))
     rf.validation.accu <- 1 - mean(rf.bin != validation.pheno)
     cat("validation-accuracy:", rf.validation.accu, "\n")
   } else {
-    rf.validation.accu  <- 0
+    rf.validation.accu <- 0
   }
+  # ----------------------------------------------------------------
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
     save(rf.validation.accu, rf.holdout.accu, file = save.file)
   }
-  xgb.plots <- data.frame(vars.remain = ncol(train.ds),
+  xgb.plots <- data.frame(vars.remain = length(var.names),
                           train.acc = rf.train.accu,
                           holdout.acc = rf.holdo.accu,
                           validation.acc = rf.validation.accu,
                           alg = 5)
-  melted.rra <- reshape2::melt(xgb.plots, id = c("vars.remain", "alg"))
+  melted.xgb <- reshape2::melt(xgb.plots, id = c("vars.remain", "alg"))
+  # ----------------------------------------------------------------
+  if (file.exists("xgboost.model")) {
+    file.remove("xgboost.model")
+  }
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("xgboostRF elapsed time:", elapsed.time, "\n")
-
   list(algo.acc = xgb.plots,
-       ggplot.data = melted.rra,
+       ggplot.data = melted.xgb,
+       trn.model = train.model,
+       trn.importance = importance.values,
        elasped = elapsed.time)
 }

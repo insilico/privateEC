@@ -210,9 +210,6 @@ paperRealWorkflow <- function(real.data=NULL,
 
   temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
   # transform the data to fit the workflow expectations
-  # NOTEL bcw, below not used?
-  # n <- nrow(real.data)
-  # num.vars <- ncol(real.data) - 1
   real.data.sets <- splitDataset(all.data = real.data,
                                  pct.train = 0.5,
                                  pct.holdout = 0.5,

@@ -11,6 +11,13 @@ Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A.
 “Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” 
 Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017.
 
+# Installation
+
+> library(devtools)
+> install_github("insilico/privateEC") 
+> library(privateEC)
+> vignette("Example1")
+
 # Abstract
 
 ## Motivation

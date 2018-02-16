@@ -6,8 +6,8 @@
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 50,
-  learner.options = list(name = "randomforest", rf.ntree = 500, rf.mtry =
-  NULL), importance.options = list(name = "relieff", feature.names =
+  learner.options = list(name = "randomforest", rf.ntree = 500, rf.mtry = 5),
+  importance.options = list(name = "relieff", feature.names =
   colnames(train.ds), corelearn.estimator = "ReliefFbestK"), start.temp = 0.1,
   final.temp = 10^(-5), tau.param = 100,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
@@ -71,6 +71,7 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
+ntree <- 500
 sim.data <- createSimulation(num.samples = num.samples,
                              num.variables = num.variables,
                              pct.signals = pct.signals,
@@ -83,12 +84,11 @@ pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         learner.options = list(name = "randomforest",
-                                                rf.ntree = 500,
-                                                rf.mtry = NULL),
                          importance.options = list(name = "relieff",
                                                    feature.names = colnames(sim.data$train),
                                                    corelearn.estimator = "ReliefFbestK"),
+                         learner.options = list(name = "randomforest",
+                                                rf.ntree = ntree),
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)
@@ -96,12 +96,10 @@ pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         learner.options = list(name = "xgboost",
-                                                rf.ntree = 500,
-                                                rf.mtry = NULL),
                          importance.options = list(name = "relieff",
                                                    feature.names = colnames(sim.data$train),
                                                    corelearn.estimator = "ReliefFbestK"),
+                         learner.options = list(name = "xgboost", rf.ntree = ntree),
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)

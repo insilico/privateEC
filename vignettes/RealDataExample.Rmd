@@ -1,0 +1,65 @@
+---
+title: "Real Data Example"
+author: "Bill C. White"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+  
+vignette: >
+  %\VignetteIndexEntry{Real Data Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Privacy preserving Evaporative Cooling feature selection and classification with Relief-F and Random Forests
+
+Methods are described in the following publication.
+
+Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. [Bioinformatics Abstract](https://doi.org/10.1093/bioinformatics/btx298). 2017.
+
+## Load a subset of the resting state fMRI region correlation
+
+```{r}
+library(privateEC)
+data(rsfMRIcorrMDD)
+# ~100 variables for a test
+data.width <- ncol(rsfMRIcorrMDD)
+real.data.sets <- splitDataset(all.data = rsfMRIcorrMDD[, (data.width - 101):data.width],
+                               pct.train = 0.5,
+                               pct.holdout = 0.5,
+                               pct.validation = 0,
+                               class.label = "phenos")
+real.result <- privateEC(train.ds = real.data.sets$train,
+                         holdout.ds = real.data.sets$holdout,
+                         validation.ds = NULL,
+                         label = "phenos",
+                         is.simulated = FALSE,
+                         update.freq = 5,
+                         verbose = FALSE)
+```
+
+```{r, echo=FALSE}
+knitr::kable(real.result$algo.acc, 
+             caption = "Algorithm Iterations",
+             row.names = FALSE, 
+             digits = 3)
+```
+
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+# library(ggplot2)
+# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
+#   geom_point(size=1) + geom_line()
+plot(real.result$algo.acc$vars.remain, 
+     real.result$algo.acc$holdout.acc, 
+     col = "red", pch = 16, type = 'b', cex = 0.75, 
+     main = "One run of privateEC",
+     xlab = "Number of Attributes in Model",
+     ylab = "Accuracy")
+points(real.result$algo.acc$vars.remain, 
+       real.result$algo.acc$train.acc, 
+       col = "green", pch = 1, type = 'b', cex = 0.75)
+points(real.result$algo.acc$vars.remain, 
+       real.result$algo.acc$validation.acc, 
+       col = "blue", pch = 4, type = 'b', cex = 0.75)
+legend("topright", c("Train", "Holdout", "Test"), 
+       pch = c(16, 1, 4), col = c("red", "green", "blue"), cex = 0.75)
+```
