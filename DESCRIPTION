@@ -2,7 +2,7 @@ Package: privateEC
 Type: Package
 Title: Privacy Preserving Evaporative Cooling Feature Selection and Classification with 
   Relief-F and Random Forests
-Version: 0.9.5
+Version: 0.99
 Date: 2017-08-11
 Authors@R: as.person(c(
     "Brett McKinney <brett-mckinney@utulsa.edu> [aut, cre]", 

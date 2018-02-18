@@ -84,6 +84,7 @@ test_that("privateEC returns sane results - xgboost + xgboost", {
                            label = sim.data$class.label,
                            learner.options = list(name = "xgboost", rf.ntree = ntree),
                            importance.options = list(name = "xgboost", rf.ntree = ntree),
+                           update.freq = 5,
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
                            verbose = TRUE)

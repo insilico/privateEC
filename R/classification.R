@@ -75,7 +75,6 @@ getImportanceScores <- function(train.set=NULL,
                                                         holdout.regain = NULL,
                                                         priorknowledge = NULL),
                                 verbose=FALSE) {
-  # ----------------------------------------------------------------
   if (is.null(train.set)) {
     stop("getImportanceScores: No training data set provided")
   }
@@ -85,11 +84,14 @@ getImportanceScores <- function(train.set=NULL,
   if (is.null(importance.options$feature.names)) {
     stop("getImportanceScores: No feature names provided")
   }
-  # ----------------------------------------------------------------
+  if (dim(train.set)[2] != dim(holdout.set)[2]) {
+    print(dim(train.set))
+    print(dim(holdout.set))
+    stop("Training and holdout data sets have different sized columns")
+  }
   pheno.col <- which(colnames(train.set) == label)
   if (verbose) cat("\tComputing importance scores\n")
   good.results <- FALSE
-  # ----------------------------------------------------------------
   if (importance.options$name == "relieff") {
     if (verbose) cat("\tRelief-F train\n")
     train.importance <- CORElearn::attrEval(label, data = train.set,
@@ -99,34 +101,123 @@ getImportanceScores <- function(train.set=NULL,
                                               estimator = importance.options$corelearn.estimator)
     good.results <- TRUE
   }
-  # ----------------------------------------------------------------
   if (importance.options$name == "xgboost") {
     var.names <- colnames(train.set[, -pheno.col])
     train.data <- as.matrix(train.set[, -pheno.col])
     colnames(train.data) <- var.names
-    holdout.data <- as.matrix(holdout.set[, -pheno.col])
-    colnames(holdout.data) <- var.names
     train.pheno <- as.integer(train.set[, pheno.col]) - 1
     if (verbose) print(table(train.pheno))
-    holdo.pheno <- as.integer(holdout.set[, pheno.col]) - 1
-    if (verbose) print(table(holdo.pheno))
+    if (verbose) cat("\tfind best xgboost training model\n")
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-    if (verbose) cat("\txgboost train\n")
     train.model <- xgboost::xgboost(data = dtrain, objective = "binary:logistic", nrounds = 1)
-    if (verbose) cat("\tvariable importance\n")
-    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = var.names)
+    if (verbose) cat("\txgboost training variable importance\n")
+    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = NULL)
     if (verbose) print(importance.train)
     train.importance <- as.numeric(importance.train$Gain)
-    names(train.importance) <- as.character(importance.train$Feature)
-    if (verbose) cat("\txgboost holdout\n")
-    dholdout <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
+    names(train.importance) <- var.names[importance.train$Feature]
+
+    holdout.data <- as.matrix(holdout.set[, -pheno.col])
+    colnames(holdout.data) <- var.names
+    holdout.pheno <- as.integer(holdout.set[, pheno.col]) - 1
+    if (verbose) print(table(holdout.pheno))
+    if (verbose) cat("\tfind best xgboost holdout model\n")
+    dholdout <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
     holdout.model <- xgboost::xgboost(data = dholdout, objective = "binary:logistic", nrounds = 1)
-    if (verbose) cat("\tvariable importance\n")
-    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = var.names)
+    if (verbose) cat("\tget xgboost holdout variable importance\n")
+    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = NULL)
     if (verbose) print(importance.holdout)
     holdout.importance <- as.numeric(importance.holdout$Gain)
-    names(holdout.importance) <- as.character(importance.holdout$Feature)
+    names(holdout.importance) <- var.names[importance.holdout$Feature]
     good.results <- TRUE
+  }
+  if (importance.options$name == "xgboost.caret") {
+    var.names <- colnames(train.set[, -pheno.col])
+    train.data <- as.matrix(train.set[, -pheno.col])
+    colnames(train.data) <- var.names
+    train.pheno <- as.integer(train.set[, pheno.col]) - 1
+    if (verbose) print(table(train.pheno))
+
+    holdout.data <- as.matrix(holdout.set[, -pheno.col])
+    colnames(holdout.data) <- var.names
+    holdout.pheno <- as.integer(holdout.set[, pheno.col]) - 1
+    if (verbose) print(table(holdout.pheno))
+
+    if (verbose) cat("\txgboost train\n")
+    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
+    # xgboost fitting with arbitrary parameters
+    xgb.params.1 = list(
+      objective = "binary:logistic",  # binary classification
+      eta = 0.01,                     # learning rate
+      max.depth = 3,                  # max tree depth
+      eval_metric = "error"           # evaluation/loss metric
+    )
+    # fit the model with the arbitrary parameters specified above
+    xgb.1 = xgboost::xgboost(data = dtrain,
+                             params = xgb.params.1,
+                             nrounds = 100,               # max number of trees to build
+                             verbose = verbose,
+                             print_every_n = 1,
+                             early_stopping_rounds = 10   # stop if no improvement within 10 trees
+    )
+    train.importance <- xgboost::xgb.importance(feature_names = var.names, model = xgb.1)
+    # train.importance <- as.numeric(importance.train$Gain)
+    # names(train.importance) <- var.names[importance.train$Feature]
+    holdout.importance <- xgboost::xgb.importance(model = xgb.1, data = holdout.data)
+
+    good.results <- TRUE
+  }
+  if (importance.options$name == "xgboost.caret.tune") {
+    cv.ctrl <- caret::trainControl(method = "repeatedcv", repeats = 1,number = 3,
+                                   #summaryFunction = twoClassSummary,
+                                   classProbs = TRUE,
+                                   allowParallel = T)
+
+    xgb.grid <- expand.grid(nrounds = 1000,
+                            eta = c(0.01,0.05,0.1),
+                            max_depth = c(2,4,6,8,10,14)
+    )
+    set.seed(45)
+    xgb.tune <- caret::train(paste(label, "~.", sep = ""),
+                             data = train.set,
+                             method = "xgbTree",
+                             trControl = cv.ctrl,
+                             tuneGrid = xgb.grid,
+                             verbose = TRUE,
+                             metric = "Kappa",
+                             nthread = 3
+    )
+
+  }
+  if (importance.options$name == "xgboost.caret.hyper") {
+    # set up the cross-validated hyper-parameter search
+    xgb_grid_1 = expand.grid(
+      nrounds = 1000,
+      eta = c(0.01, 0.001, 0.0001),
+      max_depth = c(2, 4, 6, 8, 10),
+      gamma = 1
+    )
+
+    # pack the training control parameters
+    xgb_trcontrol_1 = caret::trainControl(
+      method = "cv",
+      number = 5,
+      verboseIter = TRUE,
+      returnData = FALSE,
+      returnResamp = "all",                                                        # save losses across all models
+      classProbs = TRUE,                                                           # set to TRUE for AUC to be computed
+      summaryFunction = twoClassSummary,
+      allowParallel = TRUE
+    )
+
+    # train the model for each parameter combination in the grid,
+    #   using CV to evaluate
+    xgb_train_1 = caret::train(
+      x = train.data,
+      y = as.factor(train.pheno),
+      trControl = xgb_trcontrol_1,
+      tuneGrid = xgb_grid_1,
+      method = "xgbTree"
+    )
   }
   # ----------------------------------------------------------------
   if (importance.options$name == "epistasisrank") {
@@ -142,7 +233,7 @@ getImportanceScores <- function(train.set=NULL,
   }
   # ----------------------------------------------------------------
   if (!good.results) {
-    stop("Invalid feature importance ranker name [ ", importance.options$name, " ]")
+    stop("Variable importance ranker name [ ", importance.options$name, " ] not found or failed")
   }
   list(train.scores = train.importance, holdout.scores = holdout.importance)
 }
@@ -246,9 +337,22 @@ privateEC <- function(train.ds=NULL,
                       signal.names=NULL,
                       save.file=NULL,
                       verbose=FALSE) {
-  options(warn = 2)
   if (is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
+  }
+  if (ncol(train.ds) != ncol(holdout.ds)) {
+    stop("Training and holdout data sets must have the same number of variables (columns)")
+  }
+  if (sum(colnames(train.ds) != colnames(holdout.ds)) > 0) {
+    stop("Training and holdout data sets must have the same variable (column) names")
+  }
+  if (!is.null(validation.ds)) {
+    if (ncol(train.ds) != ncol(validation.ds)) {
+      stop("Training and validation data sets must have the same number of variables (columns)")
+    }
+    if (sum(colnames(train.ds) != colnames(validation.ds)) > 0) {
+      stop("Training and validation data sets must have the same variable (column) names")
+    }
   }
   if (is.simulated & is.null(signal.names)) {
     warning("For correct detection of signals, 'signal.names' parameter is required")
@@ -273,6 +377,7 @@ privateEC <- function(train.ds=NULL,
   if (verbose) cat("running [", importance.options$name, "] importance for training and holdout sets\n")
   if (importance.options$name == "relieff" |
       importance.options$name == "xgboost" |
+      importance.options$name == "xgboost.caret" |
       importance.options$name == "epistasisrank") {
     # pass-through the importance function options list
     initial.scores <- getImportanceScores(train.set = train.ds,
@@ -290,6 +395,9 @@ privateEC <- function(train.ds=NULL,
                    "elapsed time:", (proc.time() - ptm)[3], "\n")
   q1.scores <- initial.scores[[1]]
   q2.scores <- initial.scores[[2]]
+  if (length(q1.scores) != length(q2.scores)) {
+    stop("Initial imoprtance scores for train and holdout data sets are not the same size")
+  }
   orig.var.names <- names(q1.scores)
   diff.scores <- abs(q1.scores - q2.scores)
   delta.q <- max(diff.scores)
@@ -336,7 +444,7 @@ privateEC <- function(train.ds=NULL,
       break
     }
     # run EC on the current set of variables - "update"
-    if ((current.iteration %% update.freq) == 1) {
+    if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
       if (verbose) cat("iteration [", current.iteration, " ] UPDATE [", num.updates,
                        "] current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
@@ -359,24 +467,32 @@ privateEC <- function(train.ds=NULL,
       }
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
+      if (length(q1.scores) != length(q2.scores)) {
+        keep.looping <- FALSE
+        next
+      }
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
       # run the learner
       method.valid <- FALSE
       if (learner.options$name == "randomforest") {
+        new.train.ds$Class <- factor(new.train.ds$Class, levels = c(0, 1))
+        new.holdout.ds$Class <- factor(new.holdout.ds$Class, levels = c(0, 1))
         if (verbose) cat("\trunning randomForest\n")
-        model.formula <- stats::as.formula(paste(label, "~.", sep = ""))
-        result.rf <- randomForest::randomForest(formula = model.formula,
+        model.formula <- stats::as.formula(paste(label, " ~ .", sep = ""))
+        result.rf <- randomForest::randomForest(model.formula,
                                                 data = new.train.ds,
                                                 ntree = learner.options$rf.ntree,
                                                 mtry = param.mtry)
-        current.train.acc <- 1 - mean(result.rf$confusion[,"class.error"])
-        if (verbose) cat("\tpredict\n")
-        holdout.pred <- stats::predict(result.rf, newdata = new.holdout.ds)
-        current.holdout.acc <- mean(holdout.pred == holdout.ds[, label])
-        if (is.simulated | (!is.null(new.validation.ds))) {
-          validation.pred <- stats::predict(result.rf, newdata = new.validation.ds)
-          current.validation.acc <- mean(validation.pred == validation.ds[, label])
+        current.train.acc <- 1 - mean(result.rf$confusion[, "class.error"])
+        if (verbose) cat("\tpredict holdout\n")
+        holdout.pred <- predict(result.rf, new.holdout.ds)
+        current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
+        if (!is.null(new.validation.ds)) {
+          new.validation.ds$Class <- factor(new.validation.ds$Class, levels = c(0, 1))
+          if (verbose) cat("\tpredict validation\n")
+          validation.pred <- predict(result.rf, new.validation.ds)
+          current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
         } else {
           current.validation.acc <- 0
         }
@@ -1047,11 +1163,11 @@ xgboostRF <- function(train.ds=NULL,
   colnames(holdout.data) <- var.names
   train.pheno <- as.integer(train.ds[, pheno.col]) - 1
   if (verbose) print(table(train.pheno))
-  holdo.pheno <- as.integer(holdout.ds[, pheno.col]) - 1
-  if (verbose) print(table(holdo.pheno))
+  holdout.pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  if (verbose) print(table(holdout.pheno))
   # ----------------------------------------------------------------
   dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-  dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdo.pheno)
+  dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
   train.model <- xgboost::xgboost(data = dtrain,
                                   eta = learn.rate,
                                   nthread = num.threads,
@@ -1073,7 +1189,7 @@ xgboostRF <- function(train.ds=NULL,
   pred.prob <- predict(train.model, dholdo)
   pred.bin <- as.numeric(pred.prob > 0.5)
   if (verbose) print(table(pred.bin))
-  rf.holdo.accu <- 1 - mean(pred.bin != holdo.pheno)
+  rf.holdo.accu <- 1 - mean(pred.bin != holdout.pheno)
   cat("holdout-accuracy:", rf.holdo.accu, "\n")
   # ----------------------------------------------------------------
   if (!is.null(validation.ds)) {
