@@ -2,7 +2,6 @@
 .Rhistory
 .Rapp.history
 .RData
-
 # Session Data files
 # Example code in package build process
 *-Ex.R
@@ -21,7 +20,9 @@
 *.utf8.md
 *.knit.md
 .Rproj.user
-
+# RStudio project
 privateEC.Rproj
-
-/*.model
+xgboost.model
+# generated documentation vignettes
+vignettes/*.R
+vignettes/*.html
