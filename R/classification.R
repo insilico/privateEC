@@ -359,13 +359,13 @@ privateEC <- function(train.ds=NULL,
   }
   num.data.rows <- nrow(train.ds)
   num.data.cols <- ncol(train.ds) - 1
-  param.mtry <- floor(sqrt(num.data.cols))
   orig.var.names <- colnames(train.ds)
-  if (!is.null(learner.options$rf.mtry)) {
-    param.mtry <- learner.options$rf.mtry
-  }
-  if ((param.mtry < 1) | (param.mtry > num.data.cols)) {
+  if (is.null(learner.options$rf.mtry)) {
+    param.mtry <- floor(sqrt(num.data.cols))
+    if ((param.mtry < 1) | (param.mtry > num.data.cols)) {
       stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < num.data.cols"))
+    }
+    learner.options$rf.mtry <- param.mtry
   }
   if (is.null(importance.options$feature.names)) {
     cat("WARNING: No features names in importance options list, using column names of training data set\n")
@@ -437,16 +437,17 @@ privateEC <- function(train.ds=NULL,
         keep.looping <- FALSE
         next
       }
+      if (verbose) cat("\t[", length(current.var.names), "] remaining variables\n")
     }
     if (length(prev.var.names) == length(current.var.names)) {
       cat("\tCONVERGENCE to a set of variables that are unchanging\n")
       keep.looping <- FALSE
       break
     }
-    # run EC on the current set of variables - "update"
+    # run on the current set of variables - "update"
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
-      if (verbose) cat("iteration [", current.iteration, " ] UPDATE [", num.updates,
+      if (verbose) cat("\n\niteration [", current.iteration, " ] UPDATE [", num.updates,
                        "] current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
       # re-compute imnportance
       if (verbose) cat("\trecomputing scores with evaporated attributes removed\n")
@@ -468,6 +469,8 @@ privateEC <- function(train.ds=NULL,
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
       if (length(q1.scores) != length(q2.scores)) {
+        cat("WARNING: q1 and q2 scores of different lengths [", length(q1.scores), "] vs. [",
+            length(q2.scores), "], exiting EC loop\n")
         keep.looping <- FALSE
         next
       }
@@ -476,20 +479,36 @@ privateEC <- function(train.ds=NULL,
       # run the learner
       method.valid <- FALSE
       if (learner.options$name == "randomforest") {
-        new.train.ds$Class <- factor(new.train.ds$Class, levels = c(0, 1))
-        new.holdout.ds$Class <- factor(new.holdout.ds$Class, levels = c(0, 1))
         if (verbose) cat("\trunning randomForest\n")
-        model.formula <- stats::as.formula(paste(label, " ~ .", sep = ""))
+        rf.train.ds <- train.ds[, c(current.var.names, label)]
+        rf.train.pheno <- factor(rf.train.ds[, label])
+        if (any(is.na(rf.train.pheno))) {
+          cat("Phenos:\n")
+          print(rf.train.pheno)
+          stop("NAs detected in training phenotype")
+        }
+        model.formula <- as.formula(paste(label, "~ ."))
+        if (verbose) {
+          print(model.formula)
+          print(dim(rf.train.ds))
+          print(rf.train.pheno)
+        }
         result.rf <- randomForest::randomForest(model.formula,
-                                                data = new.train.ds,
+                                                data = rf.train.ds,
                                                 ntree = learner.options$rf.ntree,
-                                                mtry = param.mtry)
+                                                mtry = learner.options$rf.mtry)
+        if (verbose) print(result.rf)
         current.train.acc <- 1 - mean(result.rf$confusion[, "class.error"])
+
         if (verbose) cat("\tpredict holdout\n")
-        holdout.pred <- predict(result.rf, new.holdout.ds)
+        #new.holdout.ds[, label] <- factor(new.holdout.ds[, label])
+        holdout.pred <- predict(result.rf, newdata = new.holdout.ds)
+        print(holdout.pred)
+        print(new.holdout.ds[, label])
         current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
+
         if (!is.null(new.validation.ds)) {
-          new.validation.ds$Class <- factor(new.validation.ds$Class, levels = c(0, 1))
+          new.validation.ds[, label] <- factor(new.validation.ds[, label])
           if (verbose) cat("\tpredict validation\n")
           validation.pred <- predict(result.rf, new.validation.ds)
           current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
@@ -516,7 +535,7 @@ privateEC <- function(train.ds=NULL,
       }
       if (verbose) {
         cat("\tthreshold:          ", threshold, "\n")
-        cat("\ttolerance:          ", threshold, "\n")
+        cat("\ttolerance:          ", tolerance, "\n")
         cat("\tlearner function:   ", learner.options$name, "\n")
         cat("\timportance function:", learner.options$name, "\n")
         cat("\tftrain:             ", current.train.acc, "\n")

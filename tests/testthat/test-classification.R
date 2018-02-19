@@ -5,7 +5,7 @@
 library(privateEC)
 context("Classification")
 
-test_that("privateEC returns sane results - RF + Relief-F", {
+test_that("privateEC returns sane results - Relief-F + randomForest", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -30,13 +30,13 @@ test_that("privateEC returns sane results - RF + Relief-F", {
                                                   rf.mtry = NULL),
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
-                           verbose = FALSE)
+                           verbose = TRUE)
   expect_equal(ncol(pec.results$algo.acc), 5)
   expect_equal(ncol(pec.results$ggplot.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })
 
-test_that("privateEC returns sane results - xgboost + Relief-F", {
+test_that("privateEC returns sane results - Relief-F + xgboost", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -142,7 +142,7 @@ test_that("privateRF returns sane results", {
                                sim.type = "mainEffect",
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
-                               pct.validation = 1 /3,
+                               pct.validation = 1 / 3,
                                verbose = FALSE)
   pec.results <- privateEC(train.ds = sim.data$train,
                            holdout.ds = sim.data$holdout,
@@ -180,7 +180,7 @@ test_that("standard random forest returns sane results", {
                                sim.type = "mainEffect",
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
-                               pct.validation = 1 /3,
+                               pct.validation = 1 / 3,
                                verbose = FALSE)
   rra.results <- standardRF(train.ds = sim.data$train,
                             holdout.ds = sim.data$holdout,
