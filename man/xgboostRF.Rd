@@ -5,8 +5,9 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", rf.ntree = 500, num.iter = 1, num.threads = 1,
-  max.depth = 4, learn.rate = 1, save.file = NULL, verbose = FALSE)
+  label = "phenos", rf.ntree = 500, rf.mtry = 5, num.rounds = 1,
+  num.threads = 1, max.depth = 6, learn.rate = 1,
+  obj.func = "binary:logistic", save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -19,8 +20,6 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{rf.ntree}{An integer the number of trees in the random forest}
 
-\item{num.iter}{An integer number of xgboost iterations}
-
 \item{num.threads}{An integer for OpenMP number of cores}
 
 \item{max.depth}{An integer aximum tree depth}
@@ -30,6 +29,8 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{save.file}{A character vector for results filename or NULL to skip}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
+
+\item{num.iter}{An integer number of xgboost iterations}
 }
 \value{
 A list containing:

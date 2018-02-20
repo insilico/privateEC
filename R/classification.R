@@ -101,6 +101,9 @@ getImportanceScores <- function(train.set=NULL,
                                               estimator = importance.options$corelearn.estimator)
     good.results <- TRUE
   }
+  if (importance.options$name == "randomforest") {
+    stop("Not implemented yet")
+  }
   if (importance.options$name == "xgboost") {
     var.names <- colnames(train.set[, -pheno.col])
     train.data <- as.matrix(train.set[, -pheno.col])
@@ -111,7 +114,7 @@ getImportanceScores <- function(train.set=NULL,
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
     train.model <- xgboost::xgboost(data = dtrain, objective = "binary:logistic", nrounds = 1)
     if (verbose) cat("\txgboost training variable importance\n")
-    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = NULL)
+    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = var.names)
     if (verbose) print(importance.train)
     train.importance <- as.numeric(importance.train$Gain)
     names(train.importance) <- var.names[importance.train$Feature]
@@ -124,7 +127,7 @@ getImportanceScores <- function(train.set=NULL,
     dholdout <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
     holdout.model <- xgboost::xgboost(data = dholdout, objective = "binary:logistic", nrounds = 1)
     if (verbose) cat("\tget xgboost holdout variable importance\n")
-    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = NULL)
+    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = var.names)
     if (verbose) print(importance.holdout)
     holdout.importance <- as.numeric(importance.holdout$Gain)
     names(holdout.importance) <- var.names[importance.holdout$Feature]
@@ -147,7 +150,7 @@ getImportanceScores <- function(train.set=NULL,
     # xgboost fitting with arbitrary parameters
     xgb.params.1 = list(
       objective = "binary:logistic",  # binary classification
-      eta = 0.01,                     # learning rate
+      eta = 0.1,                     # learning rate
       max.depth = 3,                  # max tree depth
       eval_metric = "error"           # evaluation/loss metric
     )
@@ -186,7 +189,7 @@ getImportanceScores <- function(train.set=NULL,
                              metric = "Kappa",
                              nthread = 3
     )
-
+    train.importance <- xgb.tune$results$Accuracy
   }
   if (importance.options$name == "xgboost.caret.hyper") {
     # set up the cross-validated hyper-parameter search
@@ -322,13 +325,18 @@ privateEC <- function(train.ds=NULL,
                       label="phenos",
                       is.simulated=TRUE,
                       bias=0.4,
-                      update.freq=50,
-                      learner.options=list(name = "randomforest",
-                                           rf.ntree = 500,
-                                           rf.mtry = 5),
+                      update.freq=5,
                       importance.options=list(name = "relieff",
                                               feature.names = colnames(train.ds),
                                               corelearn.estimator = "ReliefFbestK"),
+                      learner.options=list(name = "randomforest",
+                                           rf.ntree = 500,
+                                           rf.mtry = 5,
+                                           max.iter = 1,
+                                           num.threads = 2,
+                                           max.depth = 6,
+                                           learn.rate = 1,
+                                           obj.func = "binary:logistic"), # max_depth maximum depth of a tree. Default: 6
                       start.temp=0.1,
                       final.temp=10 ^ (-5),
                       tau.param=100,
@@ -487,13 +495,7 @@ privateEC <- function(train.ds=NULL,
           print(rf.train.pheno)
           stop("NAs detected in training phenotype")
         }
-        model.formula <- as.formula(paste(label, "~ ."))
-        if (verbose) {
-          print(model.formula)
-          print(dim(rf.train.ds))
-          print(rf.train.pheno)
-        }
-        result.rf <- randomForest::randomForest(model.formula,
+        result.rf <- randomForest::randomForest(as.formula(paste(label, "~ .")),
                                                 data = rf.train.ds,
                                                 ntree = learner.options$rf.ntree,
                                                 mtry = learner.options$rf.mtry)
@@ -503,8 +505,8 @@ privateEC <- function(train.ds=NULL,
         if (verbose) cat("\tpredict holdout\n")
         #new.holdout.ds[, label] <- factor(new.holdout.ds[, label])
         holdout.pred <- predict(result.rf, newdata = new.holdout.ds)
-        print(holdout.pred)
-        print(new.holdout.ds[, label])
+        if (verbose) print(holdout.pred)
+        if (verbose) print(new.holdout.ds[, label])
         current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
 
         if (!is.null(new.validation.ds)) {
@@ -523,6 +525,9 @@ privateEC <- function(train.ds=NULL,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
                                  rf.ntree = learner.options$rf.ntree,
+                                 num.rounds = learner.options$max.iter,
+                                 num.threads = learner.options$num.threads,
+                                 max.depth =  learner.options$max.depth,
                                  label = label,
                                  verbose = verbose)
         current.train.acc <- xgb.results$algo.acc$train.acc
@@ -587,7 +592,7 @@ privateEC <- function(train.ds=NULL,
                           holdout.acc = all.holdout.acc,
                           validation.acc = all.validation.acc,
                           alg = 1)
-  print(plot.data)
+  if (verbose) print(plot.data)
   plot.data.narrow <- reshape2::melt(plot.data, id = c("vars.remain", "alg"))
 
   # save the results to an Rdata file if requested
@@ -1156,10 +1161,12 @@ xgboostRF <- function(train.ds=NULL,
                       validation.ds=NULL,
                       label="phenos",
                       rf.ntree=500,
-                      num.iter=1,
+                      rf.mtry=5,
+                      num.rounds=1,
                       num.threads=1,
-                      max.depth=4,
+                      max.depth=6,
                       learn.rate=1,
+                      obj.func="binary:logistic",
                       save.file=NULL,
                       verbose=FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
@@ -1190,10 +1197,9 @@ xgboostRF <- function(train.ds=NULL,
   train.model <- xgboost::xgboost(data = dtrain,
                                   eta = learn.rate,
                                   nthread = num.threads,
-                                  nrounds = num.iter,
+                                  nrounds = num.rounds,
                                   max.depth = max.depth,
-                                  num_parallel_tree = rf.ntree,
-                                  objective = "binary:logistic")
+                                  objective = obj.func)
   if (verbose) cat("Computing variable importance\n")
   importance.xgb <- xgboost::xgb.importance(model = train.model, feature_names = colnames(train.data))
   if (verbose) print(importance.xgb)
