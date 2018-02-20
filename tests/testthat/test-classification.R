@@ -10,7 +10,7 @@ test_that("privateEC returns sane results - Relief-F + randomForest", {
   num.variables <- 100
   pct.signals <- 0.1
   rf.ntree <- 500
-  rf.mtry <- floor(sqrt(num.variables))
+  rf.mtry <- 5
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
                                pct.signals = pct.signals,
@@ -57,7 +57,14 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
                            importance.options = list(name = "relieff",
                                                      feature.names = colnames(sim.data$train),
                                                      corelearn.estimator = "ReliefFbestK"),
-                           learner.options = list(name = "xgboost", rf.ntree = ntree),
+                           learner.options = list(name = "xgboost",
+                                                  rf.ntree = ntree,
+                                                  rf.mtry = 5,
+                                                  max.iter = 1,
+                                                  num.threads = 2,
+                                                  max.depth = 6,
+                                                  learn.rate = 1,
+                                                  obj.func = "binary:logistic"),
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
                            verbose = FALSE)
@@ -65,34 +72,6 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
   expect_equal(ncol(pec.results$ggplot.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })
-
-# test_that("privateEC returns sane results - xgboost + xgboost", {
-#   num.samples <- 100
-#   num.variables <- 100
-#   pct.signals <- 0.1
-#   ntree <- 500
-#   sim.data <- createSimulation(num.samples = num.samples,
-#                                num.variables = num.variables,
-#                                pct.signals = pct.signals,
-#                                pct.train = 1 / 3,
-#                                pct.holdout = 1 / 3,
-#                                pct.validation = 1 / 3,
-#                                sim.type = "mainEffect",
-#                                verbose = FALSE)
-#   pec.results <- privateEC(train.ds = sim.data$train,
-#                            holdout.ds = sim.data$holdout,
-#                            validation.ds = sim.data$validation,
-#                            label = sim.data$class.label,
-#                            learner.options = list(name = "xgboost", rf.ntree = ntree),
-#                            importance.options = list(name = "xgboost", rf.ntree = ntree),
-#                            update.freq = 5,
-#                            is.simulated = TRUE,
-#                            signal.names = sim.data$signal.names,
-#                            verbose = FALSE)
-#   expect_equal(ncol(pec.results$algo.acc), 5)
-#   expect_equal(ncol(pec.results$ggplot.data), 4)
-#   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
-# })
 
 test_that("originalThresholdout returns sane results", {
   num.samples <- 100

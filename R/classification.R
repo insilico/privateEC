@@ -68,8 +68,6 @@ getImportanceScores <- function(train.set=NULL,
                                 label="phenos",
                                 importance.options=list(name = "relieff",
                                                         corelearn.estimator = "ReliefFbestK",
-                                                        xgb.train.model = NULL,
-                                                        xgb.holdout.model = NULL,
                                                         feature.names = NULL,
                                                         train.regain = NULL,
                                                         holdout.regain = NULL,
@@ -89,7 +87,6 @@ getImportanceScores <- function(train.set=NULL,
     print(dim(holdout.set))
     stop("Training and holdout data sets have different sized columns")
   }
-  pheno.col <- which(colnames(train.set) == label)
   if (verbose) cat("\tComputing importance scores\n")
   good.results <- FALSE
   if (importance.options$name == "relieff") {
@@ -100,127 +97,6 @@ getImportanceScores <- function(train.set=NULL,
     holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
                                               estimator = importance.options$corelearn.estimator)
     good.results <- TRUE
-  }
-  if (importance.options$name == "randomforest") {
-    stop("Not implemented yet")
-  }
-  if (importance.options$name == "xgboost") {
-    var.names <- colnames(train.set[, -pheno.col])
-    train.data <- as.matrix(train.set[, -pheno.col])
-    colnames(train.data) <- var.names
-    train.pheno <- as.integer(train.set[, pheno.col]) - 1
-    if (verbose) print(table(train.pheno))
-    if (verbose) cat("\tfind best xgboost training model\n")
-    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-    train.model <- xgboost::xgboost(data = dtrain, objective = "binary:logistic", nrounds = 1)
-    if (verbose) cat("\txgboost training variable importance\n")
-    importance.train <- xgboost::xgb.importance(model = train.model, feature_names = var.names)
-    if (verbose) print(importance.train)
-    train.importance <- as.numeric(importance.train$Gain)
-    names(train.importance) <- var.names[importance.train$Feature]
-
-    holdout.data <- as.matrix(holdout.set[, -pheno.col])
-    colnames(holdout.data) <- var.names
-    holdout.pheno <- as.integer(holdout.set[, pheno.col]) - 1
-    if (verbose) print(table(holdout.pheno))
-    if (verbose) cat("\tfind best xgboost holdout model\n")
-    dholdout <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
-    holdout.model <- xgboost::xgboost(data = dholdout, objective = "binary:logistic", nrounds = 1)
-    if (verbose) cat("\tget xgboost holdout variable importance\n")
-    importance.holdout <- xgboost::xgb.importance(model = holdout.model, feature_names = var.names)
-    if (verbose) print(importance.holdout)
-    holdout.importance <- as.numeric(importance.holdout$Gain)
-    names(holdout.importance) <- var.names[importance.holdout$Feature]
-    good.results <- TRUE
-  }
-  if (importance.options$name == "xgboost.caret") {
-    var.names <- colnames(train.set[, -pheno.col])
-    train.data <- as.matrix(train.set[, -pheno.col])
-    colnames(train.data) <- var.names
-    train.pheno <- as.integer(train.set[, pheno.col]) - 1
-    if (verbose) print(table(train.pheno))
-
-    holdout.data <- as.matrix(holdout.set[, -pheno.col])
-    colnames(holdout.data) <- var.names
-    holdout.pheno <- as.integer(holdout.set[, pheno.col]) - 1
-    if (verbose) print(table(holdout.pheno))
-
-    if (verbose) cat("\txgboost train\n")
-    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-    # xgboost fitting with arbitrary parameters
-    xgb.params.1 = list(
-      objective = "binary:logistic",  # binary classification
-      eta = 0.1,                     # learning rate
-      max.depth = 3,                  # max tree depth
-      eval_metric = "error"           # evaluation/loss metric
-    )
-    # fit the model with the arbitrary parameters specified above
-    xgb.1 = xgboost::xgboost(data = dtrain,
-                             params = xgb.params.1,
-                             nrounds = 100,               # max number of trees to build
-                             verbose = verbose,
-                             print_every_n = 1,
-                             early_stopping_rounds = 10   # stop if no improvement within 10 trees
-    )
-    train.importance <- xgboost::xgb.importance(feature_names = var.names, model = xgb.1)
-    # train.importance <- as.numeric(importance.train$Gain)
-    # names(train.importance) <- var.names[importance.train$Feature]
-    holdout.importance <- xgboost::xgb.importance(model = xgb.1, data = holdout.data)
-
-    good.results <- TRUE
-  }
-  if (importance.options$name == "xgboost.caret.tune") {
-    cv.ctrl <- caret::trainControl(method = "repeatedcv", repeats = 1,number = 3,
-                                   #summaryFunction = twoClassSummary,
-                                   classProbs = TRUE,
-                                   allowParallel = T)
-
-    xgb.grid <- expand.grid(nrounds = 1000,
-                            eta = c(0.01,0.05,0.1),
-                            max_depth = c(2,4,6,8,10,14)
-    )
-    set.seed(45)
-    xgb.tune <- caret::train(paste(label, "~.", sep = ""),
-                             data = train.set,
-                             method = "xgbTree",
-                             trControl = cv.ctrl,
-                             tuneGrid = xgb.grid,
-                             verbose = TRUE,
-                             metric = "Kappa",
-                             nthread = 3
-    )
-    train.importance <- xgb.tune$results$Accuracy
-  }
-  if (importance.options$name == "xgboost.caret.hyper") {
-    # set up the cross-validated hyper-parameter search
-    xgb_grid_1 = expand.grid(
-      nrounds = 1000,
-      eta = c(0.01, 0.001, 0.0001),
-      max_depth = c(2, 4, 6, 8, 10),
-      gamma = 1
-    )
-
-    # pack the training control parameters
-    xgb_trcontrol_1 = caret::trainControl(
-      method = "cv",
-      number = 5,
-      verboseIter = TRUE,
-      returnData = FALSE,
-      returnResamp = "all",                                                        # save losses across all models
-      classProbs = TRUE,                                                           # set to TRUE for AUC to be computed
-      summaryFunction = twoClassSummary,
-      allowParallel = TRUE
-    )
-
-    # train the model for each parameter combination in the grid,
-    #   using CV to evaluate
-    xgb_train_1 = caret::train(
-      x = train.data,
-      y = as.factor(train.pheno),
-      trControl = xgb_trcontrol_1,
-      tuneGrid = xgb_grid_1,
-      method = "xgbTree"
-    )
   }
   # ----------------------------------------------------------------
   if (importance.options$name == "epistasisrank") {

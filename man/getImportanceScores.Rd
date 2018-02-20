@@ -6,9 +6,8 @@
 \usage{
 getImportanceScores(train.set = NULL, holdout.set = NULL,
   label = "phenos", importance.options = list(name = "relieff",
-  corelearn.estimator = "ReliefFbestK", xgb.train.model = NULL,
-  xgb.holdout.model = NULL, feature.names = NULL, train.regain = NULL,
-  holdout.regain = NULL, priorknowledge = NULL), verbose = FALSE)
+  corelearn.estimator = "ReliefFbestK", feature.names = NULL, train.regain =
+  NULL, holdout.regain = NULL, priorknowledge = NULL), verbose = FALSE)
 }
 \arguments{
 \item{train.set}{A training data frame with last column as class}
