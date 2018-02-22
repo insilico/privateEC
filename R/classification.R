@@ -123,8 +123,8 @@ getImportanceScores <- function(train.set=NULL,
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
-#' @param learner.options A list of learner options
-#' @param importance.options A list of importance options
+#' @param learner.options A list of learner parameters
+#' @param importance.options A list of importance parameters
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
@@ -208,7 +208,7 @@ privateEC <- function(train.ds=NULL,
                       learner.options=list(name = "randomforest",
                                            rf.ntree = 500,
                                            rf.mtry = 5,
-                                           max.iter = 1,
+                                           num.rounds = 1,
                                            num.threads = 2,
                                            max.depth = 6,
                                            learn.rate = 1,
@@ -260,8 +260,6 @@ privateEC <- function(train.ds=NULL,
   cat("\nRunning the privateEC algorithm...\n")
   if (verbose) cat("running [", importance.options$name, "] importance for training and holdout sets\n")
   if (importance.options$name == "relieff" |
-      importance.options$name == "xgboost" |
-      importance.options$name == "xgboost.caret" |
       importance.options$name == "epistasisrank") {
     # pass-through the importance function options list
     initial.scores <- getImportanceScores(train.set = train.ds,
@@ -332,14 +330,13 @@ privateEC <- function(train.ds=NULL,
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
       if (verbose) cat("\n\niteration [", current.iteration, " ] UPDATE [", num.updates,
-                       "] current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
+                       "] ", length(current.var.names), "current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
       # re-compute imnportance
       if (verbose) cat("\trecomputing scores with evaporated attributes removed\n")
       new.train.ds <- train.ds[, c(current.var.names, label)]
       new.holdout.ds <- holdout.ds[, c(current.var.names, label)]
       new.validation.ds <- validation.ds[, c(current.var.names, label)]
       if (importance.options$name == "relieff" |
-          importance.options$name == "xgboost" |
           importance.options$name == "epistasisrank") {
         importance.options$feature.names <- current.var.names
         new.scores <- getImportanceScores(train.set = new.train.ds,
@@ -386,9 +383,9 @@ privateEC <- function(train.ds=NULL,
         current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
 
         if (!is.null(new.validation.ds)) {
-          new.validation.ds[, label] <- factor(new.validation.ds[, label])
           if (verbose) cat("\tpredict validation\n")
-          validation.pred <- predict(result.rf, new.validation.ds)
+          if (verbose) print(new.validation.ds[, label])
+          validation.pred <- predict(result.rf, newdata = new.validation.ds)
           current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
         } else {
           current.validation.acc <- 0
@@ -401,9 +398,10 @@ privateEC <- function(train.ds=NULL,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
                                  rf.ntree = learner.options$rf.ntree,
-                                 num.rounds = learner.options$max.iter,
+                                 num.rounds = learner.options$num.rounds,
                                  num.threads = learner.options$num.threads,
                                  max.depth =  learner.options$max.depth,
+                                 learn.rate = learner.options$learn.rate,
                                  label = label,
                                  verbose = verbose)
         current.train.acc <- xgb.results$algo.acc$train.acc
@@ -1068,37 +1066,49 @@ xgboostRF <- function(train.ds=NULL,
   holdout.pheno <- as.integer(holdout.ds[, pheno.col]) - 1
   if (verbose) print(table(holdout.pheno))
   # ----------------------------------------------------------------
-  dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-  dholdo <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
-  train.model <- xgboost::xgboost(data = dtrain,
+  xgb.train.ds <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
+  xgb.holdo.ds <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
+  cat("-----------------------------------\n",
+      "eta =",  learn.rate, "\n",
+      "nthread =",  num.threads, "\n",
+      "nrounds =", num.rounds, "\n",
+      "max.depth =", max.depth, "\n",
+      "objective =", obj.func, "\n",
+      "------------------------------------\n")
+  train.model <- xgboost::xgboost(data = xgb.train.ds,
                                   eta = learn.rate,
                                   nthread = num.threads,
                                   nrounds = num.rounds,
                                   max.depth = max.depth,
                                   objective = obj.func)
   if (verbose) cat("Computing variable importance\n")
-  importance.xgb <- xgboost::xgb.importance(model = train.model, feature_names = colnames(train.data))
+  importance.xgb <- xgboost::xgb.importance(model = train.model,
+                                            feature_names = colnames(xgb.train.ds))
   if (verbose) print(importance.xgb)
   importance.values <- as.numeric(importance.xgb$Gain)
   names(importance.values) <- as.character(importance.xgb$Feature)
-  pred.prob <- predict(train.model, dtrain)
+  pred.prob <- predict(train.model, xgb.train.ds)
   pred.bin <- as.numeric(pred.prob > 0.5)
   rf.train.accu <- 1 - mean(pred.bin != train.pheno)
   cat("training-accuracy:", rf.train.accu, "\n")
   # ----------------------------------------------------------------
   if (verbose) cat("Predict using the best tree\n")
-  pred.prob <- predict(train.model, dholdo)
+  pred.prob <- predict(train.model, xgb.holdo.ds)
   pred.bin <- as.numeric(pred.prob > 0.5)
   if (verbose) print(table(pred.bin))
   rf.holdo.accu <- 1 - mean(pred.bin != holdout.pheno)
   cat("holdout-accuracy:", rf.holdo.accu, "\n")
   # ----------------------------------------------------------------
   if (!is.null(validation.ds)) {
+    cat("Preparing dating for prediction\n")
+    print(validation.ds[, pheno.col])
     validation.pheno <- as.integer(validation.ds[, pheno.col]) - 1
+    print(validation.pheno)
     validation.data <- as.matrix(validation.ds[, -pheno.col])
+    print(dim(validation.data))
     colnames(validation.data) <- var.names
-    dvalidation <- xgboost::xgb.DMatrix(data = validation.data, label = validation.pheno)
-    rf.prob <- predict(train.model, dvalidation)
+    xgb.validation.ds <- xgboost::xgb.DMatrix(data = validation.data, label = validation.pheno)
+    rf.prob <- predict(train.model, xgb.validation.ds)
     rf.bin <- as.numeric(rf.prob > 0.5)
     if (verbose) print(table(rf.bin))
     rf.validation.accu <- 1 - mean(rf.bin != validation.pheno)

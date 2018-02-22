@@ -9,7 +9,7 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   importance.options = list(name = "relieff", feature.names =
   colnames(train.ds), corelearn.estimator = "ReliefFbestK"),
   learner.options = list(name = "randomforest", rf.ntree = 500, rf.mtry = 5,
-  max.iter = 1, num.threads = 2, max.depth = 6, learn.rate = 1, obj.func =
+  num.rounds = 1, num.threads = 2, max.depth = 6, learn.rate = 1, obj.func =
   "binary:logistic"), start.temp = 0.1, final.temp = 10^(-5),
   tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
   tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
@@ -30,9 +30,9 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{update.freq}{An integer the number of steps before update}
 
-\item{importance.options}{A list of importance options}
+\item{importance.options}{A list of importance parameters}
 
-\item{learner.options}{A list of learner options}
+\item{learner.options}{A list of learner parameters}
 
 \item{start.temp}{A numeric EC starting temperature}
 

@@ -28,24 +28,27 @@ pct.signals <- 0.1
 update.freq <- 5
 verbose <- FALSE
 
-data.sets <- createSimulation(num.samples=n.samples,
-                              num.variables=n.variables,
-                              pct.signals=pct.signals,
-                              bias=bias,
-                              sim.type=type,
-                              save.file=NULL,
-                              verbose=verbose)
+data.sets <- createSimulation(num.samples = n.samples,
+                              num.variables = n.variables,
+                              pct.signals = pct.signals,
+                              bias = bias,
+                              pct.train = 1 / 3,
+                              pct.holdout = 1 / 3,
+                              pct.validation = 1 / 3,
+                              sim.type = type,
+                              save.file = NULL,
+                              verbose = verbose)
 
-pec.result <- privateEC(train.ds=data.sets$train,
-                        holdout.ds=data.sets$holdout,
-                        validation.ds=data.sets$validation,
-                        label=data.sets$class.label,
-                        is.simulated=TRUE,
-                        bias=bias,
-                        update.freq=update.freq,
-                        save.file=NULL,
-                        signal.names=data.sets$signal.names,
-                        verbose=verbose)
+pec.result <- privateEC(train.ds = data.sets$train,
+                        holdout.ds = data.sets$holdout,
+                        validation.ds = data.sets$validation,
+                        label = data.sets$class.label,
+                        is.simulated = TRUE,
+                        bias = bias,
+                        update.freq = update.freq,
+                        save.file = NULL,
+                        signal.names = data.sets$signal.names,
+                        verbose = verbose)
 ```
 
 ```{r, echo=FALSE}
