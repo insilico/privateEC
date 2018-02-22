@@ -1101,9 +1101,9 @@ xgboostRF <- function(train.ds=NULL,
   # ----------------------------------------------------------------
   if (!is.null(validation.ds)) {
     cat("Preparing dating for prediction\n")
-    print(validation.ds[, pheno.col])
+    # print(validation.ds[, pheno.col])
     validation.pheno <- as.integer(validation.ds[, pheno.col]) - 1
-    print(validation.pheno)
+    # print(validation.pheno)
     validation.data <- as.matrix(validation.ds[, -pheno.col])
     print(dim(validation.data))
     colnames(validation.data) <- var.names
