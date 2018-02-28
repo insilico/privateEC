@@ -67,7 +67,7 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
                                                   obj.func = "binary:logistic"),
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
-                           verbose = FALSE)
+                           verbose = TRUE)
   expect_equal(ncol(pec.results$algo.acc), 5)
   expect_equal(ncol(pec.results$ggplot.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
