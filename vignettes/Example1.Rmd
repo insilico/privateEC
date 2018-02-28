@@ -4,8 +4,8 @@ author: "Bill C. White"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to the WaterML R package}
   %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Example1}
   %\VignetteEncoding{UTF-8}
 ---
 
