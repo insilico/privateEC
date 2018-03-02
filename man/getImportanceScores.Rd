@@ -5,9 +5,8 @@
 \title{Compute and return importance scores (Relief-F scores)}
 \usage{
 getImportanceScores(train.set = NULL, holdout.set = NULL,
-  label = "phenos", importance.options = list(name = "relieff",
-  corelearn.estimator = "ReliefFbestK", feature.names = NULL, train.regain =
-  NULL, holdout.regain = NULL, priorknowledge = NULL), verbose = FALSE)
+  label = "phenos", importance.name = "relieff",
+  importance.algorithm = "ReliefFbestK", verbose = FALSE)
 }
 \arguments{
 \item{train.set}{A training data frame with last column as class}
@@ -16,7 +15,7 @@ getImportanceScores(train.set = NULL, holdout.set = NULL,
 
 \item{label}{A character vector of the class variable column name}
 
-\item{importance.options}{A list importance operation parameters}
+\item{importance.name}{A list importance operation parameters}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
 }

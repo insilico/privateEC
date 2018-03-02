@@ -6,14 +6,12 @@
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 5,
-  importance.options = list(name = "relieff", feature.names =
-  colnames(train.ds), corelearn.estimator = "ReliefFbestK"),
-  learner.options = list(name = "randomforest", rf.ntree = 500, rf.mtry = 5,
-  num.rounds = 1, num.threads = 2, max.depth = 6, learn.rate = 1, obj.func =
-  "binary:logistic"), start.temp = 0.1, final.temp = 10^(-5),
-  tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
-  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+  importance.name = "relieff", importance.algorithm = "ReliefFbestK",
+  learner.name = "randomforest", rf.mtry = 5, num.rounds = 1,
+  max.depth = 6, learn.rate = 1, obj.func = "binary:logistic",
+  start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
+  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
+  signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -24,15 +22,25 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{label}{A character vector of the class variable column name}
 
-\item{is.simulated}{Is the data simulated (or real?)}
-
 \item{bias}{A numeric for effect size in simulated signal variables}
 
 \item{update.freq}{An integer the number of steps before update}
 
-\item{importance.options}{A list of importance parameters}
+\item{importance.name}{A character vector containg the importance algorithm name}
 
-\item{learner.options}{A list of learner parameters}
+\item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
+
+\item{learner.name}{A list of learner parameters}
+
+\item{rf.mtry}{An integer for the number of variables used for node splits}
+
+\item{num.rounds}{An integer for the number of cgboost rounds to perform}
+
+\item{max.depth}{An integer for the maximum tree depth}
+
+\item{learn.rate}{A numeric for the xgboost learning rate}
+
+\item{obj.func}{= "binary:logistic",}
 
 \item{start.temp}{A numeric EC starting temperature}
 
@@ -51,6 +59,8 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 \item{save.file}{A character vector for results filename or NULL to skip}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
+
+\item{learner.name}{A character vector containg the learner algorithm name}
 }
 \value{
 A list with:
@@ -73,7 +83,6 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
-ntree <- 500
 sim.data <- createSimulation(num.samples = num.samples,
                              num.variables = num.variables,
                              pct.signals = pct.signals,
@@ -86,11 +95,9 @@ pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         importance.options = list(name = "relieff",
-                                                   feature.names = colnames(sim.data$train),
-                                                   corelearn.estimator = "ReliefFbestK"),
-                         learner.options = list(name = "randomforest",
-                                                rf.ntree = ntree),
+                         importance.name = "relieff",
+                         importance.algorithm = "ReliefFbestK",
+                         learner..name = "randomforest",
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)
@@ -98,10 +105,6 @@ pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         importance.options = list(name = "relieff",
-                                                   feature.names = colnames(sim.data$train),
-                                                   corelearn.estimator = "ReliefFbestK"),
-                         learner.options = list(name = "xgboost", rf.ntree = ntree),
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)

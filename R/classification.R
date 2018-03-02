@@ -57,7 +57,7 @@ epistasisRank <- function(G, Gamma_vec) {
 #' @param train.set A training data frame with last column as class
 #' @param holdout.set A holdout data frame with last column as class
 #' @param label A character vector of the class variable column name
-#' @param importance.options A list importance operation parameters
+#' @param importance.name A list importance operation parameters
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
 #' (Relief-F scores) for the train and holdout data sets.
@@ -66,12 +66,8 @@ epistasisRank <- function(G, Gamma_vec) {
 getImportanceScores <- function(train.set=NULL,
                                 holdout.set=NULL,
                                 label="phenos",
-                                importance.options=list(name = "relieff",
-                                                        corelearn.estimator = "ReliefFbestK",
-                                                        feature.names = NULL,
-                                                        train.regain = NULL,
-                                                        holdout.regain = NULL,
-                                                        priorknowledge = NULL),
+                                importance.name = "relieff",
+                                importance.algorithm = "ReliefFbestK",
                                 verbose=FALSE) {
   if (is.null(train.set)) {
     stop("getImportanceScores: No training data set provided")
@@ -79,40 +75,37 @@ getImportanceScores <- function(train.set=NULL,
   if (is.null(holdout.set)) {
     stop("getImportanceScores: No holdout data set provided")
   }
-  if (is.null(importance.options$feature.names)) {
-    stop("getImportanceScores: No feature names provided")
-  }
   if (dim(train.set)[2] != dim(holdout.set)[2]) {
     print(dim(train.set))
     print(dim(holdout.set))
-    stop("Training and holdout data sets have different sized columns")
+    stop("Training and holdout data sets have different number of columns")
   }
   if (verbose) cat("\tComputing importance scores\n")
   good.results <- FALSE
-  if (importance.options$name == "relieff") {
+  if (importance.name == "relieff") {
     if (verbose) cat("\tRelief-F train\n")
     train.importance <- CORElearn::attrEval(label, data = train.set,
-                                            estimator = importance.options$corelearn.estimator)
+                                            estimator = importance.algorithm)
     if (verbose) cat("\tRelief-F holdout\n")
     holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
-                                              estimator = importance.options$corelearn.estimator)
+                                              estimator = importance.algorithm)
     good.results <- TRUE
   }
   # ----------------------------------------------------------------
-  if (importance.options$name == "epistasisrank") {
-    if (verbose) cat("\tEpistasisRank train\n")
-    train.imp <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
-    train.importance <- as.numeric(train.imp$rank)
-    names(train.importance) <- importance.options$feature.names
-    if (verbose) cat("\tEpistasisRank holdout\n")
-    holdout.imp <- epistasisRank(importance.options$holdout.regain, importance.options$priorknowledge)
-    holdout.importance <- as.numeric(holdout.imp)
-    names(holdout.importance) <- importance.options$feature.names
-    good.results <- TRUE
-  }
+  # if (learner.name == "epistasisrank") {
+  #   if (verbose) cat("\tEpistasisRank train\n")
+  #   train.imp <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
+  #   train.importance <- as.numeric(train.imp$rank)
+  #   names(train.importance) <- importance.options$feature.names
+  #   if (verbose) cat("\tEpistasisRank holdout\n")
+  #   holdout.imp <- epistasisRank(importance.options$holdout.regain, importance.options$priorknowledge)
+  #   holdout.importance <- as.numeric(holdout.imp)
+  #   names(holdout.importance) <- importance.options$feature.names
+  #   good.results <- TRUE
+  # }
   # ----------------------------------------------------------------
   if (!good.results) {
-    stop("Variable importance ranker name [ ", importance.options$name, " ] not found or failed")
+    stop("Variable importance ranker name [ ", importance.name, " ] not found or failed")
   }
   list(train.scores = train.importance, holdout.scores = holdout.importance)
 }
@@ -123,11 +116,17 @@ getImportanceScores <- function(train.set=NULL,
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
-#' @param learner.options A list of learner parameters
-#' @param importance.options A list of importance parameters
-#' @param is.simulated Is the data simulated (or real?)
+#' @param learner.name A list of learner parameters
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
+#' @param learner.name A character vector containg the learner algorithm name
+#' @param importance.name A character vector containg the importance algorithm name
+#' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param rf.mtry An integer for the number of variables used for node splits
+#' @param num.rounds An integer for the number of cgboost rounds to perform
+#' @param max.depth An integer for the maximum tree depth
+#' @param learn.rate A numeric for the xgboost learning rate
+#' @param obj.func = "binary:logistic",
 #' @param start.temp A numeric EC starting temperature
 #' @param final.temp A numeric EC final temperature
 #' @param tau.param A numeric tau to control temperature reduction schedule
@@ -149,7 +148,6 @@ getImportanceScores <- function(train.set=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
-#' ntree <- 500
 #' sim.data <- createSimulation(num.samples = num.samples,
 #'                              num.variables = num.variables,
 #'                              pct.signals = pct.signals,
@@ -162,11 +160,9 @@ getImportanceScores <- function(train.set=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          importance.options = list(name = "relieff",
-#'                                                    feature.names = colnames(sim.data$train),
-#'                                                    corelearn.estimator = "ReliefFbestK"),
-#'                          learner.options = list(name = "randomforest",
-#'                                                 rf.ntree = ntree),
+#'                          importance.name = "relieff",
+#'                          importance.algorithm = "ReliefFbestK",
+#'                          learner..name = "randomforest",
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -174,10 +170,8 @@ getImportanceScores <- function(train.set=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          importance.options = list(name = "relieff",
-#'                                                    feature.names = colnames(sim.data$train),
-#'                                                    corelearn.estimator = "ReliefFbestK"),
-#'                          learner.options = list(name = "xgboost", rf.ntree = ntree),
+#`                          learner.name = "xgboost",
+#                           max.depth = 5,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -202,17 +196,14 @@ privateEC <- function(train.ds=NULL,
                       is.simulated=TRUE,
                       bias=0.4,
                       update.freq=5,
-                      importance.options=list(name = "relieff",
-                                              feature.names = colnames(train.ds),
-                                              corelearn.estimator = "ReliefFbestK"),
-                      learner.options=list(name = "randomforest",
-                                           rf.ntree = 500,
-                                           rf.mtry = 5,
-                                           num.rounds = 1,
-                                           num.threads = 2,
-                                           max.depth = 6,
-                                           learn.rate = 1,
-                                           obj.func = "binary:logistic"),
+                      importance.name = "relieff",
+                      importance.algorithm = "ReliefFbestK",
+                      learner.name = "randomforest",
+                      rf.mtry = 5,
+                      num.rounds = 1,
+                      max.depth = 6,
+                      learn.rate = 1,
+                      obj.func = "binary:logistic",
                       start.temp=0.1,
                       final.temp=10 ^ (-5),
                       tau.param=100,
@@ -244,36 +235,24 @@ privateEC <- function(train.ds=NULL,
   num.data.rows <- nrow(train.ds)
   num.data.cols <- ncol(train.ds) - 1
   orig.var.names <- colnames(train.ds)
-  if (is.null(learner.options$rf.mtry)) {
-    param.mtry <- floor(sqrt(num.data.cols))
-    if ((param.mtry < 1) | (param.mtry > num.data.cols)) {
-      stop(paste("mtry parameter", param.mtry, "out of range 1 < mtry < num.data.cols"))
-    }
-    learner.options$rf.mtry <- param.mtry
-  }
-  if (is.null(importance.options$feature.names)) {
-    cat("WARNING: No features names in importance options list, using column names of training data set\n")
-    importance.options$feature.names <- colnames(train.ds)
-  }
   # ---------------------------------------------------------------------------
   ptm <- proc.time()
   cat("\nRunning the privateEC algorithm...\n")
-  if (verbose) cat("running [", importance.options$name, "] importance for training and holdout sets\n")
-  if (importance.options$name == "relieff" |
-      importance.options$name == "epistasisrank") {
+  if (verbose) cat("running [", importance.name, "] importance for training and holdout sets\n")
+  if (importance.name == "relieff") {
     # pass-through the importance function options list
     initial.scores <- getImportanceScores(train.set = train.ds,
                                           holdout.set = holdout.ds,
                                           label = label,
-                                          importance.options = importance.options,
+                                          importance.name = importance.name,
                                           verbose = verbose)
   } else {
-    stop("Importance method [", importance.options$name, "] is not recognized")
+    stop("Importance method [", importance.name, "] is not recognized")
   }
   if (length(initial.scores) != 2) {
     stop("Could not get importance scores")
   }
-  if (verbose) cat("private EC importance:", importance.options$name,
+  if (verbose) cat("private EC importance:", importance.name,
                    "elapsed time:", (proc.time() - ptm)[3], "\n")
   q1.scores <- initial.scores[[1]]
   q2.scores <- initial.scores[[2]]
@@ -336,16 +315,14 @@ privateEC <- function(train.ds=NULL,
       new.train.ds <- train.ds[, c(current.var.names, label)]
       new.holdout.ds <- holdout.ds[, c(current.var.names, label)]
       new.validation.ds <- validation.ds[, c(current.var.names, label)]
-      if (importance.options$name == "relieff" |
-          importance.options$name == "epistasisrank") {
-        importance.options$feature.names <- current.var.names
+      if (importance.name == "relieff") {
         new.scores <- getImportanceScores(train.set = new.train.ds,
                                           holdout.set = new.holdout.ds,
                                           label = label,
-                                          importance.options = importance.options,
+                                          importance.name = importance.name,
                                           verbose = verbose)
       } else {
-        stop("Importance method [", importance.options$name, "] is not recognized")
+        stop("Importance method [", learner.name, "] is not recognized")
       }
       q1.scores <- new.scores[[1]]
       q2.scores <- new.scores[[2]]
@@ -359,7 +336,7 @@ privateEC <- function(train.ds=NULL,
       delta.q <- max(diff.scores)
       # run the learner
       method.valid <- FALSE
-      if (learner.options$name == "randomforest") {
+      if (learner.name == "randomforest") {
         if (verbose) cat("\trunning randomForest\n")
         rf.train.ds <- train.ds[, c(current.var.names, label)]
         rf.train.pheno <- factor(rf.train.ds[, label])
@@ -370,8 +347,7 @@ privateEC <- function(train.ds=NULL,
         }
         result.rf <- randomForest::randomForest(as.formula(paste(label, "~ .")),
                                                 data = rf.train.ds,
-                                                ntree = learner.options$rf.ntree,
-                                                mtry = learner.options$rf.mtry)
+                                                mtry = rf.mtry)
         if (verbose) print(result.rf)
         current.train.acc <- 1 - mean(result.rf$confusion[, "class.error"])
 
@@ -392,16 +368,14 @@ privateEC <- function(train.ds=NULL,
         }
         method.valid <- TRUE
       }
-      if (learner.options$name == "xgboost") {
+      if (learner.name == "xgboost") {
         if (verbose) cat("\trunning xgboost\n")
         xgb.results <- xgboostRF(train.ds = new.train.ds,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
-                                 rf.ntree = learner.options$rf.ntree,
-                                 num.rounds = learner.options$num.rounds,
-                                 num.threads = learner.options$num.threads,
-                                 max.depth =  learner.options$max.depth,
-                                 learn.rate = learner.options$learn.rate,
+                                 num.rounds = num.rounds,
+                                 max.depth =  max.depth,
+                                 learn.rate = learn.rate,
                                  label = label,
                                  verbose = verbose)
         current.train.acc <- xgb.results$algo.acc$train.acc
@@ -410,13 +384,13 @@ privateEC <- function(train.ds=NULL,
         method.valid <- TRUE
       }
       if (!method.valid) {
-        stop("Learner method [ ", learner.options$name, " ] is not recognized")
+        stop("Learner method [ ", learner.name, " ] is not recognized")
       }
       if (verbose) {
         cat("\tthreshold:          ", threshold, "\n")
         cat("\ttolerance:          ", tolerance, "\n")
-        cat("\tlearner function:   ", learner.options$name, "\n")
-        cat("\timportance function:", learner.options$name, "\n")
+        cat("\tlearner function:   ", learner.name, "\n")
+        cat("\timportance function:", learner.name, "\n")
         cat("\tftrain:             ", current.train.acc, "\n")
         cat("\tfholdout:           ", current.holdout.acc, "\n")
       }
