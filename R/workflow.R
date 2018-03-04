@@ -38,7 +38,7 @@
 #' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and
-#' \code{\link{compileResults}}. A comparison analysis with real data (fMRI)
+#' \code{\link{compileAndSaveAllResults}}. A comparison analysis with real data (fMRI)
 #' is in \code{\link{paperRealWorkflow}}.
 #' @export
 paperSimWorkflow <- function(n.samples=100,
@@ -121,7 +121,7 @@ paperSimWorkflow <- function(n.samples=100,
                         por = por.result,
                         pra = pra.result,
                         rra = rra.result)
-    run.results <- compileResults(run.results = all.results, verbose = verbose)
+    run.results <- compileAndSaveAllResults(run.results = all.results, verbose = verbose)
     if (verbose) cat("end sim/classification loop for type/bias", type, bias, "\n")
     run.results
   }) # end simtype.num loop 1:3 for sva. er, inte
@@ -144,11 +144,11 @@ paperSimWorkflow <- function(n.samples=100,
 #'   \item{correct}{number of variables detected correctly in each data set}
 #' }
 #' @family workflows
-compileResults <- function(run.results = NULL,
-                           save.file = NULL,
-                           verbose = FALSE) {
+compileAndSaveAllResults <- function(run.results = NULL,
+                                     save.file = NULL,
+                                     verbose = FALSE) {
   if (is.null(run.results)) {
-    stop("compileResults: No results list provided as first argument")
+    stop("compileAndSaveAllResults: No results list provided as first argument")
   }
   if (verbose) cat("compiling results for plotting\n")
   acc.dfs <- lapply(run.results, FUN = function(method.results) {
@@ -195,7 +195,7 @@ compileResults <- function(run.results = NULL,
 #' \code{\link{originalThresholdout}}
 #' \code{\link{privateRF}}
 #' \code{\link{standardRF}} and
-#' \code{\link{compileResults}}. A comparison analysis with simulated data
+#' \code{\link{compileAndSaveAllResults}}. A comparison analysis with simulated data
 #' is in \code{\link{paperSimWorkflow}}.
 #' @family workflows
 #' @export
@@ -252,10 +252,61 @@ paperRealWorkflow <- function(real.data=NULL,
 
   # compile and return results
   all.results <- list(pec = pec.result, por = por.result, pra = pra.result, rra = rra.result)
-  final.results <- compileResults(run.results = all.results, verbose = verbose)
+  final.results <- compileAndSaveAllResults(run.results = all.results, verbose = verbose)
 
   elapsed <- (proc.time() - ptm)[3]
   if (verbose) cat("Total elapsed time:", elapsed, "\n")
 
   list(run.results = final.results, elapsed = elapsed)
+}
+
+#' Plot the results of a privateEC workflow for a quick plot/review with base graphics.
+#'
+#' @param A list representing the results returned rom a privateEC algorithm run.
+#' @examples
+#' data(rsfMRIcorrMDD)
+#' # ~100 variables for a test
+#' data.width <- ncol(rsfMRIcorrMDD)
+#' real.data.sets <- splitDataset(all.data = rsfMRIcorrMDD[, (data.width - 101):data.width],
+#' pct.train = 0.5,
+#' pct.holdout = 0.5,
+#' pct.validation = 0,
+#' class.label = "phenos"
+#' real.result <- privateEC(train.ds = real.data.sets$train,
+#'                          holdout.ds = real.data.sets$holdout,
+#'                          validation.ds = NULL,
+#'                          label = "phenos",
+#'                          is.simulated = FALSE,
+#'                          update.freq = 5,
+#'                          verbose = FALSE)
+#' plotRunResults(real.result)
+#' @family workflows
+#' @export
+plotRunResults <- function(pec.result=NULL) {
+  if (is.null(pec.result)) {
+    return(FALSE)
+  }
+  plot(pec.result$algo.acc$vars.remain,
+       pec.result$algo.acc$holdout.acc,
+       col = "red", pch = 16, type = 'b', cex = 0.75,
+       main = "One run of privateEC",
+       ylim = c(0.05, 1.0),
+       xlab = "Number of Attributes in Model",
+       ylab = "Accuracy")
+  points(pec.result$algo.acc$vars.remain,
+         pec.result$algo.acc$train.acc,
+         col = "green", pch = 1, type = 'b', cex = 0.75)
+  if (is.null(pec.result$algo.acc$validation.acc)) {
+    legend.labels <- c("Train", "Holdout")
+    legend.pch <- c(16, 1, 4)
+    legend.col <- c("red", "green")
+  } else {
+    points(pec.result$algo.acc$vars.remain,
+           pec.result$algo.acc$validation.acc,
+           col = "blue", pch = 4, type = 'b', cex = 0.75)
+    legend.labels <- c("Train", "Holdout", "Test")
+    legend.pch <- c(16, 1)
+    legend.col <- c("red", "green", "blue")
+  }
+  legend("topright", legend.labels, pch = legend.pch, col = legend.col, cex = 0.75)
 }

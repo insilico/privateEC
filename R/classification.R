@@ -91,7 +91,6 @@ getImportanceScores <- function(train.set=NULL,
                                               estimator = importance.algorithm)
     good.results <- TRUE
   }
-  # ----------------------------------------------------------------
   # if (learner.name == "epistasisrank") {
   #   if (verbose) cat("\tEpistasisRank train\n")
   #   train.imp <- epistasisRank(importance.options$train.regain, importance.options$priorknowledge)
@@ -103,7 +102,6 @@ getImportanceScores <- function(train.set=NULL,
   #   names(holdout.importance) <- importance.options$feature.names
   #   good.results <- TRUE
   # }
-  # ----------------------------------------------------------------
   if (!good.results) {
     stop("Variable importance ranker name [ ", importance.name, " ] not found or failed")
   }
@@ -116,17 +114,15 @@ getImportanceScores <- function(train.set=NULL,
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
-#' @param learner.name A list of learner parameters
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
-#' @param learner.name A character vector containg the learner algorithm name
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param learner.name A character vector containg the learner algorithm name
 #' @param rf.mtry An integer for the number of variables used for node splits
-#' @param num.rounds An integer for the number of cgboost rounds to perform
-#' @param max.depth An integer for the maximum tree depth
-#' @param learn.rate A numeric for the xgboost learning rate
-#' @param obj.func = "binary:logistic",
+#' @param xgb.max.depth A vector of integers for the maximum tree depth
+#' @param xgb.num.rounds = A vector of xgboost algorithm iterations
+#' @param xgb.shrinkage = A vector of xgboost shrinkage values 0-1
 #' @param start.temp A numeric EC starting temperature
 #' @param final.temp A numeric EC final temperature
 #' @param tau.param A numeric tau to control temperature reduction schedule
@@ -162,7 +158,7 @@ getImportanceScores <- function(train.set=NULL,
 #'                          label = sim.data$class.label,
 #'                          importance.name = "relieff",
 #'                          importance.algorithm = "ReliefFbestK",
-#'                          learner..name = "randomforest",
+#'                          learner.name = "randomforest",
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -171,7 +167,7 @@ getImportanceScores <- function(train.set=NULL,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
 #`                          learner.name = "xgboost",
-#                           max.depth = 5,
+#                           xgb.max.depth = 5,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -199,19 +195,18 @@ privateEC <- function(train.ds=NULL,
                       importance.name = "relieff",
                       importance.algorithm = "ReliefFbestK",
                       learner.name = "randomforest",
-                      rf.mtry = 5,
-                      num.rounds = 1,
-                      max.depth = 6,
-                      learn.rate = 1,
-                      obj.func = "binary:logistic",
-                      start.temp=0.1,
-                      final.temp=10 ^ (-5),
-                      tau.param=100,
-                      threshold=4 / sqrt(nrow(train.ds)),
-                      tolerance=1 / sqrt(nrow(train.ds)),
-                      signal.names=NULL,
-                      save.file=NULL,
-                      verbose=FALSE) {
+                      rf.mtry = NULL,
+                      xgb.num.rounds = c(1, 2, 3),
+                      xgb.max.depth = c(4, 8, 16),
+                      xgb.shrinkage = c(0.1, 0.5, 1.0),
+                      start.temp = 0.1,
+                      final.temp = 10 ^ (-5),
+                      tau.param = 100,
+                      threshold = 4 / sqrt(nrow(train.ds)),
+                      tolerance = 1 / sqrt(nrow(train.ds)),
+                      signal.names = NULL,
+                      save.file = NULL,
+                      verbose = FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
     stop("At least train and holdout data sets must be provided")
   }
@@ -229,13 +224,17 @@ privateEC <- function(train.ds=NULL,
       stop("Training and validation data sets must have the same variable (column) names")
     }
   }
+  if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
+    rf.mtry.valid <- max(floor(ncol(train.ds) / 3), 1)
+  } else {
+    rf.mtry.valid <- floor(sqrt(ncol(train.ds)))
+  }
   if (is.simulated & is.null(signal.names)) {
     warning("For correct detection of signals, 'signal.names' parameter is required")
   }
   num.data.rows <- nrow(train.ds)
   num.data.cols <- ncol(train.ds) - 1
   orig.var.names <- colnames(train.ds)
-  # ---------------------------------------------------------------------------
   ptm <- proc.time()
   cat("\nRunning the privateEC algorithm...\n")
   if (verbose) cat("running [", importance.name, "] importance for training and holdout sets\n")
@@ -294,7 +293,7 @@ privateEC <- function(train.ds=NULL,
     } else {
       current.var.names <- setdiff(current.var.names, var.names.to.remove)
       if (length(current.var.names) < 2) {
-        cat("\tsetdiff remove: last variable removed\n")
+        if (verbose) cat("\tsetdiff remove: last variable removed\n")
         keep.looping <- FALSE
         next
       }
@@ -308,10 +307,11 @@ privateEC <- function(train.ds=NULL,
     # run on the current set of variables - "update"
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
-      if (verbose) cat("\n\niteration [", current.iteration, " ] UPDATE [", num.updates,
-                       "] ", length(current.var.names), "current.temp > Tmin? [", current.temp, "] > [", Tmin, "]?\n")
+      cat("Iterations [", current.iteration, " ] Updates [", num.updates,
+          "] Is", length(current.var.names), "current.temp > Tmin? [", current.temp,
+          "] > [", Tmin, "]?\n")
       # re-compute imnportance
-      if (verbose) cat("\trecomputing scores with evaporated attributes removed\n")
+      if (verbose) cat("\tRecomputing scores with evaporated attributes removed\n")
       new.train.ds <- train.ds[, c(current.var.names, label)]
       new.holdout.ds <- holdout.ds[, c(current.var.names, label)]
       new.validation.ds <- validation.ds[, c(current.var.names, label)]
@@ -337,7 +337,7 @@ privateEC <- function(train.ds=NULL,
       # run the learner
       method.valid <- FALSE
       if (learner.name == "randomforest") {
-        if (verbose) cat("\trunning randomForest\n")
+        if (verbose) cat("\tRunning randomForest\n")
         rf.train.ds <- train.ds[, c(current.var.names, label)]
         rf.train.pheno <- factor(rf.train.ds[, label])
         if (any(is.na(rf.train.pheno))) {
@@ -345,15 +345,32 @@ privateEC <- function(train.ds=NULL,
           print(rf.train.pheno)
           stop("NAs detected in training phenotype")
         }
-        result.rf <- randomForest::randomForest(as.formula(paste(label, "~ .")),
-                                                data = rf.train.ds,
-                                                mtry = rf.mtry)
-        if (verbose) print(result.rf)
-        current.train.acc <- 1 - mean(result.rf$confusion[, "class.error"])
-
+        control <- caret::trainControl(method = "repeatedcv",
+                                       number = 10,
+                                       repeats = 3,
+                                       search = "grid")
+        if (is.null(rf.mtry)) {
+          if (ncol(rf.train.ds) < 10) {
+            tunegrid <- NULL
+          } else {
+            tunegrid = expand.grid(
+              mtry = c(max(floor(ncol(rf.train.ds)/3), 1), floor(sqrt(length(rf.train.pheno))))
+            )
+          }
+        } else {
+          tunegrid = expand.grid(mtry = rf.mtry)
+        }
+        #print(tunegrid)
+        rf.gridsearch <- caret::train(as.formula(paste(label, "~ .")),
+                                      data = rf.train.ds,
+                                      method = "rf",
+                                      metric = "Accuracy",
+                                      tuneGrid = tunegrid,
+                                      trControl = control)
+        #if (verbose & interactive()) plot(rf.gridsearch)
+        current.train.acc <- rf.gridsearch$results$Accuracy[which.max(rf.gridsearch$results$Accuracy)]
         if (verbose) cat("\tpredict holdout\n")
-        #new.holdout.ds[, label] <- factor(new.holdout.ds[, label])
-        holdout.pred <- predict(result.rf, newdata = new.holdout.ds)
+        holdout.pred <- predict(rf.gridsearch, newdata = new.holdout.ds)
         if (verbose) print(holdout.pred)
         if (verbose) print(new.holdout.ds[, label])
         current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
@@ -361,7 +378,7 @@ privateEC <- function(train.ds=NULL,
         if (!is.null(new.validation.ds)) {
           if (verbose) cat("\tpredict validation\n")
           if (verbose) print(new.validation.ds[, label])
-          validation.pred <- predict(result.rf, newdata = new.validation.ds)
+          validation.pred <- predict(rf.gridsearch, newdata = new.validation.ds)
           current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
         } else {
           current.validation.acc <- 0
@@ -373,9 +390,9 @@ privateEC <- function(train.ds=NULL,
         xgb.results <- xgboostRF(train.ds = new.train.ds,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
-                                 num.rounds = num.rounds,
-                                 max.depth =  max.depth,
-                                 learn.rate = learn.rate,
+                                 num.rounds = xgb.num.rounds,
+                                 max.depth =  xgb.max.depth,
+                                 shrinkage = xgb.shrinkage,
                                  label = label,
                                  verbose = verbose)
         current.train.acc <- xgb.results$algo.acc$train.acc
@@ -708,8 +725,8 @@ privateRF <- function(train.ds=NULL,
                       rf.mtry=NULL,
                       pec.file=NULL,
                       update.freq=50,
-                      threshold=4 / sqrt(nrow(holdout.ds)),
-                      tolerance=1 / sqrt(nrow(holdout.ds)),
+                      threshold=4 / sqrt(nrow(train.ds)),
+                      tolerance=1 / sqrt(nrow(train.ds)),
                       signal.names=NULL,
                       save.file=NULL,
                       verbose=FALSE) {
@@ -959,26 +976,26 @@ standardRF <- function(train.ds=NULL,
 #' xgboost random forests algorithm
 #'
 #' Scalable and Flexible Gradient Boosting
-#' XGBoost is short for “Extreme Gradient Boosting”, where the term “Gradient Boosting” is proposed in the paper
-#' Greedy Function Approximation: A Gradient Boosting Machine, by Friedman. XGBoost is based on this original model.
-#' This is a function using gradient boosted trees for privacyEC.
-#' .
+#' XGBoost is short for “Extreme Gradient Boosting”, where the term “Gradient Boosting”
+#' is proposed in the paper Greedy Function Approximation: A Gradient Boosting Machine,
+#' by Friedman. XGBoost is based on this original model. This is a function using gradient
+#' boosted trees for privacyEC.
+#'
 #' @param train.ds A data frame with training data and class labels
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
-#' @param rf.ntree An integer the number of trees in the random forest
-#' @param num.iter An integer number of xgboost iterations
 #' @param num.threads An integer for OpenMP number of cores
+#' @param num.rounds An integer number of xgboost boosting iterations
 #' @param max.depth An integer aximum tree depth
-#' @param learn.rate A numeric gradient learning rate 0-1
+#' @param shrinkage A numeric gradient learning rate 0-1
 #' @param save.file A character vector for results filename or NULL to skip
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
 #' \describe{
 #'   \item{algo.acc}{data frame of results, a row for each update}
 #'   \item{ggplot.data}{melted results data frame for plotting}
-#'   \item{correct}{number of variables detected correctly in each data set}
+#'   \item{trn.model}{xgboost model}
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
@@ -992,29 +1009,25 @@ standardRF <- function(train.ds=NULL,
 #'                              pct.holdout = 1 / 3,
 #'                              pct.validation = 1 / 3,
 #'                              verbose = FALSE)
-#' rra.results <- xgboostRF(train.ds=sim.data$train,
-#'                          holdout.ds=sim.data$holdout,
-#'                          validation.ds=sim.data$validation,
-#'                          label=sim.data$class.label,
-#'                          num.iter = 3,
-#'                          rf.ntree = 500,
-#'                          max.depth = 10,
-#'                          is.simulated=TRUE,
-#'                          verbose=FALSE,
-#'                          signal.names=sim.data$signal.names)
+#' rra.results <- xgboostRF(train.ds = sim.data$train,
+#'                          holdout.ds = sim.data$holdout,
+#'                          validation.ds = sim.data$validation,
+#'                          label = sim.data$class.label,
+#'                          num.rounds = c(1, 2, 3),
+#'                          max.depth = c(10),
+#'                          is.simulated = TRUE,
+#'                          verbose = FALSE,
+#'                          signal.names = sim.data$signal.names)
 #' @family classification
 #' @export
 xgboostRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
                       label="phenos",
-                      rf.ntree=500,
-                      rf.mtry=5,
-                      num.rounds=1,
-                      num.threads=1,
-                      max.depth=6,
-                      learn.rate=1,
-                      obj.func="binary:logistic",
+                      num.threads=2,
+                      num.rounds=c(1),
+                      max.depth=c(4),
+                      shrinkage = c(0.1, 0.5, 1.0),
                       save.file=NULL,
                       verbose=FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
@@ -1027,70 +1040,75 @@ xgboostRF <- function(train.ds=NULL,
   if ((pheno.col < 1) | (pheno.col > ncol(train.ds))) {
     stop("Could not find phenotype column with label [ ", label, " ]")
   }
-  # ----------------------------------------------------------------
   if (verbose) cat("Running xgboostRF\n")
   ptm <- proc.time()
   var.names <- colnames(train.ds[, -pheno.col])
-  train.data <- as.matrix(train.ds[, -pheno.col])
-  colnames(train.data) <- var.names
-  holdout.data <- as.matrix(holdout.ds[, -pheno.col])
-  colnames(holdout.data) <- var.names
-  train.pheno <- as.integer(train.ds[, pheno.col]) - 1
-  if (verbose) print(table(train.pheno))
-  holdout.pheno <- as.integer(holdout.ds[, pheno.col]) - 1
-  if (verbose) print(table(holdout.pheno))
-  # ----------------------------------------------------------------
-  xgb.train.ds <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-  xgb.holdo.ds <- xgboost::xgb.DMatrix(data = holdout.data, label = holdout.pheno)
-  cat("-----------------------------------\n",
-      "eta =",  learn.rate, "\n",
-      "nthread =",  num.threads, "\n",
-      "nrounds =", num.rounds, "\n",
-      "max.depth =", max.depth, "\n",
-      "objective =", obj.func, "\n",
-      "------------------------------------\n")
-  train.model <- xgboost::xgboost(data = xgb.train.ds,
-                                  eta = learn.rate,
-                                  nthread = num.threads,
-                                  nrounds = num.rounds,
-                                  max.depth = max.depth,
-                                  objective = obj.func)
-  if (verbose) cat("Computing variable importance\n")
-  importance.xgb <- xgboost::xgb.importance(model = train.model,
-                                            feature_names = colnames(xgb.train.ds))
-  if (verbose) print(importance.xgb)
-  importance.values <- as.numeric(importance.xgb$Gain)
-  names(importance.values) <- as.character(importance.xgb$Feature)
-  pred.prob <- predict(train.model, xgb.train.ds)
-  pred.bin <- as.numeric(pred.prob > 0.5)
-  rf.train.accu <- 1 - mean(pred.bin != train.pheno)
+  train_data <- as.matrix(train.ds[, -pheno.col])
+  colnames(train_data) <- var.names
+  train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  if (verbose) print(table(train_pheno))
+  holdout_data <- as.matrix(holdout.ds[, -pheno.col])
+  colnames(holdout_data) <- var.names
+  holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  if (verbose) print(table(holdout_pheno))
+  if (verbose) {
+    cat("-----------------------------------\n",
+        "In xgboostRF() called from private() with xgboost learner\n",
+        "nthread =",  num.threads, "\n",
+        "nrounds =", num.rounds, "\n",
+        "max.depth =", max.depth, "\n",
+        "eta =", shrinkage, "\n",
+        "------------------------------------\n")
+  }
+  xgb_grid_1 = expand.grid(
+    eta = shrinkage,
+    max_depth = max.depth,
+    nrounds = num.rounds,
+    gamma = 0,
+    colsample_bytree = 1,
+    min_child_weight = 1,
+    subsample = 1
+  )
+  # pack the training control parameters
+  xgb_trcontrol_1 = caret::trainControl(
+    method = "repeatedcv",
+    repeats = 1,
+    number = 3,
+    #summaryFunction = caret::twoClassSummary,
+    # set to TRUE for AUC to be computed
+    #classProbs = TRUE,
+    allowParallel = TRUE
+  )
+  # train the model for each parameter combination in the grid using CV to evaluate
+  cat("Running caret::train with cross validation and a grid of parameters to test\n")
+  train.model = caret::train(x = data.matrix(train_data),
+                             y = as.factor(train_pheno),
+                             trControl = xgb_trcontrol_1,
+                             tuneGrid = xgb_grid_1,
+                             method = "xgbTree",
+                             metric = "Accuracy",
+                             verbose = verbose)
+  pred.class <- predict(train.model, train.ds)
+  rf.train.accu <- 1 - mean(pred.class != train_pheno)
   cat("training-accuracy:", rf.train.accu, "\n")
-  # ----------------------------------------------------------------
   if (verbose) cat("Predict using the best tree\n")
-  pred.prob <- predict(train.model, xgb.holdo.ds)
-  pred.bin <- as.numeric(pred.prob > 0.5)
-  if (verbose) print(table(pred.bin))
-  rf.holdo.accu <- 1 - mean(pred.bin != holdout.pheno)
+  pred.class <- predict(train.model, holdout.ds)
+  if (verbose) print(table(pred.class))
+  rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
   cat("holdout-accuracy:", rf.holdo.accu, "\n")
-  # ----------------------------------------------------------------
   if (!is.null(validation.ds)) {
     cat("Preparing dating for prediction\n")
-    # print(validation.ds[, pheno.col])
-    validation.pheno <- as.integer(validation.ds[, pheno.col]) - 1
-    # print(validation.pheno)
-    validation.data <- as.matrix(validation.ds[, -pheno.col])
-    print(dim(validation.data))
-    colnames(validation.data) <- var.names
-    xgb.validation.ds <- xgboost::xgb.DMatrix(data = validation.data, label = validation.pheno)
-    rf.prob <- predict(train.model, xgb.validation.ds)
-    rf.bin <- as.numeric(rf.prob > 0.5)
-    if (verbose) print(table(rf.bin))
-    rf.validation.accu <- 1 - mean(rf.bin != validation.pheno)
-    cat("validation-accuracy:", rf.validation.accu, "\n")
+    validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+    validation_data <- as.matrix(validation.ds[, -pheno.col])
+    print(dim(validation_data))
+    colnames(validation_data) <- var.names
+    rf.class <- predict(train.model, validation.ds)
+    if (verbose) print(table(rf.class))
+    rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
   } else {
     rf.validation.accu <- 0
   }
-  # ----------------------------------------------------------------
+  cat("validation-accuracy:", rf.validation.accu, "\n")
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
     save(rf.validation.accu, rf.holdout.accu, file = save.file)
@@ -1101,7 +1119,6 @@ xgboostRF <- function(train.ds=NULL,
                           validation.acc = rf.validation.accu,
                           alg = 5)
   melted.xgb <- reshape2::melt(xgb.plots, id = c("vars.remain", "alg"))
-  # ----------------------------------------------------------------
   if (file.exists("xgboost.model")) {
     file.remove("xgboost.model")
   }
@@ -1110,6 +1127,5 @@ xgboostRF <- function(train.ds=NULL,
   list(algo.acc = xgb.plots,
        ggplot.data = melted.xgb,
        trn.model = train.model,
-       trn.importance = importance.values,
        elasped = elapsed.time)
 }

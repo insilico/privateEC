@@ -7,8 +7,8 @@
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 5,
   importance.name = "relieff", importance.algorithm = "ReliefFbestK",
-  learner.name = "randomforest", rf.mtry = 5, num.rounds = 1,
-  max.depth = 6, learn.rate = 1, obj.func = "binary:logistic",
+  learner.name = "randomforest", rf.mtry = NULL, xgb.num.rounds = c(1, 2,
+  3), xgb.max.depth = c(4, 8, 16), xgb.shrinkage = c(0.1, 0.5, 1),
   start.temp = 0.1, final.temp = 10^(-5), tau.param = 100,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
   signal.names = NULL, save.file = NULL, verbose = FALSE)
@@ -30,17 +30,15 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
 
-\item{learner.name}{A list of learner parameters}
+\item{learner.name}{A character vector containg the learner algorithm name}
 
 \item{rf.mtry}{An integer for the number of variables used for node splits}
 
-\item{num.rounds}{An integer for the number of cgboost rounds to perform}
+\item{xgb.num.rounds}{= A vector of xgboost algorithm iterations}
 
-\item{max.depth}{An integer for the maximum tree depth}
+\item{xgb.max.depth}{A vector of integers for the maximum tree depth}
 
-\item{learn.rate}{A numeric for the xgboost learning rate}
-
-\item{obj.func}{= "binary:logistic",}
+\item{xgb.shrinkage}{= A vector of xgboost shrinkage values 0-1}
 
 \item{start.temp}{A numeric EC starting temperature}
 
@@ -59,8 +57,6 @@ thresholdout’s supplementary material (Dwork, et al.,2015)}
 \item{save.file}{A character vector for results filename or NULL to skip}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
-
-\item{learner.name}{A character vector containg the learner algorithm name}
 }
 \value{
 A list with:
@@ -97,7 +93,7 @@ pec.results <- privateEC(train.ds = sim.data$train,
                          label = sim.data$class.label,
                          importance.name = "relieff",
                          importance.algorithm = "ReliefFbestK",
-                         learner..name = "randomforest",
+                         learner.name = "randomforest",
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)

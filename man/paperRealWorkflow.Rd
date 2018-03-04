@@ -41,9 +41,10 @@ The workflow consists of the sequence:
 \code{\link{originalThresholdout}}
 \code{\link{privateRF}}
 \code{\link{standardRF}} and
-\code{\link{compileResults}}. A comparison analysis with simulated data
+\code{\link{compileAndSaveAllResults}}. A comparison analysis with simulated data
 is in \code{\link{paperSimWorkflow}}.
 
-Other workflows: \code{\link{compileResults}},
-  \code{\link{paperSimWorkflow}}
+Other workflows: \code{\link{compileAndSaveAllResults}},
+  \code{\link{paperSimWorkflow}},
+  \code{\link{plotRunResults}}
 }

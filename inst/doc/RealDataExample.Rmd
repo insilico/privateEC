@@ -44,5 +44,21 @@ knitr::kable(real.result$algo.acc,
 ```
 
 ```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
-plotRunResults(real.result)
+# library(ggplot2)
+# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
+#   geom_point(size=1) + geom_line()
+plot(real.result$algo.acc$vars.remain, 
+     real.result$algo.acc$holdout.acc, 
+     col = "red", pch = 16, type = 'b', cex = 0.75, 
+     main = "One run of privateEC",
+     xlab = "Number of Attributes in Model",
+     ylab = "Accuracy")
+points(real.result$algo.acc$vars.remain, 
+       real.result$algo.acc$train.acc, 
+       col = "green", pch = 1, type = 'b', cex = 0.75)
+points(real.result$algo.acc$vars.remain, 
+       real.result$algo.acc$validation.acc, 
+       col = "blue", pch = 4, type = 'b', cex = 0.75)
+legend("topright", c("Train", "Holdout", "Test"), 
+       pch = c(16, 1, 4), col = c("red", "green", "blue"), cex = 0.75)
 ```

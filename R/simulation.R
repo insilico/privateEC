@@ -420,7 +420,7 @@ createSimulation <- function(num.samples=100,
   }
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)
-  signal.names <- paste("sig.var", 1:nbias, sep = "")
+  signal.names <- paste("simvar", 1:nbias, sep = "")
   background.names <- paste("var", 1:(num.variables - nbias), sep = "")
   var.names <- c(signal.names, background.names, class.label)
   colnames(dataset) <- var.names
@@ -430,13 +430,13 @@ createSimulation <- function(num.samples=100,
                              pct.validation = pct.validation,
                              class.label = class.label)
 
-  if(!is.null(save.file)) {
-    if(verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
+  if (!is.null(save.file)) {
+    if (verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
     save(split.data, pct.signals, bias, sim.type, file = save.file)
   }
 
   elapsed <- (proc.time() - ptm)[3]
-  if(verbose) cat("createSimulation elapsed time:", elapsed, "\n")
+  if (verbose) cat("createSimulation elapsed time:", elapsed, "\n")
 
   list(train = split.data$train,
        holdout = split.data$holdout,

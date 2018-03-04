@@ -5,9 +5,9 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", rf.ntree = 500, rf.mtry = 5, num.rounds = 1,
-  num.threads = 1, max.depth = 6, learn.rate = 1,
-  obj.func = "binary:logistic", save.file = NULL, verbose = FALSE)
+  label = "phenos", num.threads = 2, num.rounds = c(1),
+  max.depth = c(4), shrinkage = c(0.1, 0.5, 1), save.file = NULL,
+  verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -18,35 +18,33 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{label}{A character vector of the class variable column name}
 
-\item{rf.ntree}{An integer the number of trees in the random forest}
-
 \item{num.threads}{An integer for OpenMP number of cores}
+
+\item{num.rounds}{An integer number of xgboost boosting iterations}
 
 \item{max.depth}{An integer aximum tree depth}
 
-\item{learn.rate}{A numeric gradient learning rate 0-1}
+\item{shrinkage}{A numeric gradient learning rate 0-1}
 
 \item{save.file}{A character vector for results filename or NULL to skip}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
-
-\item{num.iter}{An integer number of xgboost iterations}
 }
 \value{
 A list containing:
 \describe{
   \item{algo.acc}{data frame of results, a row for each update}
   \item{ggplot.data}{melted results data frame for plotting}
-  \item{correct}{number of variables detected correctly in each data set}
+  \item{trn.model}{xgboost model}
   \item{elapsed}{total elapsed time}
 }
 }
 \description{
 Scalable and Flexible Gradient Boosting
-XGBoost is short for “Extreme Gradient Boosting”, where the term “Gradient Boosting” is proposed in the paper
-Greedy Function Approximation: A Gradient Boosting Machine, by Friedman. XGBoost is based on this original model.
-This is a function using gradient boosted trees for privacyEC.
-.
+XGBoost is short for “Extreme Gradient Boosting”, where the term “Gradient Boosting”
+is proposed in the paper Greedy Function Approximation: A Gradient Boosting Machine,
+by Friedman. XGBoost is based on this original model. This is a function using gradient
+boosted trees for privacyEC.
 }
 \examples{
 num.samples <- 100
@@ -59,16 +57,15 @@ sim.data <- createSimulation(num.variables = num.variables,
                              pct.holdout = 1 / 3,
                              pct.validation = 1 / 3,
                              verbose = FALSE)
-rra.results <- xgboostRF(train.ds=sim.data$train,
-                         holdout.ds=sim.data$holdout,
-                         validation.ds=sim.data$validation,
-                         label=sim.data$class.label,
-                         num.iter = 3,
-                         rf.ntree = 500,
-                         max.depth = 10,
-                         is.simulated=TRUE,
-                         verbose=FALSE,
-                         signal.names=sim.data$signal.names)
+rra.results <- xgboostRF(train.ds = sim.data$train,
+                         holdout.ds = sim.data$holdout,
+                         validation.ds = sim.data$validation,
+                         label = sim.data$class.label,
+                         num.rounds = c(1, 2, 3),
+                         max.depth = c(10),
+                         is.simulated = TRUE,
+                         verbose = FALSE,
+                         signal.names = sim.data$signal.names)
 }
 \seealso{
 Other classification: \code{\link{epistasisRank}},

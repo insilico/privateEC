@@ -51,27 +51,10 @@ pec.result <- privateEC(train.ds = data.sets$train,
 ```
 
 ```{r, echo=FALSE}
-knitr::kable(pec.result$algo.acc, caption="Algorithm Iterations",
-             row.names=FALSE, digits=3)
+knitr::kable(pec.result$algo.acc, caption = "Algorithm Iterations",
+             row.names = FALSE, digits = 3)
 ```
 
 ```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
-# library(ggplot2)
-# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
-#   geom_point(size=1) + geom_line()
-plot(pec.result$algo.acc$vars.remain, 
-     pec.result$algo.acc$holdout.acc, 
-     col="red", pch=16, type='b', cex=0.75, 
-     main="One run of privateEC",
-     ylim=c(0.05, 1.0), 
-     xlab="Number of Attributes in Model",
-     ylab="Accuracy")
-points(pec.result$algo.acc$vars.remain, 
-       pec.result$algo.acc$train.acc, 
-       col="green", pch=1, type='b', cex=0.75)
-points(pec.result$algo.acc$vars.remain, 
-       pec.result$algo.acc$validation.acc, 
-       col="blue", pch=4, type='b', cex=0.75)
-legend("topright", c("Train", "Holdout", "Test"), 
-       pch=c(16, 1, 4), col=c("red", "green", "blue"), cex=0.75)
+plotRunResults(pec.result)
 ```

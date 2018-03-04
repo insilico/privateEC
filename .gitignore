@@ -26,3 +26,7 @@ xgboost.model
 # generated documentation vignettes
 vignettes/*.R
 vignettes/*.html
+vignettes/*.pdf
+# inst/doc
+inst/doc/
+

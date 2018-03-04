@@ -9,7 +9,6 @@ test_that("privateEC returns sane results - Relief-F + randomForest", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  rf.ntree <- 500
   rf.mtry <- 5
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
@@ -38,7 +37,6 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
-  ntree <- 500
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
                                pct.signals = pct.signals,
@@ -52,15 +50,14 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
                            validation.ds = sim.data$validation,
                            label = sim.data$class.label,
                            importance.name = "relieff",
-                           rf.mtry = 5,
+                           importance.algorithm = "ReliefFBestK",
                            learner.name = "xgboost",
-                           num.rounds = 1,
-                           max.depth = 4,
-                           learn.rate = 0.4,
-                           obj.func = "binary:logistic",
+                           xgb.num.rounds = c(1, 2, 3),
+                           xgb.max.depth = c(4, 8, 16),
+                           xgb.shrinkage = c(0.1, 0.5, 1.0),
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
-                           verbose = TRUE)
+                           verbose = FALSE)
   expect_equal(ncol(pec.results$algo.acc), 5)
   expect_equal(ncol(pec.results$ggplot.data), 4)
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
