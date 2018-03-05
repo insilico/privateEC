@@ -34,11 +34,11 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{rf.mtry}{An integer for the number of variables used for node splits}
 
-\item{xgb.num.rounds}{= A vector of xgboost algorithm iterations}
+\item{xgb.num.rounds}{= A vector of integers for xgboost algorithm iterations}
 
-\item{xgb.max.depth}{A vector of integers for the maximum tree depth}
+\item{xgb.max.depth}{A vector of integers for the xboost maximum tree depth}
 
-\item{xgb.shrinkage}{= A vector of xgboost shrinkage values 0-1}
+\item{xgb.shrinkage}{= A vector of numerics for xgboost shrinkage values 0-1}
 
 \item{start.temp}{A numeric EC starting temperature}
 

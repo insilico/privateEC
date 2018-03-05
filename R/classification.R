@@ -120,9 +120,9 @@ getImportanceScores <- function(train.set=NULL,
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param learner.name A character vector containg the learner algorithm name
 #' @param rf.mtry An integer for the number of variables used for node splits
-#' @param xgb.max.depth A vector of integers for the maximum tree depth
-#' @param xgb.num.rounds = A vector of xgboost algorithm iterations
-#' @param xgb.shrinkage = A vector of xgboost shrinkage values 0-1
+#' @param xgb.max.depth A vector of integers for the xboost maximum tree depth
+#' @param xgb.num.rounds = A vector of integers for xgboost algorithm iterations
+#' @param xgb.shrinkage = A vector of numerics for xgboost shrinkage values 0-1
 #' @param start.temp A numeric EC starting temperature
 #' @param final.temp A numeric EC final temperature
 #' @param tau.param A numeric tau to control temperature reduction schedule
@@ -307,7 +307,7 @@ privateEC <- function(train.ds=NULL,
     # run on the current set of variables - "update"
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
-      cat("Iterations [", current.iteration, " ] Updates [", num.updates,
+      cat("pEC Iteration [", current.iteration, " ] Temp Updates [", num.updates,
           "] Is", length(current.var.names), "current.temp > Tmin? [", current.temp,
           "] > [", Tmin, "]?\n")
       # re-compute imnportance
@@ -943,7 +943,7 @@ standardRF <- function(train.ds=NULL,
                                           data = rbind(train.ds, holdout.ds),
                                           ntree = rf.ntree,
                                           mtry = param.mtry,
-                                          importance = T)
+                                          importance = TRUE)
   # rf.holdo.accu <- 1- bag.simul$prediction.error
   rf.holdout.accu <- 1 - mean(bag.simul$confusion[, "class.error"])
   if (is.simulated) {
@@ -1080,7 +1080,7 @@ xgboostRF <- function(train.ds=NULL,
     allowParallel = TRUE
   )
   # train the model for each parameter combination in the grid using CV to evaluate
-  cat("Running caret::train with cross validation and a grid of parameters to test\n")
+  if (verbose) cat("Running caret::train with cross validation and a grid of parameters to test\n")
   train.model = caret::train(x = data.matrix(train_data),
                              y = as.factor(train_pheno),
                              trControl = xgb_trcontrol_1,
@@ -1090,17 +1090,17 @@ xgboostRF <- function(train.ds=NULL,
                              verbose = verbose)
   pred.class <- predict(train.model, train.ds)
   rf.train.accu <- 1 - mean(pred.class != train_pheno)
-  cat("training-accuracy:", rf.train.accu, "\n")
+  if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
   if (verbose) cat("Predict using the best tree\n")
   pred.class <- predict(train.model, holdout.ds)
   if (verbose) print(table(pred.class))
   rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
-  cat("holdout-accuracy:", rf.holdo.accu, "\n")
+  if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
   if (!is.null(validation.ds)) {
-    cat("Preparing dating for prediction\n")
+    if (verbose) cat("Preparing dating for prediction\n")
     validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
     validation_data <- as.matrix(validation.ds[, -pheno.col])
-    print(dim(validation_data))
+    if (verbose) print(dim(validation_data))
     colnames(validation_data) <- var.names
     rf.class <- predict(train.model, validation.ds)
     if (verbose) print(table(rf.class))
@@ -1108,7 +1108,7 @@ xgboostRF <- function(train.ds=NULL,
   } else {
     rf.validation.accu <- 0
   }
-  cat("validation-accuracy:", rf.validation.accu, "\n")
+  if (verbose) cat("validation-accuracy:", rf.validation.accu, "\n")
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
     save(rf.validation.accu, rf.holdout.accu, file = save.file)
