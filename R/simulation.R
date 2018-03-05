@@ -420,6 +420,10 @@ createSimulation <- function(num.samples=100,
   }
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)
+  # BEWARE - DO NOT BE TEMPTED TO USE COLNAMES WITH '.' IN THE NAME 'sim.var1',
+  # Removed it altogether; put 'sim' together with 'var' for 'simvar1' instead
+  # Not technically allowed but tolerated by R, see make.names() - bcw - 3/4/18
+  # Exanple: vgboost does not allow for certain functions using these names
   signal.names <- paste("simvar", 1:nbias, sep = "")
   background.names <- paste("var", 1:(num.variables - nbias), sep = "")
   var.names <- c(signal.names, background.names, class.label)

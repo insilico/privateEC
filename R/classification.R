@@ -5,53 +5,6 @@
 # classification with Relief-F and Random Forests
 # https://doi.org/10.1093/bioinformatics/btx298
 
-#' Compute and return epistasis rank scores
-#'
-#' Modified SNPrank function
-#'
-#' @param G Am adjacency matrix
-#' @param Gamma_vec A vector of prior knowledge
-#' @family classification
-#' @export
-epistasisRank <- function(G, Gamma_vec) {
-  n <- nrow(G)
-  geneNames <- colnames(G)
-  Gdiag <- diag(G)
-  Gtrace <- sum(Gdiag)
-  #colsum <- colSums(G)
-  diag(G) <- 0
-  Gtrace <- Gtrace * n
-  colsumG <- colSums(G)
-  #rowSumG <- rowSums(G)
-  rowsum_denom <- matrix(0, n, 1)
-  for (current.iteration in 1:n) {
-    localSum <- 0
-    for (j in 1:n) {
-      factor <- ifelse(G[current.iteration, j] != 0, 1, 0)
-      localSum <- localSum + (factor * colsumG[j])
-    }
-    rowsum_denom[current.iteration] <- localSum
-  }
-  #   gamma_vec <- rep(gamma, n)
-  gamma_vec <- Gamma_vec
-  gamma_matrix <- matrix(nrow = n, ncol = n, data = rep(gamma_vec, n))
-  if (Gtrace) {
-    b <- ((1 - gamma_vec)/n) + (Gdiag/Gtrace)
-  }
-  else {
-    b <- ((1 - gamma_vec)/n)
-  }
-  D <- matrix(nrow = n, ncol = n, data = c(0))
-  diag(D) <- 1/colsumG
-  I <- diag(n)
-  temp <- I - gamma_matrix * G %*% D
-  r <- solve(temp, b)
-  final.ranks <- r/sum(r)
-  saveTable <- data.frame(gene = geneNames, rank = final.ranks)
-  sortedTable <- saveTable[order(saveTable$snprank, decreasing = TRUE), ]
-  sortedTable
-}
-
 #' Compute and return importance scores (Relief-F scores)
 #'
 #' @param train.set A training data frame with last column as class
@@ -157,7 +110,6 @@ getImportanceScores <- function(train.set=NULL,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
 #'                          importance.name = "relieff",
-#'                          importance.algorithm = "ReliefFbestK",
 #'                          learner.name = "randomforest",
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
@@ -185,13 +137,13 @@ getImportanceScores <- function(train.set=NULL,
 #' \href{http://insilico.utulsa.edu/index.php/privateec/}{Insilico Lab privateEC Page}
 #' @family classification
 #' @export
-privateEC <- function(train.ds=NULL,
-                      holdout.ds=NULL,
-                      validation.ds=NULL,
-                      label="phenos",
-                      is.simulated=TRUE,
-                      bias=0.4,
-                      update.freq=5,
+privateEC <- function(train.ds = NULL,
+                      holdout.ds = NULL,
+                      validation.ds = NULL,
+                      label = "phenos",
+                      is.simulated = TRUE,
+                      bias = 0.4,
+                      update.freq = 5,
                       importance.name = "relieff",
                       importance.algorithm = "ReliefFbestK",
                       learner.name = "randomforest",
@@ -200,7 +152,7 @@ privateEC <- function(train.ds=NULL,
                       xgb.max.depth = c(4, 8, 16),
                       xgb.shrinkage = c(0.1, 0.5, 1.0),
                       start.temp = 0.1,
-                      final.temp = 10 ^ (-5),
+                      final.temp = 0.00001,
                       tau.param = 100,
                       threshold = 4 / sqrt(nrow(train.ds)),
                       tolerance = 1 / sqrt(nrow(train.ds)),
@@ -249,7 +201,7 @@ privateEC <- function(train.ds=NULL,
     stop("Importance method [", importance.name, "] is not recognized")
   }
   if (length(initial.scores) != 2) {
-    stop("Could not get importance scores")
+    stop("Could not get two vectors of importance scores for train and holdout data sets")
   }
   if (verbose) cat("private EC importance:", importance.name,
                    "elapsed time:", (proc.time() - ptm)[3], "\n")
@@ -268,7 +220,7 @@ privateEC <- function(train.ds=NULL,
   correct.detect.ec <- vector(mode = "numeric")
   current.var.names <- orig.var.names
   prev.var.names <- current.var.names
-  if (verbose) cat("private EC optimization loop\n")
+  if (verbose) cat("privateEC optimization loop begin\n")
   T0 <- start.temp
   Tmin <- final.temp
   tau <- tau.param
@@ -276,6 +228,14 @@ privateEC <- function(train.ds=NULL,
   current.iteration <- 1
   num.updates <- 0
   keep.looping <- ifelse(length(current.var.names) > 1, TRUE, FALSE)
+  algo.hist <- data.frame()
+  algo.hist <- rbind(algo.hist,
+    data.frame(iter = current.iteration,
+               update = num.updates,
+               numvars =  length(current.var.names),
+               temp = current.temp,
+               tmpmin = Tmin)
+  )
   while (keep.looping & (current.temp > Tmin)) {
     diff <- diff.scores * (diff.scores > 10^(-3)) + 10^(-3) * (diff.scores < 10^(-3))
     PAs <- exp(-q1.scores / (2 * diff * current.temp))
@@ -307,9 +267,16 @@ privateEC <- function(train.ds=NULL,
     # run on the current set of variables - "update"
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
-      cat("pEC Iteration [", current.iteration, " ] Temp Updates [", num.updates,
-          "] Is", length(current.var.names), "current.temp > Tmin? [", current.temp,
-          "] > [", Tmin, "]?\n")
+      cat("pEC Iteration [", current.iteration, "] Temp Updates [", num.updates, "]",
+          "Is", length(current.var.names), "current.temp > [", current.temp, "] >",
+          "Tmin? [", Tmin, "]?\n")
+      algo.hist <- rbind(algo.hist,
+                         data.frame(iter = current.iteration,
+                                    update = num.updates,
+                                    numvars =  length(current.var.names),
+                                    temp = current.temp,
+                                    tmpmin = Tmin)
+      )
       # re-compute imnportance
       if (verbose) cat("\tRecomputing scores with evaporated attributes removed\n")
       new.train.ds <- train.ds[, c(current.var.names, label)]
@@ -476,7 +443,8 @@ privateEC <- function(train.ds=NULL,
        ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
        elasped = elapsed.time,
-       atts.remain = current.var.names)
+       atts.remain = current.var.names,
+       updates = algo.hist)
 }
 
 #' Original Thresholdout algorithm
@@ -1128,4 +1096,51 @@ xgboostRF <- function(train.ds=NULL,
        ggplot.data = melted.xgb,
        trn.model = train.model,
        elasped = elapsed.time)
+}
+
+#' Compute and return epistasis rank scores
+#'
+#' Modified SNPrank function
+#'
+#' @param G Am adjacency matrix
+#' @param Gamma_vec A vector of prior knowledge
+#' @family classification
+#' @export
+epistasisRank <- function(G, Gamma_vec) {
+  n <- nrow(G)
+  geneNames <- colnames(G)
+  Gdiag <- diag(G)
+  Gtrace <- sum(Gdiag)
+  #colsum <- colSums(G)
+  diag(G) <- 0
+  Gtrace <- Gtrace * n
+  colsumG <- colSums(G)
+  #rowSumG <- rowSums(G)
+  rowsum_denom <- matrix(0, n, 1)
+  for (current.iteration in 1:n) {
+    localSum <- 0
+    for (j in 1:n) {
+      factor <- ifelse(G[current.iteration, j] != 0, 1, 0)
+      localSum <- localSum + (factor * colsumG[j])
+    }
+    rowsum_denom[current.iteration] <- localSum
+  }
+  #   gamma_vec <- rep(gamma, n)
+  gamma_vec <- Gamma_vec
+  gamma_matrix <- matrix(nrow = n, ncol = n, data = rep(gamma_vec, n))
+  if (Gtrace) {
+    b <- ((1 - gamma_vec)/n) + (Gdiag/Gtrace)
+  }
+  else {
+    b <- ((1 - gamma_vec)/n)
+  }
+  D <- matrix(nrow = n, ncol = n, data = c(0))
+  diag(D) <- 1/colsumG
+  I <- diag(n)
+  temp <- I - gamma_matrix * G %*% D
+  r <- solve(temp, b)
+  final.ranks <- r/sum(r)
+  saveTable <- data.frame(gene = geneNames, rank = final.ranks)
+  sortedTable <- saveTable[order(saveTable$snprank, decreasing = TRUE), ]
+  sortedTable
 }
