@@ -72,6 +72,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param learner.name A character vector containg the learner algorithm name
+#' @param learner.cv An integer for the number of cross validation folds
 #' @param rf.mtry An integer for the number of variables used for node splits
 #' @param xgb.max.depth A vector of integers for the xboost maximum tree depth
 #' @param xgb.num.rounds = A vector of integers for xgboost algorithm iterations
@@ -147,10 +148,11 @@ privateEC <- function(train.ds = NULL,
                       importance.name = "relieff",
                       importance.algorithm = "ReliefFbestK",
                       learner.name = "randomforest",
+                      learner.cv = 10,
                       rf.mtry = NULL,
-                      xgb.num.rounds = c(1, 2, 3),
-                      xgb.max.depth = c(4, 8, 16),
-                      xgb.shrinkage = c(0.1, 0.5, 1.0),
+                      xgb.num.rounds = c(1),
+                      xgb.max.depth = c(4),
+                      xgb.shrinkage = c(1.0),
                       start.temp = 0.1,
                       final.temp = 0.00001,
                       tau.param = 100,
@@ -312,9 +314,8 @@ privateEC <- function(train.ds = NULL,
           print(rf.train.pheno)
           stop("NAs detected in training phenotype")
         }
-        control <- caret::trainControl(method = "repeatedcv",
-                                       number = 10,
-                                       repeats = 3,
+        control <- caret::trainControl(method = "cv",
+                                       number = learner.cv,
                                        search = "grid")
         if (is.null(rf.mtry)) {
           if (ncol(rf.train.ds) < 10) {
@@ -357,6 +358,7 @@ privateEC <- function(train.ds = NULL,
         xgb.results <- xgboostRF(train.ds = new.train.ds,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
+                                 cv.folds = learner.cv,
                                  num.rounds = xgb.num.rounds,
                                  max.depth =  xgb.max.depth,
                                  shrinkage = xgb.shrinkage,
@@ -953,6 +955,7 @@ standardRF <- function(train.ds=NULL,
 #' @param holdout.ds A data frame with holdout data and class labels
 #' @param validation.ds A data frame with validation data and class labels
 #' @param label A character vector of the class variable column name
+#' @param cv.folds An integer for the number of cross validation folds
 #' @param num.threads An integer for OpenMP number of cores
 #' @param num.rounds An integer number of xgboost boosting iterations
 #' @param max.depth An integer aximum tree depth
@@ -981,7 +984,7 @@ standardRF <- function(train.ds=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$class.label,
-#'                          num.rounds = c(1, 2, 3),
+#'                          num.rounds = c(1),
 #'                          max.depth = c(10),
 #'                          is.simulated = TRUE,
 #'                          verbose = FALSE,
@@ -992,10 +995,11 @@ xgboostRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
                       label="phenos",
-                      num.threads=2,
-                      num.rounds=c(1),
-                      max.depth=c(4),
-                      shrinkage = c(0.1, 0.5, 1.0),
+                      cv.folds = 10,
+                      num.threads = 2,
+                      num.rounds = c(1),
+                      max.depth = c(4),
+                      shrinkage = c(1.0),
                       save.file=NULL,
                       verbose=FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
@@ -1039,9 +1043,8 @@ xgboostRF <- function(train.ds=NULL,
   )
   # pack the training control parameters
   xgb_trcontrol_1 = caret::trainControl(
-    method = "repeatedcv",
-    repeats = 1,
-    number = 3,
+    method = "cv",
+    number = cv.folds,
     #summaryFunction = caret::twoClassSummary,
     # set to TRUE for AUC to be computed
     #classProbs = TRUE,

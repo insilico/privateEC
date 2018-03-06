@@ -33,7 +33,7 @@ test_that("privateEC returns sane results - Relief-F + randomForest", {
   expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
 })
 
-test_that("privateEC returns sane results - Relief-F + xgboost", {
+test_that("privateEC returns sane results - Relief-F + xgboost fixed parameters", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -45,6 +45,10 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
                                pct.validation = 1 / 3,
                                sim.type = "mainEffect",
                                verbose = FALSE)
+  # use of scalars reduces grid search to one dimension
+  hyper.rounds <- 1
+  hyper.depth <- 4
+  hyper.shrink <- 1.0
   pec.results <- privateEC(train.ds = sim.data$train,
                            holdout.ds = sim.data$holdout,
                            validation.ds = sim.data$validation,
@@ -52,9 +56,43 @@ test_that("privateEC returns sane results - Relief-F + xgboost", {
                            importance.name = "relieff",
                            importance.algorithm = "ReliefFBestK",
                            learner.name = "xgboost",
-                           xgb.num.rounds = c(1, 2, 3),
-                           xgb.max.depth = c(4, 8, 16),
-                           xgb.shrinkage = c(0.1, 0.5, 1.0),
+                           xgb.num.rounds = hyper.rounds,
+                           xgb.max.depth = hyper.depth,
+                           xgb.shrinkage = hyper.shrink,
+                           is.simulated = TRUE,
+                           signal.names = sim.data$signal.names,
+                           verbose = FALSE)
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
+})
+
+test_that("privateEC returns sane results - Relief-F + xgboost with hyperparameter optimization", {
+  num.samples <- 100
+  num.variables <- 100
+  pct.signals <- 0.1
+  sim.data <- createSimulation(num.samples = num.samples,
+                               num.variables = num.variables,
+                               pct.signals = pct.signals,
+                               pct.train = 1 / 3,
+                               pct.holdout = 1 / 3,
+                               pct.validation = 1 / 3,
+                               sim.type = "mainEffect",
+                               verbose = FALSE)
+  # use vectors to perform grid search on the parameters
+  hyper.rounds <- c(1, 2, 3)
+  hyper.depth <- c(2, 4, 8)
+  hyper.shrink <- c(0.1, 0.5, 1.0)
+  pec.results <- privateEC(train.ds = sim.data$train,
+                           holdout.ds = sim.data$holdout,
+                           validation.ds = sim.data$validation,
+                           label = sim.data$class.label,
+                           importance.name = "relieff",
+                           importance.algorithm = "ReliefFBestK",
+                           learner.name = "xgboost",
+                           xgb.num.rounds = hyper.rounds,
+                           xgb.max.depth = hyper.depth,
+                           xgb.shrinkage = hyper.shrink,
                            is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
                            verbose = FALSE)

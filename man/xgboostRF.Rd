@@ -5,9 +5,8 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", num.threads = 2, num.rounds = c(1),
-  max.depth = c(4), shrinkage = c(0.1, 0.5, 1), save.file = NULL,
-  verbose = FALSE)
+  label = "phenos", cv.folds = 10, num.threads = 2, num.rounds = c(1),
+  max.depth = c(4), shrinkage = c(1), save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}
@@ -17,6 +16,8 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{validation.ds}{A data frame with validation data and class labels}
 
 \item{label}{A character vector of the class variable column name}
+
+\item{cv.folds}{An integer for the number of cross validation folds}
 
 \item{num.threads}{An integer for OpenMP number of cores}
 
@@ -61,7 +62,7 @@ rra.results <- xgboostRF(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
                          label = sim.data$class.label,
-                         num.rounds = c(1, 2, 3),
+                         num.rounds = c(1),
                          max.depth = c(10),
                          is.simulated = TRUE,
                          verbose = FALSE,

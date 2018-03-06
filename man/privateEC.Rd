@@ -7,8 +7,8 @@
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 5,
   importance.name = "relieff", importance.algorithm = "ReliefFbestK",
-  learner.name = "randomforest", rf.mtry = NULL, xgb.num.rounds = c(1, 2,
-  3), xgb.max.depth = c(4, 8, 16), xgb.shrinkage = c(0.1, 0.5, 1),
+  learner.name = "randomforest", learner.cv = 10, rf.mtry = NULL,
+  xgb.num.rounds = c(1), xgb.max.depth = c(4), xgb.shrinkage = c(1),
   start.temp = 0.1, final.temp = 1e-05, tau.param = 100,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
   signal.names = NULL, save.file = NULL, verbose = FALSE)
@@ -31,6 +31,8 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
 
 \item{learner.name}{A character vector containg the learner algorithm name}
+
+\item{learner.cv}{An integer for the number of cross validation folds}
 
 \item{rf.mtry}{An integer for the number of variables used for node splits}
 
