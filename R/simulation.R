@@ -375,7 +375,7 @@ createSimulation <- function(num.samples=100,
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
     my.sim.data <- simulateData(n.e=num.variables,
-                                n.db=3 * num.samples,
+                                n.db=num.samples,
                                 sd.b=bias,
                                 p.b=pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
@@ -385,7 +385,7 @@ createSimulation <- function(num.samples=100,
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
     dataset <- createDiffCoexpMatrixNoME(M=num.variables,
-                                         N=3 * num.samples,
+                                         N=num.samples,
                                          meanExpression=7,
                                          A=myA,
                                          randSdNoise=1,
@@ -399,7 +399,7 @@ createSimulation <- function(num.samples=100,
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
     dataset <- createDiffCoexpMatrixNoME(M=num.variables,
-                                         N=3 * num.samples,
+                                         N=num.samples,
                                          meanExpression=7,
                                          A=myA,
                                          randSdNoise=1,
