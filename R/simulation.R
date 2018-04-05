@@ -386,37 +386,37 @@ createSimulation <- function(num.samples=100,
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- createMainEffects(n.e = num.variables,
-                                     n.db = 3 * num.samples,
-                                     sd.b = bias,
-                                     p.b = pct.signals)$db
+    my.sim.data <- simulateData(n.e=num.variables,
+                                n.db=num.samples,
+                                sd.b=bias,
+                                p.b=pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
   } else if (sim.type == "interactionScalefree") {
     # interaction simulation: scale-free
     g <- igraph::barabasi.game(num.variables, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M = num.variables,
-                                  N = 3 * num.samples,
-                                  meanExpression = 7,
-                                  A = myA,
-                                  randSdNoise = 1,
-                                  sdNoise = bias,
-                                  sampleIndicesInteraction = 1:nbias)
-  } else if (sim.type == "interactionErdos") {
+    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+                                         N=num.samples,
+                                         meanExpression=7,
+                                         A=myA,
+                                         randSdNoise=1,
+                                         sdNoise=bias,
+                                         sampleIndicesInteraction=1:nbias)
+  } else if(sim.type == "interactionErdos") {
     attach.prob <- 0.1
     g <- igraph::erdos.renyi.game(num.variables, attach.prob)
     #   foo <- printIGraphStats(g)
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M = num.variables,
-                                  N = 3 * num.samples,
-                                  meanExpression = 7,
-                                  A = myA,
-                                  randSdNoise = 1,
-                                  sdNoise = bias,
-                                  sampleIndicesInteraction = 1:nbias)
+    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
+                                         N=num.samples,
+                                         meanExpression=7,
+                                         A=myA,
+                                         randSdNoise=1,
+                                         sdNoise=bias,
+                                         sampleIndicesInteraction=1:nbias)
   }
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)
