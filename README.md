@@ -13,10 +13,12 @@ Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017.
 
 # Installation
 
-> library(devtools)
-> install_github("insilico/privateEC") 
-> library(privateEC)
-> vignette("Example1")
+```
+library(devtools)
+install_github("insilico/privateEC") 
+library(privateEC)
+vignette("Example1")
+```
 
 # Abstract
 
