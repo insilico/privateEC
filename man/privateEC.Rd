@@ -7,11 +7,12 @@
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 5,
   importance.name = "relieff", importance.algorithm = "ReliefFbestK",
-  learner.name = "randomforest", learner.cv = 10, rf.mtry = NULL,
-  xgb.num.rounds = c(1), xgb.max.depth = c(4), xgb.shrinkage = c(1),
-  start.temp = 0.1, final.temp = 1e-05, tau.param = 100,
-  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
-  signal.names = NULL, save.file = NULL, verbose = FALSE)
+  learner.name = "randomforest", learner.cv = NULL, rf.mtry = NULL,
+  rf.ntree = 500, xgb.num.rounds = c(1), xgb.max.depth = c(4),
+  xgb.shrinkage = c(1), start.temp = 0.1, final.temp = 1e-05,
+  tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
+  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and class labels}

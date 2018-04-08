@@ -386,10 +386,10 @@ createSimulation <- function(num.samples=100,
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- simulateData(n.e=num.variables,
-                                n.db=num.samples,
-                                sd.b=bias,
-                                p.b=pct.signals)$db
+    my.sim.data <- createMainEffects(n.e=num.variables,
+                                     n.db=num.samples,
+                                     sd.b=bias,
+                                     p.b=pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
   } else if (sim.type == "interactionScalefree") {
     # interaction simulation: scale-free

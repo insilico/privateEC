@@ -5,7 +5,7 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", cv.folds = 10, num.threads = 2, num.rounds = c(1),
+  label = "phenos", cv.folds = NULL, num.threads = 2, num.rounds = c(1),
   max.depth = c(4), shrinkage = c(1), save.file = NULL, verbose = FALSE)
 }
 \arguments{
