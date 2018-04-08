@@ -148,8 +148,9 @@ privateEC <- function(train.ds = NULL,
                       importance.name = "relieff",
                       importance.algorithm = "ReliefFbestK",
                       learner.name = "randomforest",
-                      learner.cv = 10,
+                      learner.cv = NULL,
                       rf.mtry = NULL,
+                      rf.ntree=500,
                       xgb.num.rounds = c(1),
                       xgb.max.depth = c(4),
                       xgb.shrinkage = c(1.0),
@@ -229,6 +230,7 @@ privateEC <- function(train.ds = NULL,
   current.temp <- T0
   current.iteration <- 1
   num.updates <- 0
+  var.names <- list()
   keep.looping <- ifelse(length(current.var.names) > 1, TRUE, FALSE)
   algo.hist <- data.frame()
   algo.hist <- rbind(algo.hist,
@@ -314,31 +316,46 @@ privateEC <- function(train.ds = NULL,
           print(rf.train.pheno)
           stop("NAs detected in training phenotype")
         }
-        control <- caret::trainControl(method = "cv",
-                                       number = learner.cv,
-                                       search = "grid")
-        if (is.null(rf.mtry)) {
-          if (ncol(rf.train.ds) < 10) {
-            tunegrid <- NULL
+        if(!is.null(learner.cv)){
+          control <- caret::trainControl(method = "cv",
+                                         number = learner.cv,
+                                         search = "grid")
+          if (is.null(rf.mtry)) {
+            if (ncol(rf.train.ds) < 10) {
+              tunegrid <- NULL
+            } else {
+              tunegrid = expand.grid(
+                mtry = c(max(floor(ncol(rf.train.ds)/3), 1), floor(sqrt(length(rf.train.pheno))))
+              )
+            }
           } else {
-            tunegrid = expand.grid(
-              mtry = c(max(floor(ncol(rf.train.ds)/3), 1), floor(sqrt(length(rf.train.pheno))))
-            )
+            tunegrid = expand.grid(mtry = rf.mtry)
           }
+          #print(tunegrid)
+          rf.model <- caret::train(as.formula(paste(label, "~ .")),
+                                   data = rf.train.ds,
+                                   method = "rf",
+                                   metric = "Accuracy",
+                                   tuneGrid = tunegrid,
+                                   trControl = control)
+          #if (verbose & interactive()) plot(rf.gridsearch)
+          current.train.acc <- rf.model$results$Accuracy[which.max(rf.gridsearch$results$Accuracy)]
         } else {
-          tunegrid = expand.grid(mtry = rf.mtry)
+          model.formula <- stats::as.formula(paste(label, "~.", 
+                                                   sep = ""))
+          rf.model <- randomForest::randomForest(formula = model.formula, 
+                                                 data = rf.train.ds, 
+                                                 ntree = rf.ntree, 
+                                                 mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
+                                                   rf.mtry.valid <- max(floor(ncol(rf.train.ds) / 3), 1)
+                                                 } else {
+                                                   rf.mtry.valid <- floor(sqrt(ncol(rf.train.ds)))
+                                                 })
+          current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
         }
-        #print(tunegrid)
-        rf.gridsearch <- caret::train(as.formula(paste(label, "~ .")),
-                                      data = rf.train.ds,
-                                      method = "rf",
-                                      metric = "Accuracy",
-                                      tuneGrid = tunegrid,
-                                      trControl = control)
-        #if (verbose & interactive()) plot(rf.gridsearch)
-        current.train.acc <- rf.gridsearch$results$Accuracy[which.max(rf.gridsearch$results$Accuracy)]
+        
         if (verbose) cat("\tpredict holdout\n")
-        holdout.pred <- predict(rf.gridsearch, newdata = new.holdout.ds)
+        holdout.pred <- predict(rf.model, newdata = new.holdout.ds)
         if (verbose) print(holdout.pred)
         if (verbose) print(new.holdout.ds[, label])
         current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
@@ -346,7 +363,7 @@ privateEC <- function(train.ds = NULL,
         if (!is.null(new.validation.ds)) {
           if (verbose) cat("\tpredict validation\n")
           if (verbose) print(new.validation.ds[, label])
-          validation.pred <- predict(rf.gridsearch, newdata = new.validation.ds)
+          validation.pred <- predict(rf.model, newdata = new.validation.ds)
           current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
         } else {
           current.validation.acc <- 0
@@ -354,7 +371,7 @@ privateEC <- function(train.ds = NULL,
         method.valid <- TRUE
       }
       if (learner.name == "xgboost") {
-        if (verbose) cat("\trunning xgboost\n")
+        if (verbose) cat("\tRunning xgboost\n")
         xgb.results <- xgboostRF(train.ds = new.train.ds,
                                  holdout.ds = new.holdout.ds,
                                  validation.ds = new.validation.ds,
@@ -403,6 +420,7 @@ privateEC <- function(train.ds = NULL,
       if (verbose) cat("\t", current.iteration - 1, ': ', current.temp, '\n')
       # check for simulated variables
       if (verbose) cat("\tcollecting results\n")
+      var.names[[num.updates]] <- current.var.names
       if (is.simulated) {
         correct.detect.ec <- c(correct.detect.ec, sum(current.var.names %in% signal.names))
       }
@@ -445,7 +463,7 @@ privateEC <- function(train.ds = NULL,
        ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
        elasped = elapsed.time,
-       atts.remain = current.var.names,
+       atts.remain = var.names,
        updates = algo.hist)
 }
 
@@ -995,7 +1013,7 @@ xgboostRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
                       label="phenos",
-                      cv.folds = 10,
+                      cv.folds = NULL,
                       num.threads = 2,
                       num.rounds = c(1),
                       max.depth = c(4),
@@ -1032,53 +1050,93 @@ xgboostRF <- function(train.ds=NULL,
         "eta =", shrinkage, "\n",
         "------------------------------------\n")
   }
-  xgb_grid_1 = expand.grid(
-    eta = shrinkage,
-    max_depth = max.depth,
-    nrounds = num.rounds,
-    gamma = 0,
-    colsample_bytree = 1,
-    min_child_weight = 1,
-    subsample = 1
-  )
-  # pack the training control parameters
-  xgb_trcontrol_1 = caret::trainControl(
-    method = "cv",
-    number = cv.folds,
-    #summaryFunction = caret::twoClassSummary,
-    # set to TRUE for AUC to be computed
-    #classProbs = TRUE,
-    allowParallel = TRUE
-  )
-  # train the model for each parameter combination in the grid using CV to evaluate
-  if (verbose) cat("Running caret::train with cross validation and a grid of parameters to test\n")
-  train.model = caret::train(x = data.matrix(train_data),
-                             y = as.factor(train_pheno),
-                             trControl = xgb_trcontrol_1,
-                             tuneGrid = xgb_grid_1,
-                             method = "xgbTree",
-                             metric = "Accuracy",
-                             verbose = verbose)
-  pred.class <- predict(train.model, train.ds)
-  rf.train.accu <- 1 - mean(pred.class != train_pheno)
-  if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
-  if (verbose) cat("Predict using the best tree\n")
-  pred.class <- predict(train.model, holdout.ds)
-  if (verbose) print(table(pred.class))
-  rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
-  if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
-  if (!is.null(validation.ds)) {
-    if (verbose) cat("Preparing dating for prediction\n")
-    validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
-    validation_data <- as.matrix(validation.ds[, -pheno.col])
-    if (verbose) print(dim(validation_data))
-    colnames(validation_data) <- var.names
-    rf.class <- predict(train.model, validation.ds)
-    if (verbose) print(table(rf.class))
-    rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+  if(!is.null(cv.folds)){
+    xgb_grid_1 = expand.grid(
+      eta = shrinkage,
+      max_depth = max.depth,
+      nrounds = num.rounds,
+      gamma = 0,
+      colsample_bytree = 1,
+      min_child_weight = 1,
+      subsample = 1
+    )
+    # pack the training control parameters
+    xgb_trcontrol_1 = caret::trainControl(
+      method = "cv",
+      number = cv.folds,
+      #summaryFunction = caret::twoClassSummary,
+      # set to TRUE for AUC to be computed
+      #classProbs = TRUE,
+      allowParallel = TRUE
+    )
+    # train the model for each parameter combination in the grid using CV to evaluate
+    if (verbose) cat("Running caret::train with cross validation and a grid of parameters to test\n")
+    train.model = caret::train(x = data.matrix(train_data),
+                               y = as.factor(train_pheno),
+                               trControl = xgb_trcontrol_1,
+                               tuneGrid = xgb_grid_1,
+                               method = "xgbTree",
+                               metric = "Accuracy",
+                               verbose = verbose)
+    
+    pred.class <- predict(train.model, train.ds)
+    rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
+    if (verbose) cat("Predict using the best tree\n")
+    pred.class <- predict(train.model, holdout.ds)
+    if (verbose) print(table(pred.class))
+    rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
+    if (!is.null(validation.ds)) {
+      if (verbose) cat("Preparing dating for prediction\n")
+      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      validation_data <- as.matrix(validation.ds[, -pheno.col])
+      if (verbose) print(dim(validation_data))
+      colnames(validation_data) <- var.names
+      rf.class <- predict(train.model, validation.ds)
+      if (verbose) print(table(rf.class))
+      rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+    } else {
+      rf.validation.accu <- 0
+    }
   } else {
-    rf.validation.accu <- 0
+    dtrain <- xgboost::xgb.DMatrix(data = train_data, label = train_pheno)
+    dholdo <- xgboost::xgb.DMatrix(data = holdout_data, label = holdout_pheno)
+    train.model <- xgboost::xgboost(data = dtrain,
+                                    eta = shrinkage,
+                                    nthread = num.threads,
+                                    nrounds = num.rounds,
+                                    max.depth = max.depth,
+                                    objective = "binary:logistic",
+                                    verbose = FALSE)
+    
+    train.pred.prob <- predict(train.model, dtrain)
+    pred.class <- as.numeric(train.pred.prob > 0.5)
+    rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
+    if (verbose) cat("Predict using the best tree\n")
+    holdout.pred.prob <- predict(train.model, dholdo)
+    pred.class <- as.numeric(holdout.pred.prob > 0.5)
+    if (verbose) print(table(pred.class))
+    rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
+    if (!is.null(validation.ds)) {
+      if (verbose) cat("Preparing dating for prediction\n")
+      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      validation_data <- as.matrix(validation.ds[, -pheno.col])
+      if (verbose) print(dim(validation_data))
+      colnames(validation_data) <- var.names
+      dvalid <- xgboost::xgb.DMatrix(data = validation_data, label = validation_pheno)
+      valid.pred.prob <- predict(train.model, dvalid)
+      rf.class <- as.numeric(valid.pred.prob > 0.5)
+      if (verbose) print(table(rf.class))
+      rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+    } else {
+      rf.validation.accu <- 0
+    }
   }
+  
+  
   if (verbose) cat("validation-accuracy:", rf.validation.accu, "\n")
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
