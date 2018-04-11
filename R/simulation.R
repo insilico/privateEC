@@ -396,13 +396,13 @@ createSimulation <- function(num.samples=100,
     g <- igraph::barabasi.game(num.variables, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
-                                         N=num.samples,
-                                         meanExpression=7,
-                                         A=myA,
-                                         randSdNoise=1,
-                                         sdNoise=bias,
-                                         sampleIndicesInteraction=1:nbias)
+    dataset <- createInteractions(M=num.variables,
+                                  N=num.samples,
+                                  meanExpression=7,
+                                  A=myA,
+                                  randSdNoise=1,
+                                  sdNoise=bias,
+                                  sampleIndicesInteraction=1:nbias)
   } else if(sim.type == "interactionErdos") {
     attach.prob <- 0.1
     g <- igraph::erdos.renyi.game(num.variables, attach.prob)
@@ -410,13 +410,13 @@ createSimulation <- function(num.samples=100,
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createDiffCoexpMatrixNoME(M=num.variables,
-                                         N=num.samples,
-                                         meanExpression=7,
-                                         A=myA,
-                                         randSdNoise=1,
-                                         sdNoise=bias,
-                                         sampleIndicesInteraction=1:nbias)
+    dataset <- createInteractions(M=num.variables,
+                                  N=num.samples,
+                                  meanExpression=7,
+                                  A=myA,
+                                  randSdNoise=1,
+                                  sdNoise=bias,
+                                  sampleIndicesInteraction=1:nbias)
   }
   # make numeric matrix into a data frame for splitting and subsequent ML algorithms
   dataset <- as.data.frame(dataset)

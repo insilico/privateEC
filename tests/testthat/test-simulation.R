@@ -18,7 +18,7 @@ test_that("createSimulation mainEffect returns sane results", {
                                sim.type = sim.type,
                                verbose = FALSE)
   expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
-               num.samples * 3)
+               num.samples)
   expect_equal(ncol(sim.data$train), num.variables + 1)
 })
 
@@ -35,7 +35,7 @@ test_that("createSimulation Erdos-Renyi network base returns sane results", {
                                sim.type = sim.type,
                                verbose = FALSE)
   expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
-               num.samples * 3)
+               num.samples)
   expect_equal(ncol(sim.data$train), num.variables + 1)
 })
 
@@ -52,7 +52,7 @@ test_that("createSimulation with interaction network returns sane results", {
                                sim.type = sim.type,
                                verbose = FALSE)
   expect_equal(nrow(sim.data$train) + nrow(sim.data$holdout) + nrow(sim.data$validation),
-               num.samples * 3)
+               num.samples)
   expect_equal(ncol(sim.data$train), num.variables + 1)
 })
 

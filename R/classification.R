@@ -339,13 +339,13 @@ privateEC <- function(train.ds = NULL,
                                    tuneGrid = tunegrid,
                                    trControl = control)
           #if (verbose & interactive()) plot(rf.gridsearch)
-          current.train.acc <- rf.model$results$Accuracy[which.max(rf.gridsearch$results$Accuracy)]
+          current.train.acc <- rf.model$results$Accuracy[which.max(rf.model$results$Accuracy)]
         } else {
-          model.formula <- stats::as.formula(paste(label, "~.", 
+          model.formula <- stats::as.formula(paste(label, "~.",
                                                    sep = ""))
-          rf.model <- randomForest::randomForest(formula = model.formula, 
-                                                 data = rf.train.ds, 
-                                                 ntree = rf.ntree, 
+          rf.model <- randomForest::randomForest(formula = model.formula,
+                                                 data = rf.train.ds,
+                                                 ntree = rf.ntree,
                                                  mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
                                                    rf.mtry.valid <- max(floor(ncol(rf.train.ds) / 3), 1)
                                                  } else {
@@ -353,7 +353,7 @@ privateEC <- function(train.ds = NULL,
                                                  })
           current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
         }
-        
+
         if (verbose) cat("\tpredict holdout\n")
         holdout.pred <- predict(rf.model, newdata = new.holdout.ds)
         if (verbose) print(holdout.pred)
@@ -1078,7 +1078,7 @@ xgboostRF <- function(train.ds=NULL,
                                method = "xgbTree",
                                metric = "Accuracy",
                                verbose = verbose)
-    
+
     pred.class <- predict(train.model, train.ds)
     rf.train.accu <- 1 - mean(pred.class != train_pheno)
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
@@ -1088,7 +1088,7 @@ xgboostRF <- function(train.ds=NULL,
     rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
-      if (verbose) cat("Preparing dating for prediction\n")
+      if (verbose) cat("Preparing data for prediction\n")
       validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
@@ -1109,7 +1109,7 @@ xgboostRF <- function(train.ds=NULL,
                                     max.depth = max.depth,
                                     objective = "binary:logistic",
                                     verbose = FALSE)
-    
+
     train.pred.prob <- predict(train.model, dtrain)
     pred.class <- as.numeric(train.pred.prob > 0.5)
     rf.train.accu <- 1 - mean(pred.class != train_pheno)
@@ -1135,8 +1135,8 @@ xgboostRF <- function(train.ds=NULL,
       rf.validation.accu <- 0
     }
   }
-  
-  
+
+
   if (verbose) cat("validation-accuracy:", rf.validation.accu, "\n")
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
