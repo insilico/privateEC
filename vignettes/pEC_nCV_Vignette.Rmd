@@ -1,0 +1,472 @@
+---
+title: "pEC_nCV_Vignette"
+author: Saeid Parvandeh
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Example1}
+  %\VignetteEncoding{UTF-8}
+---
+## Privacy preserving Evaporative Cooling (PrivateEC), Consensus Nested Cross Validation (cnCV), and Regular Nested Cross Validation (rnCV) for feature selection and classification with Relief-F and Random Forests
+
+PrivateEC, cnCV, and rnCV Methods are described in the following publications.
+
+Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. [Bioinformatics Abstract](https://doi.org/10.1093/bioinformatics/btx298). 2017.
+
+PrivateEC software paper ...
+
+Consensus nested cross validation paper ...
+
+```{r, echo=FALSE}
+source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/modified_simulation.R")
+source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/modified_pEC.R")
+source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/nestedCV.R")
+```
+
+## Example Run and Results
+
+### Simulate Balanced Data
+```{r, message=FALSE}
+library(privateEC)
+n.samples <- 100
+n.variables <- 100
+label <- "class"
+type <- "mainEffect"
+importance.algorithm <- "ReliefFbestK"
+bias <- 0.4
+pct.signals <- 0.1
+update.freq <- 5
+num_tree <- 500
+verbose <- FALSE
+
+data.sets <- createSimulation(num.samples = n.samples,
+                              num.variables = n.variables,
+                              pct.signals = pct.signals,
+                              class.label = label,
+                              bias = bias,
+                              pct.train = 1 / 3,
+                              pct.holdout = 1 / 3,
+                              pct.validation = 1 / 3,
+                              sim.type = type,
+                              save.file = NULL,
+                              verbose = verbose)
+```
+
+### Run pEC on balanced simulated data
+
+```{r, message=FALSE}
+pec.result <- privateEC(train.ds = data.sets$train,
+                        holdout.ds = data.sets$holdout,
+                        validation.ds = data.sets$validation,
+                        label = data.sets$class.label,
+                        importance.algorithm = importance.algorithm,
+                        rf.ntree = num_tree,
+                        is.simulated = TRUE,
+                        bias = bias,
+                        update.freq = update.freq,
+                        save.file = NULL,
+                        signal.names = data.sets$signal.names,
+                        verbose = verbose)
+```
+
+### pEC results
+#### Table of iterations
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption = "Algorithm Iterations",
+             row.names = FALSE, digits = 3)
+```
+
+#### Plot of results
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+```{r, echo=FALSE}
+cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$algo.acc$holdout.acc)]],"]\n")
+```
+
+### Run regular nested CV
+
+```{r, message=FALSE}
+# combine train/holdout data sets
+sim_train <- rbind(data.sets$train, data.sets$holdout)
+sim_test <- data.sets$validation
+rncv_result <- regular_nestedCV(train.ds = sim_train, 
+                                validation.ds =  sim_test, 
+                                class.label = data.sets$class.label,
+                                is.simulated = TRUE,
+                                ncv_folds = c(10, 10),
+                                param.tune = FALSE,
+                                learning_method = "rf", 
+                                importance_algorithm = importance.algorithm,
+                                num_tree = num_tree,
+                                verbose = verbose)
+```
+
+### rnCV results
+```{r, message=FALSE, echo=FALSE}
+cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",rncv_result$Features,"]\n")
+cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
+```
+
+### Run consensus nested CV
+```{r, message=FALSE}
+cncv_result <- consensus_nestedCV(train.ds = sim_train, 
+                                  validation.ds =  sim_test, 
+                                  class.label = data.sets$class.label,
+                                  is.simulated = TRUE,
+                                  ncv_folds = c(10, 10),
+                                  param.tune = FALSE,
+                                  learning_method = "rf", 
+                                  importance_algorithm = importance.algorithm,
+                                  num_tree = num_tree,
+                                  verbose = verbose)
+```
+
+### cnCV results
+
+```{r, echo=FALSE}
+cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",cncv_result$Features,"]\n")
+cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
+```
+
+### Simulate Imbalanced Data (parameter in effect: pct.imbalance, where 0/1 means all ctrls/cases)
+```{r, message=FALSE}
+n.samples <- 100
+n.variables <- 100
+label <- "class"
+pct.imbalance = 0.56
+type <- "mainEffect"
+importance.algorithm <- "ReliefFbestK"
+bias <- 0.4
+pct.signals <- 0.1
+update.freq <- 5
+num_tree <- 500
+verbose <- FALSE
+
+data.sets <- createSimulation(num.samples = n.samples,
+                              num.variables = n.variables,
+                              pct.signals = pct.signals,
+                              class.label = label,
+                              pct.imbalance = pct.imbalance,
+                              bias = bias,
+                              pct.train = 1 / 3,
+                              pct.holdout = 1 / 3,
+                              pct.validation = 1 / 3,
+                              sim.type = type,
+                              save.file = NULL,
+                              verbose = verbose)
+```
+
+### Run pEC on imbalanced simulated data
+
+```{r, message=FALSE}
+pec.result <- privateEC(train.ds = data.sets$train,
+                        holdout.ds = data.sets$holdout,
+                        validation.ds = data.sets$validation,
+                        label = data.sets$class.label,
+                        importance.algorithm = importance.algorithm,
+                        rf.ntree = num_tree,
+                        is.simulated = TRUE,
+                        bias = bias,
+                        update.freq = update.freq,
+                        save.file = NULL,
+                        signal.names = data.sets$signal.names,
+                        verbose = verbose)
+```
+
+### pEC results
+#### Table of iterations
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption = "Algorithm Iterations",
+             row.names = FALSE, digits = 3)
+```
+
+#### Plot of results
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+```{r, echo=FALSE}
+cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$algo.acc$holdout.acc)]],"]\n")
+```
+
+### Run regular nested CV
+
+```{r, message=FALSE}
+# combine train/holdout data sets
+sim_train <- rbind(data.sets$train, data.sets$holdout)
+sim_test <- data.sets$validation
+rncv_result <- regular_nestedCV(train.ds = sim_train, 
+                                validation.ds =  sim_test, 
+                                class.label = data.sets$class.label,
+                                is.simulated = TRUE,
+                                ncv_folds = c(10, 10),
+                                param.tune = FALSE,
+                                learning_method = "rf", 
+                                importance_algorithm = importance.algorithm,
+                                num_tree = num_tree,
+                                verbose = verbose)
+```
+
+### rnCV results
+```{r, message=FALSE, echo=FALSE}
+cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",rncv_result$Features,"]\n")
+cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
+```
+
+### Run consensus nested CV
+```{r, message=FALSE}
+cncv_result <- consensus_nestedCV(train.ds = sim_train, 
+                                  validation.ds =  sim_test, 
+                                  class.label = data.sets$class.label,
+                                  is.simulated = TRUE,
+                                  ncv_folds = c(10, 10),
+                                  param.tune = FALSE,
+                                  learning_method = "rf", 
+                                  importance_algorithm = importance.algorithm,
+                                  num_tree = num_tree,
+                                  verbose = verbose)
+```
+
+### cnCV results
+
+```{r, echo=FALSE}
+cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",cncv_result$Features,"]\n")
+cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
+```
+
+### Simulate Mix Data (parameter in effect: pct.imbalance, where 0/1 means all ctrls/cases, pct.mixed)
+```{r, message=FALSE}
+n.samples <- 200
+n.variables <- 200
+label <- "class"
+pct.imbalance = 0.5
+pct.mixed = 0.5
+mixed.type <- c("mainEffect", "interactionScalefree")
+importance.algorithm <- "ReliefFbestK"
+bias <- 0.4
+pct.signals <- 0.1
+update.freq <- 5
+num_tree <- 500
+verbose <- FALSE
+
+data.sets <- createMixedSimulation(num.samples = n.samples,
+                                   num.variables = n.variables,
+                                   pct.signals = pct.signals,
+                                   class.label = label,
+                                   pct.imbalance = pct.imbalance,
+                                   pct.mixed = pct.mixed,
+                                   mixed.type = mixed.type,
+                                   bias = bias,
+                                   pct.train = 1 / 3,
+                                   pct.holdout = 1 / 3,
+                                   pct.validation = 1 / 3,
+                                   save.file = NULL,
+                                   verbose = verbose)
+```
+
+### Run pEC on mixed simulated data
+
+```{r, message=FALSE}
+pec.result <- privateEC(train.ds = data.sets$train,
+                        holdout.ds = data.sets$holdout,
+                        validation.ds = data.sets$validation,
+                        label = data.sets$class.label,
+                        importance.algorithm = importance.algorithm,
+                        rf.ntree = num_tree,
+                        is.simulated = TRUE,
+                        bias = bias,
+                        update.freq = update.freq,
+                        save.file = NULL,
+                        signal.names = data.sets$signal.names,
+                        verbose = verbose)
+```
+
+### pEC results
+#### Table of iterations
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption = "Algorithm Iterations",
+             row.names = FALSE, digits = 3)
+```
+
+#### Plot of results
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+```{r, echo=FALSE}
+cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$algo.acc$holdout.acc)]],"]\n")
+```
+
+### Run regular nested CV
+
+```{r, message=FALSE}
+# combine train/holdout data sets
+sim_train <- rbind(data.sets$train, data.sets$holdout)
+sim_test <- data.sets$validation
+rncv_result <- regular_nestedCV(train.ds = sim_train, 
+                                validation.ds =  sim_test, 
+                                class.label = data.sets$class.label,
+                                is.simulated = TRUE,
+                                ncv_folds = c(10, 10),
+                                param.tune = FALSE,
+                                learning_method = "rf", 
+                                importance_algorithm = importance.algorithm,
+                                num_tree = num_tree,
+                                verbose = verbose)
+```
+
+### rnCV results
+```{r, message=FALSE, echo=FALSE}
+cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",rncv_result$Features,"]\n")
+cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
+```
+
+### Run consensus nested CV
+```{r, message=FALSE}
+cncv_result <- consensus_nestedCV(train.ds = sim_train, 
+                                  validation.ds =  sim_test, 
+                                  class.label = data.sets$class.label,
+                                  is.simulated = TRUE,
+                                  ncv_folds = c(10, 10),
+                                  param.tune = FALSE,
+                                  learning_method = "rf", 
+                                  importance_algorithm = importance.algorithm,
+                                  num_tree = num_tree,
+                                  verbose = verbose)
+```
+
+### cnCV results
+
+```{r, echo=FALSE}
+cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",cncv_result$Features,"]\n")
+cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
+```
+
+### Simulate Quantitative Outcome Data (parameter in effect: label = "phenos", type = "mainEffect", importance.algorithm = "RReliefFbestK")
+```{r, message=FALSE}
+n.samples <- 200
+n.variables <- 200
+label <- "phenos"
+type <- "mainEffect"
+importance.algorithm <- "RReliefFbestK"
+bias <- 0.4
+pct.signals <- 0.1
+update.freq <- 5
+num_tree <- 500
+verbose <- FALSE
+
+data.sets <- createSimulation(num.samples = n.samples,
+                              num.variables = n.variables,
+                              pct.signals = pct.signals,
+                              class.label = label,
+                              bias = bias,
+                              pct.train = 1 / 3,
+                              pct.holdout = 1 / 3,
+                              pct.validation = 1 / 3,
+                              sim.type = type,
+                              save.file = NULL,
+                              verbose = verbose)
+```
+
+### Run pEC on quantitative simulated data
+
+```{r, message=FALSE}
+pec.result <- privateEC(train.ds = data.sets$train,
+                        holdout.ds = data.sets$holdout,
+                        validation.ds = data.sets$validation,
+                        label = data.sets$class.label,
+                        importance.algorithm = importance.algorithm,
+                        rf.ntree = num_tree,
+                        is.simulated = TRUE,
+                        bias = bias,
+                        update.freq = update.freq,
+                        save.file = NULL,
+                        signal.names = data.sets$signal.names,
+                        verbose = verbose)
+```
+
+### pEC results
+#### Table of iterations
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption = "Algorithm Iterations",
+             row.names = FALSE, digits = 3)
+```
+
+#### Plot of results
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+```{r, echo=FALSE}
+cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$algo.acc$holdout.acc)]],"]\n")
+```
+
+### Run regular nested CV
+
+```{r, message=FALSE}
+# combine train/holdout data sets
+sim_train <- rbind(data.sets$train, data.sets$holdout)
+sim_test <- data.sets$validation
+rncv_result <- regular_nestedCV(train.ds = sim_train, 
+                                validation.ds =  sim_test, 
+                                class.label = data.sets$class.label,
+                                is.simulated = TRUE,
+                                ncv_folds = c(10, 10),
+                                param.tune = FALSE,
+                                learning_method = "rf", 
+                                importance_algorithm = importance.algorithm,
+                                num_tree = num_tree,
+                                verbose = verbose)
+```
+
+### rnCV results
+```{r, echo=FALSE}
+cat("\n Train R-squared [",rncv_result$Train,"]\n")
+cat("\n Validation R-squared [",rncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",rncv_result$Features,"]\n")
+cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
+```
+
+### Run consensus nested CV
+```{r, message=FALSE}
+cncv_result <- consensus_nestedCV(train.ds = sim_train, 
+                                  validation.ds =  sim_test, 
+                                  class.label = data.sets$class.label,
+                                  is.simulated = TRUE,
+                                  ncv_folds = c(10, 10),
+                                  param.tune = FALSE,
+                                  learning_method = "rf", 
+                                  importance_algorithm = importance.algorithm,
+                                  num_tree = num_tree,
+                                  verbose = verbose)
+```
+
+### cnCV results
+
+```{r, echo=FALSE}
+cat("\n Train R-squared [",cncv_result$Train,"]\n")
+cat("\n Validation R-squared [",cncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",cncv_result$Features,"]\n")
+cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
+```
+
+
