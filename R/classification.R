@@ -5,12 +5,15 @@
 # classification with Relief-F and Random Forests
 # https://doi.org/10.1093/bioinformatics/btx298
 
+# Modified by Saeid Parvandeh - Spring 2018
+
 #' Compute and return importance scores (Relief-F scores)
 #'
 #' @param train.set A training data frame with last column as class
 #' @param holdout.set A holdout data frame with last column as class
-#' @param label A character vector of the class variable column name
+#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
 #' @param importance.name A list importance operation parameters
+#' @param importance.algorithm A character vector of the ReliefF estimator
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
 #' (Relief-F scores) for the train and holdout data sets.
@@ -72,6 +75,8 @@ getImportanceScores <- function(train.set=NULL,
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param learner.name A character vector containg the learner algorithm name
+#' @param use.nestedCV A logic character indicating whether use nested cross validation or not
+#' @param ncv_folds A vector of integers fo the number of nested cross validation folds
 #' @param learner.cv An integer for the number of cross validation folds
 #' @param rf.mtry An integer for the number of variables used for node splits
 #' @param xgb.max.depth A vector of integers for the xboost maximum tree depth
@@ -141,13 +146,16 @@ getImportanceScores <- function(train.set=NULL,
 privateEC <- function(train.ds = NULL,
                       holdout.ds = NULL,
                       validation.ds = NULL,
-                      label = "phenos",
+                      label = c("class","phenos"),
                       is.simulated = TRUE,
                       bias = 0.4,
                       update.freq = 5,
                       importance.name = "relieff",
-                      importance.algorithm = "ReliefFbestK",
+                      importance.algorithm = c("ReliefFbestK","RReliefFbestK"),
                       learner.name = "randomforest",
+                      xgb.obj = "binary:logistic",
+                      use.nestedCV = TRUE,
+                      ncv_folds = c(10, 10),
                       learner.cv = NULL,
                       rf.mtry = NULL,
                       rf.ntree=500,
@@ -199,6 +207,7 @@ privateEC <- function(train.ds = NULL,
                                           holdout.set = holdout.ds,
                                           label = label,
                                           importance.name = importance.name,
+                                          importance.algorithm = importance.algorithm,
                                           verbose = verbose)
   } else {
     stop("Importance method [", importance.name, "] is not recognized")
@@ -231,14 +240,15 @@ privateEC <- function(train.ds = NULL,
   current.iteration <- 1
   num.updates <- 0
   var.names <- list()
+  nCV_atts <- NULL
   keep.looping <- ifelse(length(current.var.names) > 1, TRUE, FALSE)
   algo.hist <- data.frame()
   algo.hist <- rbind(algo.hist,
-    data.frame(iter = current.iteration,
-               update = num.updates,
-               numvars =  length(current.var.names),
-               temp = current.temp,
-               tmpmin = Tmin)
+                     data.frame(iter = current.iteration,
+                                update = num.updates,
+                                numvars =  length(current.var.names),
+                                temp = current.temp,
+                                tmpmin = Tmin)
   )
   while (keep.looping & (current.temp > Tmin)) {
     diff <- diff.scores * (diff.scores > 10^(-3)) + 10^(-3) * (diff.scores < 10^(-3))
@@ -271,9 +281,9 @@ privateEC <- function(train.ds = NULL,
     # run on the current set of variables - "update"
     if ((current.iteration == 1) | (current.iteration %% update.freq) == 0) {
       num.updates <- num.updates + 1
-      cat("pEC Iteration [", current.iteration, "] Temp Updates [", num.updates, "]",
-          "Is", length(current.var.names), "current.temp > [", current.temp, "] >",
-          "Tmin? [", Tmin, "]?\n")
+      if(verbose)cat("pEC Iteration [", current.iteration, "] Temp Updates [", num.updates, "]",
+                     "Is", length(current.var.names), "current.temp > [", current.temp, "] >",
+                     "Tmin? [", Tmin, "]?\n")
       algo.hist <- rbind(algo.hist,
                          data.frame(iter = current.iteration,
                                     update = num.updates,
@@ -291,6 +301,7 @@ privateEC <- function(train.ds = NULL,
                                           holdout.set = new.holdout.ds,
                                           label = label,
                                           importance.name = importance.name,
+                                          importance.algorithm = importance.algorithm,
                                           verbose = verbose)
       } else {
         stop("Importance method [", learner.name, "] is not recognized")
@@ -305,76 +316,103 @@ privateEC <- function(train.ds = NULL,
       }
       diff.scores <- abs(q1.scores - q2.scores)
       delta.q <- max(diff.scores)
+      # run nested CV for feature selection and parameter tuning
+      if(use.nestedCV){
+        # tune_params <- NULL; accu_vec <- NULL
+        # Train_accu <- NULL; Test_accu <- NULL
+        relief_atts <- list()
+        ptm <- proc.time()
+        if(verbose){cat("\nRunning nested cross-validation...\n")}
+        if(verbose){cat("\n Create [",ncv_folds[1],"] outer folds\n")}
+        outer_folds <- caret::createFolds(new.train.ds[, label], ncv_folds[1], list = FALSE)
+        for (i in 1:ncv_folds[1]){
+          atts <- list()
+          if(verbose){cat("\n Create [",ncv_folds[2],"] inner folds of outer fold[",i,"]\n")}
+          inner_folds <- caret::createFolds(new.train.ds[, label][outer_folds!=i], ncv_folds[2], list = TRUE)
+          if(verbose){cat("\n Feature Selection...\n")} 
+          for (j in 1:length(inner_folds)){
+            inner_idx <- which(outer_folds!=1)[-inner_folds[[j]]]
+            rf_scores <- CORElearn::attrEval(label, new.train.ds[inner_idx, ], estimator = importance.algorithm)
+            # atts[[j]] <- names(sort(rf_scores, decreasing = T)[1:(length(rf_scores)*3/4)])
+            atts[[j]] <- names(which(rf_scores>0))
+          }
+          relief_atts[[i]] <- Reduce(intersect, atts)
+        }
+        nCV_atts <- Reduce(intersect, relief_atts)
+        # tuneParam <- tune_params[which.max(accu_vec), ]
+        if(verbose){cat("\n Validating...\n")}
+        train.data <- new.train.ds[, c(nCV_atts, label)]
+        train.pheno <- factor(new.train.ds[, label])
+        if (any(is.na(train.pheno))) {
+          cat("Phenos:\n")
+          print(train.pheno)
+          stop("NAs detected in training phenotype")
+        }
+        hold.data  <- new.holdout.ds[, c(nCV_atts, label)]
+        valid.data  <- new.validation.ds[, c(nCV_atts, label)]
+      } else {
+        train.data <- new.train.ds[, c(current.var.names, label)]
+        train.pheno <- factor(new.train.ds[, label])
+        if (any(is.na(train.pheno))) {
+          cat("Phenos:\n")
+          print(train.pheno)
+          stop("NAs detected in training phenotype")
+        }
+        hold.data <- new.holdout.ds[, c(current.var.names, label)]
+        valid.data <- new.validation.ds[, c(current.var.names, label)]
+      }
       # run the learner
       method.valid <- FALSE
       if (learner.name == "randomforest") {
         if (verbose) cat("\tRunning randomForest\n")
-        rf.train.ds <- train.ds[, c(current.var.names, label)]
-        rf.train.pheno <- factor(rf.train.ds[, label])
-        if (any(is.na(rf.train.pheno))) {
-          cat("Phenos:\n")
-          print(rf.train.pheno)
-          stop("NAs detected in training phenotype")
-        }
-        if(!is.null(learner.cv)){
-          control <- caret::trainControl(method = "cv",
-                                         number = learner.cv,
-                                         search = "grid")
-          if (is.null(rf.mtry)) {
-            if (ncol(rf.train.ds) < 10) {
-              tunegrid <- NULL
-            } else {
-              tunegrid = expand.grid(
-                mtry = c(max(floor(ncol(rf.train.ds)/3), 1), floor(sqrt(length(rf.train.pheno))))
-              )
-            }
-          } else {
-            tunegrid = expand.grid(mtry = rf.mtry)
-          }
-          #print(tunegrid)
-          rf.model <- caret::train(as.formula(paste(label, "~ .")),
-                                   data = rf.train.ds,
-                                   method = "rf",
-                                   metric = "Accuracy",
-                                   tuneGrid = tunegrid,
-                                   trControl = control)
-          #if (verbose & interactive()) plot(rf.gridsearch)
-          current.train.acc <- rf.model$results$Accuracy[which.max(rf.model$results$Accuracy)]
+        
+        model.formula <- stats::as.formula(paste(label, "~.",
+                                                 sep = ""))
+        rf.model <- randomForest::randomForest(formula = model.formula,
+                                               data = train.data,
+                                               ntree = rf.ntree,
+                                               mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
+                                                 rf.mtry.valid <- max(floor(ncol(train.data) / 3), 1)
+                                               } else {
+                                                 rf.mtry.valid <- floor(sqrt(ncol(train.data)))
+                                               })
+        if(label == "phenos"){
+          current.train.acc <- cor(rf.model$predicted, train.data[, label])^2
         } else {
-          model.formula <- stats::as.formula(paste(label, "~.",
-                                                   sep = ""))
-          rf.model <- randomForest::randomForest(formula = model.formula,
-                                                 data = rf.train.ds,
-                                                 ntree = rf.ntree,
-                                                 mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
-                                                   rf.mtry.valid <- max(floor(ncol(rf.train.ds) / 3), 1)
-                                                 } else {
-                                                   rf.mtry.valid <- floor(sqrt(ncol(rf.train.ds)))
-                                                 })
           current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
         }
-
-        if (verbose) cat("\tpredict holdout\n")
-        holdout.pred <- predict(rf.model, newdata = new.holdout.ds)
-        if (verbose) print(holdout.pred)
-        if (verbose) print(new.holdout.ds[, label])
-        current.holdout.acc <- mean(holdout.pred == new.holdout.ds[, label])
-
-        if (!is.null(new.validation.ds)) {
+        if (!is.null(hold.data)) {
+          if (verbose) cat("\tpredict holdout\n")
+          holdout.pred <- predict(rf.model, newdata = hold.data)
+          if (verbose) print(holdout.pred)
+          if (verbose) print(hold.data[, (label)])
+          if(label == "phenos"){
+            current.holdout.acc <- cor(holdout.pred, hold.data[, (label)])^2
+          } else {
+            current.holdout.acc <- mean(holdout.pred == hold.data[, (label)])
+          }
+        } else {
+          current.holdout.acc <- 0
+        }
+        if (!is.null(valid.data)) {
           if (verbose) cat("\tpredict validation\n")
-          if (verbose) print(new.validation.ds[, label])
-          validation.pred <- predict(rf.model, newdata = new.validation.ds)
-          current.validation.acc <- mean(validation.pred == new.validation.ds[, label])
+          validation.pred <- predict(rf.model, newdata = valid.data)
+          if (verbose) print(validation.pred)
+          if(label == "phenos"){
+            current.validation.acc <- cor(validation.pred, valid.data[, (label)])^2
+          } else {
+            current.validation.acc <- mean(validation.pred == valid.data[, (label)])
+          }
         } else {
           current.validation.acc <- 0
         }
         method.valid <- TRUE
-      }
+      } 
       if (learner.name == "xgboost") {
         if (verbose) cat("\tRunning xgboost\n")
-        xgb.results <- xgboostRF(train.ds = new.train.ds,
-                                 holdout.ds = new.holdout.ds,
-                                 validation.ds = new.validation.ds,
+        xgb.results <- xgboostRF(train.ds = train.data,
+                                 holdout.ds = hold.data,
+                                 validation.ds = valid.data,
                                  cv.folds = learner.cv,
                                  num.rounds = xgb.num.rounds,
                                  max.depth =  xgb.max.depth,
@@ -428,7 +466,7 @@ privateEC <- function(train.ds = NULL,
         cat("\tvariables list exhausted: no more variables to remove\n")
         keep.looping <- FALSE
       } else {
-
+        
       }
     }
     current.iteration <- current.iteration + 1
@@ -437,7 +475,7 @@ privateEC <- function(train.ds = NULL,
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("private EC optimization loop performed", num.updates,
                    "updates in", elapsed.time, " seconds\n")
-
+  
   # prepare results for returning to caller
   plot.data <- data.frame(vars.remain = vars.remain.per.update,
                           train.acc = all.train.acc,
@@ -446,7 +484,7 @@ privateEC <- function(train.ds = NULL,
                           alg = 1)
   if (verbose) print(plot.data)
   plot.data.narrow <- reshape2::melt(plot.data, id = c("vars.remain", "alg"))
-
+  
   # save the results to an Rdata file if requested
   if (!is.null(save.file)) {
     if (verbose) {
@@ -455,15 +493,16 @@ privateEC <- function(train.ds = NULL,
     save(plot.data, plot.data.narrow, correct.detect.ec, num.data.cols, num.data.rows,
          signal.names, threshold, tolerance, bias, elapsed.time, file = save.file)
   }
-
+  
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("privateEC elapsed time:", elapsed.time, "\n")
-
+  
   list(algo.acc = plot.data,
        ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
        elasped = elapsed.time,
        atts.remain = var.names,
+       ncv.atts = nCV_atts,
        updates = algo.hist)
 }
 
