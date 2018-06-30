@@ -24,7 +24,7 @@ test_that("run one workflow for a real data analysis", {
   # ~100 variables for a test
   test.mat <- rsfMRIcorrMDD[, 2900:ncol(rsfMRIcorrMDD)]
   real.result <- paperRealWorkflow(real.data = test.mat,
-                                   label = "phenos",
+                                   label = "class",
                                    update.freq = 5,
                                    verbose = FALSE)
   expect_equal(length(real.result), 2)

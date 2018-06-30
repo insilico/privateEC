@@ -4,6 +4,7 @@
 #' \describe{
 #'   \item{Simulation}{simulate data sets: mainEffect/interactionErdos/interactionScalefree}
 #'   \item{Classification}{privateEC and comparison algorithms}
+#'   \item{nestedCV}{nested cross validation methods}
 #'   \item{Workflow}{functions for reproducing paper analysis pipelines}
 #' }
 #' @docType package

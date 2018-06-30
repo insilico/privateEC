@@ -5,14 +5,58 @@
 #############################################
 ##### Consensus nested cross validation #####
 #--------------------------------------------
+
+#' Consensus nested cross validation for feature selection and parameter tuning
+#' @param train.ds A training data frame with last column as outcome
+#' @param validation.ds A validation data frame with last column as outcome
+#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
+#' @param is.simulated A TRUE or FALSE character for data type
+#' @param ncv_folds A numeric vector to indicate nested cv loops
+#' @param param.tune A TRUE or FALSE character for tuning parameters
+#' @param learning_method Name of the method: glmnet/xgbTree/rf
+#' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param num_tree Number of trees in random forest and xgboost methods
+#' @param verbose A flag indicating whether verbose output be sent to stdout
+#' @return A list with:
+#' \describe{
+#'   \item{Train}{Training data accuracy}
+#'   \item{Validation}{Validation data accuracy}
+#'   \item{Features}{number of variables detected correctly in nested cross validation}
+#'   \item{Elapsed}{total elapsed time}
+#' } 
+#' num.samples <- 100
+#' num.variables <- 100
+#' pct.signals <- 0.1
+#' sim.data <- createSimulation(num.samples = num.samples,
+#'                              num.variables = num.variables,
+#'                              pct.signals = pct.signals,
+#'                              pct.train = 1 / 3,
+#'                              pct.holdout = 1 / 3,
+#'                              pct.validation = 1 /3,
+#'                              sim.type = "mainEffect",
+#'                              verbose = FALSE)
+#' sim_train <- rbind(data.sets$train, data.sets$holdout)
+#' sim_test <- data.sets$validation                             
+#' cnCV.results <- consensus_nestedCV(train.ds = sim_train, 
+#'                                    validation.ds = sim_test, 
+#'                                    label = "class",
+#'                                    is.simulated = TRUE,
+#'                                    ncv_folds = c(10, 10),
+#'                                    param.tune = FALSE,
+#'                                    learning_method = "rf",
+#'                                    importance.algorithm = "ReliefFbestK",
+#'                                    num_tree = 500, 
+#'                                    verbose = FALSE)
+#' @family nestedCV
+#' @export
 consensus_nestedCV <- function(train.ds = NULL, 
                                validation.ds = NULL, 
-                               class.label = "class",
+                               label = "class",
                                is.simulated = TRUE,
                                ncv_folds = c(10, 10),
                                param.tune = FALSE,
                                learning_method = c("glmnet", "xgbTree", "rf"),
-                               importance_algorithm = "ReliefFbestK",
+                               importance.algorithm = "ReliefFbestK",
                                num_tree = 500, 
                                verbose = FALSE){
   tune_params <- NULL; accu_vec <- NULL
@@ -21,16 +65,16 @@ consensus_nestedCV <- function(train.ds = NULL,
   ptm <- proc.time()
   if(verbose){cat("\nRunning consensus nested cross-validation...\n")}
   if(verbose){cat("\n Create [",ncv_folds[1],"] outer folds\n")}
-  outer_folds <- caret::createFolds(train.ds[, class.label], ncv_folds[1], list = FALSE)
+  outer_folds <- caret::createFolds(train.ds[, label], ncv_folds[1], list = FALSE)
   for (i in 1:ncv_folds[1]){
     atts <- list()
     if(verbose){cat("\n Create [",ncv_folds[2],"] inner folds of outer fold[",i,"]\n")}
-    inner_folds <- caret::createFolds(train.ds[, class.label][outer_folds!=i], ncv_folds[2], list = TRUE)
+    inner_folds <- caret::createFolds(train.ds[, label][outer_folds!=i], ncv_folds[2], list = TRUE)
     if(verbose){cat("\n Feature Selection...\n")} 
     for (j in 1:length(inner_folds)){
       inner_idx <- which(outer_folds!=i)[-inner_folds[[j]]]
-      rf_scores <- CORElearn::attrEval(class.label, train.ds[inner_idx, ], 
-                                       estimator = importance_algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
+      rf_scores <- CORElearn::attrEval(label, train.ds[inner_idx, ], 
+                                       estimator = importance.algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
       atts[[j]] <- names(which(rf_scores>0))
     }
     relief_atts[[i]] <- Reduce(intersect, atts)
@@ -38,14 +82,14 @@ consensus_nestedCV <- function(train.ds = NULL,
       outer_idx <- which(outer_folds!=i)
       trn.data <- as.matrix(train.ds[outer_idx, relief_atts[[i]]])
       tst.data <- as.matrix(train.ds[-outer_idx, relief_atts[[i]]])
-      if(class.label == "class"){
-        trn.pheno <- as.factor(train.ds[, class.label][outer_idx])
+      if(label == "class"){
+        trn.pheno <- as.factor(train.ds[, label][outer_idx])
       } else {
-        trn.pheno <- train.ds[, class.label][outer_idx]}
-      if(class.label == "class"){
-        tst.pheno <- as.factor(train.ds[, class.label][-outer_idx])
+        trn.pheno <- train.ds[, label][outer_idx]}
+      if(label == "class"){
+        tst.pheno <- as.factor(train.ds[, label][-outer_idx])
       } else {
-        tst.pheno <- train.ds[, class.label][-outer_idx]}
+        tst.pheno <- train.ds[, label][-outer_idx]}
       if(verbose){cat("\n Parameter tuning...\n")}
       train_model <- caret::train(x = trn.data,
                                   y = trn.pheno,
@@ -54,7 +98,7 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
                                                            number = 10))
       pred.class <- predict(train_model, tst.data)
-      accu <- ifelse(class.label == "class",1 - mean(pred.class != tst.pheno), cor(tst.pheno, pred.class)^2)
+      accu <- ifelse(label == "class",1 - mean(pred.class != tst.pheno), cor(tst.pheno, pred.class)^2)
       tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
     }
   }
@@ -63,27 +107,27 @@ consensus_nestedCV <- function(train.ds = NULL,
   if(verbose){cat("\n Validating...\n")}
   train.data <- as.matrix(train.ds[, nCV_atts])
   test.data  <- as.matrix(validation.ds[, nCV_atts])
-  if(is.simulated && class.label == "class"){
-    train.pheno <- as.integer(train.ds[, class.label])-1
-    test.pheno <- as.integer(validation.ds[, class.label])-1
-  } else if (!is.simulated && class.label == "class"){
-    train.pheno <- as.integer(train.ds[, class.label])
-    test.pheno <- as.integer(validation.ds[, class.label])
-  } else if (class.label == "phenos"){
-    train.pheno <- train.ds[, class.label]
-    test.pheno <- validation.ds[, class.label]
+  if(is.simulated && label == "class"){
+    train.pheno <- as.integer(train.ds[, label])-1
+    test.pheno <- as.integer(validation.ds[, label])-1
+  } else if (!is.simulated && label == "class"){
+    train.pheno <- as.integer(train.ds[, label])
+    test.pheno <- as.integer(validation.ds[, label])
+  } else if (label == "phenos"){
+    train.pheno <- train.ds[, label]
+    test.pheno <- validation.ds[, label]
   }
   if(verbose){cat("\n Perform [",learning_method,"]\n")}
   if(learning_method == "glmnet"){
     # glmnet - train
     if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
-    glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(class.label == "class", "binomial", "gaussian"), 
+    glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(label == "class", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
-    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(class.label == "class","class", "response"))
-    Train_accu <- ifelse(class.label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(as.numeric(train.pred), train.pheno)^2)
+    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
+    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(as.numeric(train.pred), train.pheno)^2)
     # test
     test.pred <- predict(glmnet.model, test.data, s = lambda, type = "class")
-    Test_accu <- ifelse(class.label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
@@ -103,28 +147,28 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   subsample = subsample,
                                   colsample_bytree = colsample_bytree,
                                   min_child_weight = min_child_weight,
-                                  objective = ifelse(class.label == "class", "binary:logistic", "reg:linear"))
+                                  objective = ifelse(label == "class", "binary:logistic", "reg:linear"))
     train.pred.prob <- predict(xgb.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(class.label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
     # test
     test.pred.prob <- predict(xgb.model, dtest)
     test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-    Test_accu <- ifelse(class.label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
   } else if(learning_method == "rf") {
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
-                                           y = if(class.label == "class"){as.factor(train.pheno)}else{train.pheno},
+                                           y = if(label == "class"){as.factor(train.pheno)}else{train.pheno},
                                            mtry = if(param.tune){tuneParam$mtry} 
-                                           else if (class.label == "class"){max(floor(ncol(train.data)/3), 1)} 
+                                           else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)
-    Train_accu <- ifelse(class.label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
+    Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
                          cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
     
     # test
     test.pred <- predict(rf.model, newdata = test.data)
-    Test_accu <- ifelse(class.label == "class", 1 - mean(test.pred != test.pheno),
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred != test.pheno),
                         cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
   }
   elapsed.time <- (proc.time() - ptm)[3]
@@ -135,36 +179,82 @@ consensus_nestedCV <- function(train.ds = NULL,
 ###########################################
 ##### Regular nested cross validation #####
 #------------------------------------------
+
+#' Regular nested cross validation for feature selection and parameter tuning
+#' @param train.ds A training data frame with last column as outcome
+#' @param validation.ds A validation data frame with last column as outcome
+#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
+#' @param is.simulated A TRUE or FALSE character for data type
+#' @param ncv_folds A numeric vector to indicate nested cv loops
+#' @param param.tune A TRUE or FALSE character for tuning parameters
+#' @param learning_method Name of the method: glmnet/xgbTree/rf
+#' @param xgb.obj Name of xgboost algorithm
+#' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param num_tree Number of trees in random forest and xgboost methods
+#' @param verbose A flag indicating whether verbose output be sent to stdout
+#' @return A list with:
+#' \describe{
+#'   \item{Train}{Training data accuracy}
+#'   \item{Validation}{Validation data accuracy}
+#'   \item{Features}{number of variables detected correctly in nested cross validation}
+#'   \item{Elapsed}{total elapsed time}
+#' } 
+#' num.samples <- 100
+#' num.variables <- 100
+#' pct.signals <- 0.1
+#' sim.data <- createSimulation(num.samples = num.samples,
+#'                              num.variables = num.variables,
+#'                              pct.signals = pct.signals,
+#'                              pct.train = 1 / 3,
+#'                              pct.holdout = 1 / 3,
+#'                              pct.validation = 1 /3,
+#'                              sim.type = "mainEffect",
+#'                              verbose = FALSE)
+#' sim_train <- rbind(data.sets$train, data.sets$holdout)
+#' sim_test <- data.sets$validation                             
+#' rnCV.results <- regular_nestedCV(train.ds = sim_train, 
+#'                                  validation.ds = sim_test, 
+#'                                  label = "class",
+#'                                  is.simulated = TRUE,
+#'                                  ncv_folds = c(10, 10),
+#'                                  param.tune = FALSE,
+#'                                  learning_method = "rf",
+#'                                  importance.algorithm = "ReliefFbestK",
+#'                                  num_tree = 500, 
+#'                                  verbose = FALSE)
+#' @family nestedCV
+#' @export
 regular_nestedCV <- function(train.ds = NULL, 
                              validation.ds = NULL, 
-                             class.label = "class",
+                             label = "class",
                              is.simulated = TRUE,
                              ncv_folds = c(10, 10),
                              param.tune = FALSE,
                              learning_method = c("glmnet", "xgbTree", "rf"),
-                             importance_algorithm = "ReliefFbestK",
+                             xgb.obj = "binary:logistic",
+                             importance.algorithm = "ReliefFbestK",
                              num_tree = 500, 
                              verbose = FALSE){
   
   relief_atts <- list(); tune_params <- NULL; Train_accu <- NULL; Test_accu <- NULL
   ptm <- proc.time()
   if(verbose){cat("\nRunning regular nested cross-validation...\n")}
-  outer_folds <- caret::createFolds(train.ds[, class.label], ncv_folds[1], list = FALSE)
+  outer_folds <- caret::createFolds(train.ds[, label], ncv_folds[1], list = FALSE)
   for (i in 1:ncv_folds[1]){
     outer_idx <- which(outer_folds!=i)
-    rf_scores <- CORElearn::attrEval(class.label, train.ds[outer_idx, ], 
-                                     estimator = importance_algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
+    rf_scores <- CORElearn::attrEval(label, train.ds[outer_idx, ], 
+                                     estimator = importance.algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
     relief_atts[[i]] <- names(which(rf_scores>0))
     trn.data <- as.matrix(train.ds[outer_idx, relief_atts[[i]]])
     tst.data <- as.matrix(train.ds[-outer_idx, relief_atts[[i]]])
-    if(class.label == "class"){
-      trn.pheno <- as.factor(train.ds[, class.label][outer_idx])
+    if(label == "class"){
+      trn.pheno <- as.factor(train.ds[, label][outer_idx])
     } else {
-      trn.pheno <- train.ds[, class.label][outer_idx]}
-    if(class.label == "class"){
-      tst.pheno <- as.factor(train.ds[, class.label][-outer_idx])
+      trn.pheno <- train.ds[, label][outer_idx]}
+    if(label == "class"){
+      tst.pheno <- as.factor(train.ds[, label][-outer_idx])
     } else {
-      tst.pheno <- train.ds[, class.label][-outer_idx]}
+      tst.pheno <- train.ds[, label][-outer_idx]}
     train_model <- caret::train(x = trn.data,
                                 y = trn.pheno,
                                 method = learning_method,
@@ -180,27 +270,27 @@ regular_nestedCV <- function(train.ds = NULL,
   if(verbose){cat("\n Validating...\n")}
   train.data <- as.matrix(train.ds[, nCV_atts])
   test.data  <- as.matrix(validation.ds[, nCV_atts])
-  if(is.simulated && class.label == "class"){
-    train.pheno <- as.integer(train.ds[, class.label])-1
-    test.pheno <- as.integer(validation.ds[, class.label])-1
-  } else if (!is.simulated && class.label == "class"){
-    train.pheno <- as.integer(train.ds[, class.label])
-    test.pheno <- as.integer(validation.ds[, class.label])
-  } else if (class.label == "phenos"){
-    train.pheno <- train.ds[, class.label]
-    test.pheno <- validation.ds[, class.label]
+  if(is.simulated && label == "class"){
+    train.pheno <- as.integer(train.ds[, label])-1
+    test.pheno <- as.integer(validation.ds[, label])-1
+  } else if (!is.simulated && label == "class"){
+    train.pheno <- as.integer(train.ds[, label])
+    test.pheno <- as.integer(validation.ds[, label])
+  } else if (label == "phenos"){
+    train.pheno <- train.ds[, label]
+    test.pheno <- validation.ds[, label]
   }
   if(verbose){cat("\n Perform [",learning_method,"]\n")}
   if(learning_method == "glmnet"){
     # glmnet - train
     if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
-    glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(class.label == "class", "binomial", "gaussian"), 
+    glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(label == "class", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
-    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(class.label == "class","class", "response"))
-    Train_accu <- ifelse(class.label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(train.pred, train.pheno)^2)
+    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
+    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(train.pred, train.pheno)^2)
     # test
     test.pred <- predict(glmnet.model, test.data, s = lambda, type = "class")
-    Test_accu <- ifelse(class.label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
@@ -220,27 +310,27 @@ regular_nestedCV <- function(train.ds = NULL,
                                   subsample = subsample,
                                   colsample_bytree = colsample_bytree,
                                   min_child_weight = min_child_weight,
-                                  objective = ifelse(class.label == "class", "binary:logistic", "reg:linear"))
+                                  objective = xgb.obj)
     train.pred.prob <- predict(xgb.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(class.label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
     # test
     test.pred.prob <- predict(xgb.model, dtest)
     test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-    Test_accu <- ifelse(class.label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
   } else if(learning_method == "rf") {
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
-                                           y = if(class.label == "class"){as.factor(train.pheno)}else{train.pheno}, 
+                                           y = if(label == "class"){as.factor(train.pheno)}else{train.pheno}, 
                                            mtry = if(param.tune){tuneParam$mtry} 
-                                           else if (class.label == "class"){max(floor(ncol(train.data)/3), 1)} 
+                                           else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)
-    Train_accu <- ifelse(class.label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
+    Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
                          cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
     # test
     test.pred <- predict(rf.model, newdata = test.data)
-    Test_accu <- ifelse(class.label == "class", 1 - mean(test.pred != test.pheno),
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred != test.pheno),
                         cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
   }
   elapsed.time <- (proc.time() - ptm)[3]

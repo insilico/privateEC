@@ -100,7 +100,7 @@ rncv_result <- regular_nestedCV(train.ds = sim_train,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
                                 learning_method = "rf", 
-                                importance_algorithm = importance.algorithm,
+                                importance.algorithm = importance.algorithm,
                                 num_tree = num_tree,
                                 verbose = verbose)
 ```
@@ -122,7 +122,7 @@ cncv_result <- consensus_nestedCV(train.ds = sim_train,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
                                   learning_method = "rf", 
-                                  importance_algorithm = importance.algorithm,
+                                  importance.algorithm = importance.algorithm,
                                   num_tree = num_tree,
                                   verbose = verbose)
 ```
@@ -211,7 +211,7 @@ rncv_result <- regular_nestedCV(train.ds = sim_train,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
                                 learning_method = "rf", 
-                                importance_algorithm = importance.algorithm,
+                                importance.algorithm = importance.algorithm,
                                 num_tree = num_tree,
                                 verbose = verbose)
 ```
@@ -233,7 +233,7 @@ cncv_result <- consensus_nestedCV(train.ds = sim_train,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
                                   learning_method = "rf", 
-                                  importance_algorithm = importance.algorithm,
+                                  importance.algorithm = importance.algorithm,
                                   num_tree = num_tree,
                                   verbose = verbose)
 ```
@@ -324,7 +324,7 @@ rncv_result <- regular_nestedCV(train.ds = sim_train,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
                                 learning_method = "rf", 
-                                importance_algorithm = importance.algorithm,
+                                importance.algorithm = importance.algorithm,
                                 num_tree = num_tree,
                                 verbose = verbose)
 ```
@@ -346,7 +346,7 @@ cncv_result <- consensus_nestedCV(train.ds = sim_train,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
                                   learning_method = "rf", 
-                                  importance_algorithm = importance.algorithm,
+                                  importance.algorithm = importance.algorithm,
                                   num_tree = num_tree,
                                   verbose = verbose)
 ```
@@ -433,7 +433,7 @@ rncv_result <- regular_nestedCV(train.ds = sim_train,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
                                 learning_method = "rf", 
-                                importance_algorithm = importance.algorithm,
+                                importance.algorithm = importance.algorithm,
                                 num_tree = num_tree,
                                 verbose = verbose)
 ```
@@ -455,7 +455,7 @@ cncv_result <- consensus_nestedCV(train.ds = sim_train,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
                                   learning_method = "rf", 
-                                  importance_algorithm = importance.algorithm,
+                                  importance.algorithm = importance.algorithm,
                                   num_tree = num_tree,
                                   verbose = verbose)
 ```

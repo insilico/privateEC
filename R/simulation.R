@@ -17,13 +17,13 @@
 #' according to the predefined percentage of each partition
 #' default is a 50-50 split into training and holdout, no testing set
 #' code class/label/phenotypes as 1 and -1.
-#' User can manage the simulation data to be dichotomious/quantitative using class.label (class/phenos)
+#' User can manage the simulation data to be dichotomious/quantitative using label (class/phenos)
 #'
 #' @param all.data A data frame of n rows by d colums of data plus a label column
 #' @param pct.train A numeric percentage of samples to use for traning
 #' @param pct.holdout A numeric percentage of samples to use for holdout
 #' @param pct.validation A numeric percentage of samples to use for testing
-#' @param class.label A character vector of the data column name for the outcome label. class for classification
+#' @param label A character vector of the data column name for the outcome label. class for classification
 #' and phenos for regression.
 #' @return A list containing:
 #' \describe{
@@ -40,7 +40,7 @@ splitDataset <- function(all.data=NULL,
                          pct.train=0.5,
                          pct.holdout=0.5,
                          pct.validation=0,
-                         class.label=c("class", "phenos")) {
+                         label="class") {
   if (is.null(all.data)) {
     # stop or warning and return list of length 0?
     stop("No data passed")
@@ -48,22 +48,22 @@ splitDataset <- function(all.data=NULL,
   if (1.0 - (pct.train + pct.holdout + pct.validation) > 0.001 ) {
     stop("Proportions of training, holdout and testing must to sum to 1")
   }
-  if (!(class.label %in% colnames(all.data))) {
+  if (!(label %in% colnames(all.data))) {
     stop("Class label is not in the column names or used more than once in data set column names")
   }
-  if (class.label == "class"){
-    if (!is.factor(all.data[, class.label])) {
-      all.data[, class.label] <- factor(all.data[, class.label])
+  if (label == "class"){
+    if (!is.factor(all.data[, label])) {
+      all.data[, label] <- factor(all.data[, label])
     }
-    if (nlevels(all.data[, class.label]) != 2) {
+    if (nlevels(all.data[, label]) != 2) {
       stop("Cannot split data set with more than or less than 2 factor levels in the class label")
     }
   }
   
-  if (class.label == "class"){
-    class.levels <- levels(all.data[, class.label])
-    ind.case <- rownames(all.data)[all.data[, class.label] == class.levels[1]]
-    ind.ctrl <- rownames(all.data)[all.data[, class.label] == class.levels[2]]
+  if (label == "class"){
+    class.levels <- levels(all.data[, label])
+    ind.case <- rownames(all.data)[all.data[, label] == class.levels[1]]
+    ind.ctrl <- rownames(all.data)[all.data[, label] == class.levels[2]]
     
     n.case <- length(ind.case)
     n.ctrl <- length(ind.ctrl)
@@ -82,15 +82,15 @@ splitDataset <- function(all.data=NULL,
                                rep(1, n.train.ctrl)), n.ctrl)
     
     all.data <- data.frame(all.data)
-    all.data[, class.label] <- factor(all.data[, class.label])
-    levels(all.data[, class.label]) <- c(-1, 1)
+    all.data[, label] <- factor(all.data[, label])
+    levels(all.data[, label]) <- c(-1, 1)
     data.case <- all.data[ind.case, ]
     data.ctrl <- all.data[ind.ctrl, ]
     X_train <- rbind(data.case[partition.case == 1, ], data.ctrl[partition.ctrl == 1, ])
     X_holdo <- rbind(data.case[partition.case == 2, ], data.ctrl[partition.ctrl == 2, ])
     X_validation <- rbind(data.case[partition.case == 3, ], data.ctrl[partition.ctrl == 3, ])
   } else {
-    num_sample <- length(all.data[, class.label])
+    num_sample <- length(all.data[, label])
     n.train <- floor(pct.train * num_sample)
     n.holdout <- floor(pct.holdout * num_sample)
     n.validation <- floor(pct.validation * num_sample)
@@ -115,7 +115,7 @@ splitDataset <- function(all.data=NULL,
 #'
 #' @param M An integer for the number of samples (rows)
 #' @param N An integer for the number of variables (columns)
-#' @param class.label A character vector for the name of the outcome column. class for classification
+#' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
 #' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
 #' 0 means all controls and 1 mean all cases.
@@ -129,7 +129,7 @@ splitDataset <- function(all.data=NULL,
 #' @return A matrix representing the new new data set.
 createInteractions <- function(M=100,
                                N=100,
-                               class.label="class",
+                               label="class",
                                pct.imbalance = .5,
                                meanExpression=7,
                                A=NULL,
@@ -192,13 +192,13 @@ createInteractions <- function(M=100,
   subIds <- c(paste("case", 1:n1, sep = ""), paste("ctrl", 1:n2, sep = ""))
   phenos <- c(rep(1, n1), rep(0, n2))
   newD <- cbind(t(D), phenos)
-  colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep = ""), class.label)
+  colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep = ""), label)
   rownames(newD) <- subIds
   
   data.frame(newD)
 }
 
-# main effect with quantitative outcome using class.label ("class" (dichotomious) or "phenos"(quantitative))
+# main effect with quantitative outcome using label ("class" (dichotomious) or "phenos"(quantitative))
 # main effect with imbalanced outcome using pct.imbalance (decreasing pct. will generate less control sample)
 # parameters in effect n.e=num.variables, n.db=num.samples, sd.b=bias, p.b=pct.signals
 
@@ -217,7 +217,7 @@ createInteractions <- function(M=100,
 #' @param n.e number of variables
 #' @param n.db sample size in database
 #' @param n.ns sample size in newsample
-#' @param class.label A character vector for the name of the outcome column. class for classification
+#' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
 #' @param sv.db batches
 #' @param sv.ns batches
@@ -242,7 +242,7 @@ createInteractions <- function(M=100,
 createMainEffects <- function(n.e=1000,
                               n.db=70,
                               n.ns=30,
-                              class.label = "phenos",
+                              label = "class",
                               pct.imbalance = 0.5,
                               sv.db=c("A", "B"),
                               sv.ns=c("A", "B"),
@@ -254,6 +254,9 @@ createMainEffects <- function(n.e=1000,
                               p.b=0.3,
                               p.gam=0.3,
                               p.ov=p.b / 2) {
+  if(!any(label == c("class", "phenos"))){
+    stop("CreateMainEffects: name of the label should be class or phenos")
+  }
   n <- n.db + n.ns
   # Create random error
   U <- matrix(nrow = n.e, ncol = n, stats::rnorm(n.e * n, sd = sd.u))
@@ -261,7 +264,7 @@ createMainEffects <- function(n.e=1000,
   # Create index for database vs. new sample #
   ind <- as.factor(c(rep("db", n.db), rep("ns", n.ns)))
   
-  if (class.label == "class"){
+  if (label == "class"){
     # Create outcome, surrogate variables #
     # Use distr option to show % overlap of outcome, surrogate variables.
     # Note that .5 means no confounding between outcome, surrogate variables.
@@ -373,7 +376,7 @@ createMainEffects <- function(n.e=1000,
     db$S <- S[ind == "db"]
     db$Gam <- Gam
     db$G <- G[ind == "db"]
-  } else if (class.label == "phenos"){
+  } else if (label == "phenos"){
     ##########################
     # ------- Comment --------
     # Since, we have quantitative outcome and not dichotomize outcome, we may not be able to include conf.
@@ -433,7 +436,7 @@ createMainEffects <- function(n.e=1000,
 #' @param num.samples An integer for the number of samples
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param class.label A character vector for the name of the outcome column. class for classification
+#' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
 #' @param sim.type A character vector of the type of simulation:
 #' mainEffect/interactionErdos/interactionScalefree
@@ -447,20 +450,24 @@ createMainEffects <- function(n.e=1000,
 #'   \item{train}{traing data set}
 #'   \item{holdout}{holdout data set}
 #'   \item{validation}{validation data set}
-#'   \item{class.label}{the class label/column name}
+#'   \item{label}{the class label/column name}
 #'   \item{signal.names}{the variable names with simulated signals}
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
 #' num.variables <- 100
 #' num.samples <- 100
+#' pct.imbalance <- 0.5
 #' pct.signals <- 0.1
 #' bias <- 0.4
+#' label <- "class"
 #' sim.type <- "mainEffect"
 #' sim.data <- createSimulation(num.samples=num.samples,
 #'                              num.variables=num.variables,
 #'                              pct.signals=pct.signals,
+#'                              pct.imbalance=pct.imbalance,
 #'                              bias=bias,
+#'                              label=label,
 #'                              sim.type=sim.type,
 #'                              verbose=FALSE)
 #' @family simulation
@@ -470,13 +477,16 @@ createSimulation <- function(num.samples=100,
                              pct.imbalance = 0.5,
                              pct.signals=0.1,
                              bias=0.4,
-                             class.label=c("class", "phenos"),
+                             label="class",
                              sim.type="mainEffect",
                              pct.train=0.5,
                              pct.holdout=0.5,
                              pct.validation=0,
                              save.file=NULL,
                              verbose=FALSE) {
+  if(!any(label == c("class", "phenos"))){
+    stop("CreateMainEffects: name of the label should be class or phenos")
+  }
   ptm <- proc.time()
   nbias <- pct.signals * num.variables
   if (sim.type == "mainEffect") {
@@ -486,7 +496,7 @@ createSimulation <- function(num.samples=100,
     my.sim.data <- createMainEffects(n.e=num.variables,
                                      n.db=num.samples,
                                      pct.imbalance=pct.imbalance,
-                                     class.label = class.label,
+                                     label = label,
                                      sd.b=bias,
                                      p.b=pct.signals)$db
     dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
@@ -527,13 +537,13 @@ createSimulation <- function(num.samples=100,
   # Exanple: vgboost does not allow for certain functions using these names
   signal.names <- paste("simvar", 1:nbias, sep = "")
   background.names <- paste("var", 1:(num.variables - nbias), sep = "")
-  var.names <- c(signal.names, background.names, class.label)
+  var.names <- c(signal.names, background.names, label)
   colnames(dataset) <- var.names
   split.data <- splitDataset(all.data = dataset,
                              pct.train = pct.train,
                              pct.holdout = pct.holdout,
                              pct.validation = pct.validation,
-                             class.label = class.label)
+                             label = label)
   
   if (!is.null(save.file)) {
     if (verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
@@ -546,7 +556,7 @@ createSimulation <- function(num.samples=100,
   list(train = split.data$train,
        holdout = split.data$holdout,
        validation = split.data$validation,
-       class.label = class.label,
+       label = label,
        signal.names = signal.names,
        elapsed = elapsed)
 }
@@ -562,7 +572,7 @@ createSimulation <- function(num.samples=100,
 #' @param num.samples An integer for the number of samples
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
-#' @param class.label A character vector for the name of the outcome column. class for classification
+#' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
 #' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
 #' 0 means all controls and 1 mean all cases.
@@ -579,7 +589,7 @@ createSimulation <- function(num.samples=100,
 #'   \item{train}{traing data set}
 #'   \item{holdout}{holdout data set}
 #'   \item{validation}{validation data set}
-#'   \item{class.label}{the class label/column name}
+#'   \item{label}{the class label/column name}
 #'   \item{signal.names}{the variable names with simulated signals}
 #'   \item{elapsed}{total elapsed time}
 #' }
@@ -590,54 +600,57 @@ createSimulation <- function(num.samples=100,
 #' bias <- 0.4
 #' pct.mixed <- 0.5
 #' mixed.type <- c("mainEffect", "interactionScalefree")
-#' sim.data <- createSimulation(num.samples=num.samples,
-#'                              num.variables=num.variables,
-#'                              pct.signals=pct.signals,
-#'                              bias=bias,
-#'                              pct.mixed=pct.mixed,
-#'                              mixed.type=mixed.type,
-#'                              verbose=FALSE)
+#' sim.data <- createMixedSimulation(num.samples=num.samples,
+#'                                   num.variables=num.variables,
+#'                                   pct.signals=pct.signals,
+#'                                   bias=bias,
+#'                                   pct.mixed=pct.mixed,
+#'                                   mixed.type=mixed.type,
+#'                                   verbose=FALSE)
 #' @family simulation
 #' @export
 createMixedSimulation <- function(num.samples = 100,
                                   num.variables = 100,
                                   pct.signals=0.1,
                                   bias=0.4,
-                                  class.label = "class",
+                                  label = "class",
                                   pct.imbalance = 0.5,
                                   pct.mixed = 0.5,
-                                  mixed.type = NULL,
+                                  mixed.type = c("mainEffect","interactionScalefree"),
                                   pct.train=0.5,
                                   pct.holdout=0.5,
                                   pct.validation=0,
                                   save.file=NULL,
                                   verbose=FALSE){
+  if(!any(label == c("class", "phenos"))){
+    stop("createMixedSimulation: name of the label should be class or phenos")
+  }
   num.int.vars <- round(num.variables * pct.mixed)
   num.main.vars <- round(num.variables * (1 - pct.mixed))
   ptm <- proc.time()
   int.nbias <- pct.signals * num.int.vars
   main.nbias <- pct.signals * num.main.vars
-  if(!is.null(mixed.type[1])){
+  if(!is.null(mixed.type) && any("mainEffect" == mixed.type)){
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
     my.sim.data <- createMainEffects(n.e=num.main.vars,
                                      n.db=num.samples,
-                                     class.label=class.label,
+                                     label=label,
                                      pct.imbalance = pct.imbalance,
                                      sd.b=bias,
                                      p.b=pct.signals)$db
     mainEffect.dataset <- cbind(t(my.sim.data$datnobatch), my.sim.data$S)
   }
   
-  if (!is.null(mixed.type[2]) && mixed.type[2] == "interactionScalefree") {
+  if (!is.null(mixed.type) && any("interactionScalefree" == mixed.type)) {
     # interaction simulation: scale-free
     g <- igraph::barabasi.game(num.int.vars, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
     interaction_dataset <- createInteractions(M=num.int.vars,
                                               N=num.samples,
-                                              class.label=class.label,
+                                              label=label,
                                               pct.imbalance = pct.imbalance,
                                               meanExpression=7,
                                               A=myA,
@@ -645,7 +658,7 @@ createMixedSimulation <- function(num.samples = 100,
                                               sdNoise=bias,
                                               sampleIndicesInteraction=1:int.nbias)
     
-  } else if (!is.null(mixed.type[2]) && mixed.type[2] == "interactionErdos") {
+  } else if (!is.null(mixed.type) && any("interactionErdos" == mixed.type)) {
     attach.prob <- 0.1
     g <- igraph::erdos.renyi.game(num.int.vars, attach.prob)
     #   foo <- printIGraphStats(g)
@@ -654,13 +667,15 @@ createMixedSimulation <- function(num.samples = 100,
     myA <- as.matrix(A)
     interaction_dataset <- createInteractions(M=num.int.vars,
                                               N=num.samples,
-                                              class.label=class.label,
+                                              label=label,
                                               pct.imbalance = pct.imbalance,
                                               meanExpression=7,
                                               A=myA,
                                               randSdNoise=1,
                                               sdNoise=bias,
                                               sampleIndicesInteraction=1:int.nbias)
+  } else {
+    stop("createMixedSimulation: mixed.type vector is empty")
   }
   mainEffect.dataset <- mainEffect.dataset[c((pct.imbalance*num.samples + 1):num.samples, 1:(pct.imbalance*num.samples)), ]
   mixed_data <- cbind(mainEffect.dataset[, -(num.main.vars + 1)], interaction_dataset)
@@ -674,13 +689,13 @@ createMixedSimulation <- function(num.samples = 100,
   int.signal.names <- paste("intsim", 1:int.nbias, sep = "")
   int.background.names <- paste("var", 1:(num.int.vars - int.nbias), sep = "")
   main.background.names <- paste("var", 1:(num.main.vars - main.nbias), sep = "")
-  var.names <- c(main.signal.names, main.background.names, int.signal.names, int.background.names, class.label)
+  var.names <- c(main.signal.names, main.background.names, int.signal.names, int.background.names, label)
   colnames(dataset) <- var.names
   split.data <- splitDataset(all.data = dataset,
                              pct.train = pct.train,
                              pct.holdout = pct.holdout,
                              pct.validation = pct.validation,
-                             class.label = class.label)
+                             label = label)
   
   if (!is.null(save.file)) {
     if (verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
@@ -693,7 +708,7 @@ createMixedSimulation <- function(num.samples = 100,
   list(train = split.data$train,
        holdout = split.data$holdout,
        validation = split.data$validation,
-       class.label = class.label,
+       label = label,
        signal.names = c(main.signal.names, int.signal.names),
        elapsed = elapsed)
   

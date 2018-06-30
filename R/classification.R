@@ -9,8 +9,8 @@
 
 #' Compute and return importance scores (Relief-F scores)
 #'
-#' @param train.set A training data frame with last column as class
-#' @param holdout.set A holdout data frame with last column as class
+#' @param train.set A training data frame with last column as outcome
+#' @param holdout.set A holdout data frame with last column as outcome
 #' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
 #' @param importance.name A list importance operation parameters
 #' @param importance.algorithm A character vector of the ReliefF estimator
@@ -21,7 +21,7 @@
 #' @export
 getImportanceScores <- function(train.set=NULL,
                                 holdout.set=NULL,
-                                label="phenos",
+                                label="class",
                                 importance.name = "relieff",
                                 importance.algorithm = "ReliefFbestK",
                                 verbose=FALSE) {
@@ -66,10 +66,10 @@ getImportanceScores <- function(train.set=NULL,
 
 #' Private Evaporative Cooling feature selection and classification
 #'
-#' @param train.ds A data frame with training data and class labels
-#' @param holdout.ds A data frame with holdout data and class labels
-#' @param validation.ds A data frame with validation data and class labels
-#' @param label A character vector of the class variable column name
+#' @param train.ds A data frame with training data and outcome labels
+#' @param holdout.ds A data frame with holdout data and outcome labels
+#' @param validation.ds A data frame with validation data and outcome labels
+#' @param label A character vector of the outcome variable column name
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
 #' @param importance.name A character vector containg the importance algorithm name
@@ -97,6 +97,8 @@ getImportanceScores <- function(train.set=NULL,
 #'   \item{algo.acc}{data frame of results, a row for each update}
 #'   \item{ggplot.data}{melted results data frame for plotting with ggplot}
 #'   \item{correct}{number of variables detected correctly in each data set}
+#'   \item{atts.remain}{name of the attributes in each iteraction}
+#'   \item{ncv.atts}{name of the selected attributes using nested cross validation}
 #'   \item{elapsed}{total elapsed time}
 #' }
 #' @examples
@@ -114,7 +116,7 @@ getImportanceScores <- function(train.set=NULL,
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
+#'                          label = sim.data$label,
 #'                          importance.name = "relieff",
 #'                          learner.name = "randomforest",
 #'                          is.simulated = TRUE,
@@ -123,9 +125,9 @@ getImportanceScores <- function(train.set=NULL,
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
-#`                          learner.name = "xgboost",
-#                           xgb.max.depth = 5,
+#'                          label = sim.data$label,
+#'                          learner.name = "xgboost",
+#'                          xgb.max.depth = 5,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
@@ -146,12 +148,12 @@ getImportanceScores <- function(train.set=NULL,
 privateEC <- function(train.ds = NULL,
                       holdout.ds = NULL,
                       validation.ds = NULL,
-                      label = c("class","phenos"),
+                      label = "class",
                       is.simulated = TRUE,
                       bias = 0.4,
                       update.freq = 5,
                       importance.name = "relieff",
-                      importance.algorithm = c("ReliefFbestK","RReliefFbestK"),
+                      importance.algorithm = "ReliefFbestK",
                       learner.name = "randomforest",
                       xgb.obj = "binary:logistic",
                       use.nestedCV = TRUE,
@@ -414,6 +416,7 @@ privateEC <- function(train.ds = NULL,
                                  holdout.ds = hold.data,
                                  validation.ds = valid.data,
                                  cv.folds = learner.cv,
+                                 objective = xgb.obj,
                                  num.rounds = xgb.num.rounds,
                                  max.depth =  xgb.max.depth,
                                  shrinkage = xgb.shrinkage,
@@ -511,10 +514,10 @@ privateEC <- function(train.ds = NULL,
 #' Original Thresholdout with Dwork’s linear classifier
 #' (Dwork, et al., 2015)
 #'
-#' @param train.ds A data frame with training data and class labels
-#' @param holdout.ds A data frame with holdout data and class labels
-#' @param validation.ds A data frame with validation data and class labels
-#' @param label A character vector of the class variable column name
+#' @param train.ds A data frame with training data and outcome labels
+#' @param holdout.ds A data frame with holdout data and outcome labels
+#' @param validation.ds A data frame with validation data and outcome labels
+#' @param label A character vector of the outcome variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param update.freq A integer for the number of steps before update
 #' @param pec.file A character vector filename of privateEC results
@@ -547,7 +550,7 @@ privateEC <- function(train.ds = NULL,
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
+#'                          label = sim.data$label,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          save.file = temp.pec.file,
@@ -555,7 +558,7 @@ privateEC <- function(train.ds = NULL,
 #' por.results <- originalThresholdout(train.ds = sim.data$train,
 #'                                     holdout.ds = sim.data$holdout,
 #'                                     validation.ds = sim.data$validation,
-#'                                     label = sim.data$class.label,
+#'                                     label = sim.data$label,
 #'                                     is.simulated = TRUE,
 #'                                     signal.names = sim.data$signal.names,
 #'                                     pec.file = temp.pec.file,
@@ -566,7 +569,7 @@ privateEC <- function(train.ds = NULL,
 originalThresholdout <- function(train.ds=NULL,
                                  holdout.ds=NULL,
                                  validation.ds=NULL,
-                                 label="phenos",
+                                 label="class",
                                  is.simulated=TRUE,
                                  update.freq=50,
                                  pec.file=NULL,
@@ -687,10 +690,10 @@ originalThresholdout <- function(train.ds=NULL,
 #' Random Forest Thresholdout, which is TO with the feature selection
 #' and classifier replaced with Random Forest.
 #'
-#' @param train.ds A data frame with training data and class labels
-#' @param holdout.ds A data frame with holdout data and class labels
-#' @param validation.ds A data frame with validation data and class labels
-#' @param label A character vector of the class variable column name
+#' @param train.ds A data frame with training data and outcome labels
+#' @param holdout.ds A data frame with holdout data and outcome labels
+#' @param validation.ds A data frame with validation data and outcome labels
+#' @param label A character vector of the outcome variable column name
 #' @param is.simulated Is the data simulated (or real?)
 #' @param rf.importance.measure A character vector for the random forest importance measure
 #' @param rf.ntree An integer the number of trees in the random forest
@@ -726,7 +729,7 @@ originalThresholdout <- function(train.ds=NULL,
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
+#'                          label = sim.data$label,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          save.file = temp.pec.file,
@@ -734,7 +737,7 @@ originalThresholdout <- function(train.ds=NULL,
 #' prf.results <- privateRF(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
+#'                          label = sim.data$label,
 #'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          pec.file = temp.pec.file,
@@ -745,7 +748,7 @@ originalThresholdout <- function(train.ds=NULL,
 privateRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
-                      label="phenos",
+                      label="class",
                       is.simulated=TRUE,
                       rf.importance.measure="MeanDecreaseGini",
                       rf.ntree=500,
@@ -902,10 +905,10 @@ privateRF <- function(train.ds=NULL,
 
 #' Standard random forests algorithm serves as a baseline model
 #'
-#' @param train.ds A data frame with training data and class labels
-#' @param holdout.ds A data frame with holdout data and class labels
-#' @param validation.ds A data frame with validation data and class labels
-#' @param label A character vector of the class variable column name
+#' @param train.ds A data frame with training data and outcome labels
+#' @param holdout.ds A data frame with holdout data and outcome labels
+#' @param validation.ds A data frame with validation data and outcome labels
+#' @param label A character vector of the outcome variable column name
 #' @param rf.ntree An integer the number of trees in the random forest
 #' @param rf.mtry An integer the number of variables sampled at each random forest node split
 #' @param is.simulated Is the data simulated (or real?)
@@ -933,7 +936,7 @@ privateRF <- function(train.ds=NULL,
 #' rra.results <- standardRF(train.ds=sim.data$train,
 #'                           holdout.ds=sim.data$holdout,
 #'                           validation.ds=sim.data$validation,
-#'                           label=sim.data$class.label,
+#'                           label=sim.data$label,
 #'                           is.simulated=TRUE,
 #'                           verbose=FALSE,
 #'                           signal.names=sim.data$signal.names)
@@ -942,7 +945,7 @@ privateRF <- function(train.ds=NULL,
 standardRF <- function(train.ds=NULL,
                        holdout.ds=NULL,
                        validation.ds=NULL,
-                       label="phenos",
+                       label="class",
                        rf.ntree=500,
                        rf.mtry=NULL,
                        is.simulated=TRUE,
@@ -1008,10 +1011,10 @@ standardRF <- function(train.ds=NULL,
 #' by Friedman. XGBoost is based on this original model. This is a function using gradient
 #' boosted trees for privacyEC.
 #'
-#' @param train.ds A data frame with training data and class labels
-#' @param holdout.ds A data frame with holdout data and class labels
-#' @param validation.ds A data frame with validation data and class labels
-#' @param label A character vector of the class variable column name
+#' @param train.ds A data frame with training data and outcome labels
+#' @param holdout.ds A data frame with holdout data and outcome labels
+#' @param validation.ds A data frame with validation data and outcome labels
+#' @param label A character vector of the outcome variable column name
 #' @param cv.folds An integer for the number of cross validation folds
 #' @param num.threads An integer for OpenMP number of cores
 #' @param num.rounds An integer number of xgboost boosting iterations
@@ -1040,7 +1043,7 @@ standardRF <- function(train.ds=NULL,
 #' rra.results <- xgboostRF(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
-#'                          label = sim.data$class.label,
+#'                          label = sim.data$label,
 #'                          num.rounds = c(1),
 #'                          max.depth = c(10),
 #'                          is.simulated = TRUE,
@@ -1051,12 +1054,13 @@ standardRF <- function(train.ds=NULL,
 xgboostRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
-                      label="phenos",
+                      label="class",
                       cv.folds = NULL,
                       num.threads = 2,
                       num.rounds = c(1),
                       max.depth = c(4),
                       shrinkage = c(1.0),
+                      objective = "binary:logistic",
                       save.file=NULL,
                       verbose=FALSE) {
   if (is.null(train.ds) | is.null(holdout.ds)) {
@@ -1111,20 +1115,30 @@ xgboostRF <- function(train.ds=NULL,
     # train the model for each parameter combination in the grid using CV to evaluate
     if (verbose) cat("Running caret::train with cross validation and a grid of parameters to test\n")
     train.model = caret::train(x = data.matrix(train_data),
-                               y = as.factor(train_pheno),
+                               y = if(label=="class"){as.factor(train_pheno)}else{train_pheno},
                                trControl = xgb_trcontrol_1,
                                tuneGrid = xgb_grid_1,
                                method = "xgbTree",
-                               metric = "Accuracy",
+                               metric = ifelse(label=="class", "Accuracy", "RMSE"),
                                verbose = verbose)
 
     pred.class <- predict(train.model, train.ds)
-    rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    if(label == "class"){
+      rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    } else {
+      rf.train.accu <- cor(pred.class, train.pheno)^2
+    }
+    
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
     pred.class <- predict(train.model, holdout.ds)
     if (verbose) print(table(pred.class))
-    rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    if (label == "class"){
+      rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    } else {
+      rf.holdo.accu <- cor(pred.class, holdout_pheno)^2
+    }
+    
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
@@ -1133,8 +1147,12 @@ xgboostRF <- function(train.ds=NULL,
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
       rf.class <- predict(train.model, validation.ds)
-      if (verbose) print(table(rf.class))
-      rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+      if (label == "class"){
+        if (verbose) print(table(rf.class))
+        rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+      } else {
+        rf.validation.accu <- cor(rf.class, validation_pheno)^2
+      }
     } else {
       rf.validation.accu <- 0
     }
@@ -1146,30 +1164,43 @@ xgboostRF <- function(train.ds=NULL,
                                     nthread = num.threads,
                                     nrounds = num.rounds,
                                     max.depth = max.depth,
-                                    objective = "binary:logistic",
+                                    objective = objective,
                                     verbose = FALSE)
 
     train.pred.prob <- predict(train.model, dtrain)
-    pred.class <- as.numeric(train.pred.prob > 0.5)
-    rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    if (label == "class"){
+      pred.class <- as.numeric(train.pred.prob > 0.5)
+      rf.train.accu <- 1 - mean(pred.class != train_pheno)
+    } else {
+      rf.train.accu <- cor(train.pred.prob, train_pheno)^2
+    }
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
     holdout.pred.prob <- predict(train.model, dholdo)
-    pred.class <- as.numeric(holdout.pred.prob > 0.5)
-    if (verbose) print(table(pred.class))
-    rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    if (label == "class"){
+      pred.class <- as.numeric(holdout.pred.prob > 0.5)
+      if (verbose) print(table(pred.class))
+      rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
+    } else {
+      rf.holdo.accu <- cor(holdout.pred.prob, holdout_pheno)^2
+    }
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing dating for prediction\n")
-      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      if (label == "class"){validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1}
+      else {validation_pheno <- validation.ds[, pheno.col]}
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
       dvalid <- xgboost::xgb.DMatrix(data = validation_data, label = validation_pheno)
       valid.pred.prob <- predict(train.model, dvalid)
-      rf.class <- as.numeric(valid.pred.prob > 0.5)
-      if (verbose) print(table(rf.class))
-      rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+      if (label == "class"){
+        rf.class <- as.numeric(valid.pred.prob > 0.5)
+        if (verbose) print(table(rf.class))
+        rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
+      } else {
+        rf.validation.accu <- cor(valid.pred.prob, validation_pheno)^2
+      }
     } else {
       rf.validation.accu <- 0
     }

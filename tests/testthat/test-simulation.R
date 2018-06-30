@@ -63,7 +63,7 @@ test_that("splitDataset makes the correct sized train, holdout sized splits", {
                             pct.train = 0.5,
                             pct.holdout = 0.5,
                             pct.validation = 0,
-                            class.label = "phenos")
+                            label = "class")
   # splits
   expect_equal(nrow(data.sets$train), n * 0.5, tolerance = 0.5)
   expect_equal(nrow(data.sets$holdout), n * 0.5, tolerance = 0.5)
@@ -86,7 +86,7 @@ test_that("splitDataset makes the correct sized train, holdout AND validation si
                             pct.train = 1 / 3,
                             pct.holdout = 1 / 3,
                             pct.validation = 1 / 3,
-                            class.label = "phenos")
+                            label = "class")
   # splits
   a.third <- 1 / 3
   ntimes.a.third <- floor(n * a.third)
