@@ -600,9 +600,11 @@ createSimulation <- function(num.samples=100,
 #' bias <- 0.4
 #' pct.mixed <- 0.5
 #' mixed.type <- c("mainEffect", "interactionScalefree")
+#' label <- "class"
 #' sim.data <- createMixedSimulation(num.samples=num.samples,
 #'                                   num.variables=num.variables,
 #'                                   pct.signals=pct.signals,
+#'                                   label = label,
 #'                                   bias=bias,
 #'                                   pct.mixed=pct.mixed,
 #'                                   mixed.type=mixed.type,

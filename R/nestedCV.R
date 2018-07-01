@@ -27,19 +27,16 @@
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' sim.data <- createSimulation(num.samples = num.samples,
 #'                              num.variables = num.variables,
 #'                              pct.signals = pct.signals,
-#'                              pct.train = 1 / 3,
-#'                              pct.holdout = 1 / 3,
-#'                              pct.validation = 1 /3,
 #'                              sim.type = "mainEffect",
-#'                              verbose = FALSE)
-#' sim_train <- rbind(data.sets$train, data.sets$holdout)
-#' sim_test <- data.sets$validation                             
-#' cnCV.results <- consensus_nestedCV(train.ds = sim_train, 
-#'                                    validation.ds = sim_test, 
-#'                                    label = "class",
+#'                              label = label,
+#'                              verbose = FALSE)                           
+#' cnCV.results <- consensus_nestedCV(train.ds = sim.data$train, 
+#'                                    validation.ds = sim.data$holdout, 
+#'                                    label = label,
 #'                                    is.simulated = TRUE,
 #'                                    ncv_folds = c(10, 10),
 #'                                    param.tune = FALSE,
@@ -55,7 +52,7 @@ consensus_nestedCV <- function(train.ds = NULL,
                                is.simulated = TRUE,
                                ncv_folds = c(10, 10),
                                param.tune = FALSE,
-                               learning_method = c("glmnet", "xgbTree", "rf"),
+                               learning_method = "rf",
                                importance.algorithm = "ReliefFbestK",
                                num_tree = 500, 
                                verbose = FALSE){
@@ -159,8 +156,8 @@ consensus_nestedCV <- function(train.ds = NULL,
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno},
-                                           mtry = if(param.tune){tuneParam$mtry} 
-                                           else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
+                                           mtry = if(param.tune && (tuneParam$mtry < 1 || tuneParam$mtry > ncol(train.data)))
+                                           {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
@@ -202,19 +199,16 @@ consensus_nestedCV <- function(train.ds = NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' sim.data <- createSimulation(num.samples = num.samples,
 #'                              num.variables = num.variables,
 #'                              pct.signals = pct.signals,
-#'                              pct.train = 1 / 3,
-#'                              pct.holdout = 1 / 3,
-#'                              pct.validation = 1 /3,
 #'                              sim.type = "mainEffect",
-#'                              verbose = FALSE)
-#' sim_train <- rbind(data.sets$train, data.sets$holdout)
-#' sim_test <- data.sets$validation                             
-#' rnCV.results <- regular_nestedCV(train.ds = sim_train, 
-#'                                  validation.ds = sim_test, 
-#'                                  label = "class",
+#'                              label = label,
+#'                              verbose = FALSE)                         
+#' rnCV.results <- regular_nestedCV(train.ds = sim.data$train, 
+#'                                  validation.ds = sim.data$holdout, 
+#'                                  label = label,
 #'                                  is.simulated = TRUE,
 #'                                  ncv_folds = c(10, 10),
 #'                                  param.tune = FALSE,
@@ -230,7 +224,7 @@ regular_nestedCV <- function(train.ds = NULL,
                              is.simulated = TRUE,
                              ncv_folds = c(10, 10),
                              param.tune = FALSE,
-                             learning_method = c("glmnet", "xgbTree", "rf"),
+                             learning_method = "rf",
                              xgb.obj = "binary:logistic",
                              importance.algorithm = "ReliefFbestK",
                              num_tree = 500, 
@@ -322,8 +316,8 @@ regular_nestedCV <- function(train.ds = NULL,
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno}, 
-                                           mtry = if(param.tune){tuneParam$mtry} 
-                                           else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
+                                           mtry = if(param.tune && (tuneParam$mtry < 1 || tuneParam$mtry > ncol(train.data)))
+                                           {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 

@@ -5,14 +5,16 @@
 library(privateEC)
 context("Classification")
 
-test_that("privateEC returns sane results - Relief-F + randomForest", {
+test_that("privateEC returns sane results - Relief-F + randomForest - Dichotomous outcome", {
   num.samples <- 100
   num.variables <- 100
+  label <- "class"
   pct.signals <- 0.1
   rf.mtry <- 5
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
                                pct.signals = pct.signals,
+                               label = label,
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
                                pct.validation = 1 / 3,
@@ -23,6 +25,38 @@ test_that("privateEC returns sane results - Relief-F + randomForest", {
                            validation.ds = sim.data$validation,
                            label = sim.data$label,
                            importance.name = "relieff",
+                           importance.algorithm = "ReliefFbestK",
+                           learner.name = "randomforest",
+                           rf.mtry = rf.mtry,
+                           is.simulated = TRUE,
+                           signal.names = sim.data$signal.names,
+                           verbose = FALSE)
+  expect_equal(ncol(pec.results$algo.acc), 5)
+  expect_equal(ncol(pec.results$ggplot.data), 4)
+  expect_equal(length(pec.results$correct), nrow(pec.results$algo.acc))
+})
+
+test_that("privateEC returns sane results - Relief-F + randomForest - Quantitative outcome", {
+  num.samples <- 100
+  num.variables <- 100
+  label <- "phenos"
+  pct.signals <- 0.1
+  rf.mtry <- 5
+  sim.data <- createSimulation(num.samples = num.samples,
+                               num.variables = num.variables,
+                               pct.signals = pct.signals,
+                               label = label,
+                               pct.train = 1 / 3,
+                               pct.holdout = 1 / 3,
+                               pct.validation = 1 / 3,
+                               sim.type = "mainEffect",
+                               verbose = FALSE)
+  pec.results <- privateEC(train.ds = sim.data$train,
+                           holdout.ds = sim.data$holdout,
+                           validation.ds = sim.data$validation,
+                           label = sim.data$label,
+                           importance.name = "relieff",
+                           importance.algorithm = "RReliefFbestK",
                            learner.name = "randomforest",
                            rf.mtry = rf.mtry,
                            is.simulated = TRUE,

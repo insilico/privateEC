@@ -24,6 +24,14 @@ source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/modified_pEC.R")
 source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/nestedCV.R")
 ```
 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(privateEC)
+```
+
 ## Example Run and Results
 
 ### Simulate Balanced Data
@@ -43,7 +51,7 @@ verbose <- FALSE
 data.sets <- createSimulation(num.samples = n.samples,
                               num.variables = n.variables,
                               pct.signals = pct.signals,
-                              class.label = label,
+                              label = label,
                               bias = bias,
                               pct.train = 1 / 3,
                               pct.holdout = 1 / 3,
@@ -59,7 +67,7 @@ data.sets <- createSimulation(num.samples = n.samples,
 pec.result <- privateEC(train.ds = data.sets$train,
                         holdout.ds = data.sets$holdout,
                         validation.ds = data.sets$validation,
-                        label = data.sets$class.label,
+                        label = data.sets$label,
                         importance.algorithm = importance.algorithm,
                         rf.ntree = num_tree,
                         is.simulated = TRUE,
@@ -95,7 +103,7 @@ sim_train <- rbind(data.sets$train, data.sets$holdout)
 sim_test <- data.sets$validation
 rncv_result <- regular_nestedCV(train.ds = sim_train, 
                                 validation.ds =  sim_test, 
-                                class.label = data.sets$class.label,
+                                label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
@@ -117,7 +125,7 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 ```{r, message=FALSE}
 cncv_result <- consensus_nestedCV(train.ds = sim_train, 
                                   validation.ds =  sim_test, 
-                                  class.label = data.sets$class.label,
+                                  label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
@@ -153,7 +161,7 @@ verbose <- FALSE
 data.sets <- createSimulation(num.samples = n.samples,
                               num.variables = n.variables,
                               pct.signals = pct.signals,
-                              class.label = label,
+                              label = label,
                               pct.imbalance = pct.imbalance,
                               bias = bias,
                               pct.train = 1 / 3,
@@ -170,7 +178,7 @@ data.sets <- createSimulation(num.samples = n.samples,
 pec.result <- privateEC(train.ds = data.sets$train,
                         holdout.ds = data.sets$holdout,
                         validation.ds = data.sets$validation,
-                        label = data.sets$class.label,
+                        label = data.sets$label,
                         importance.algorithm = importance.algorithm,
                         rf.ntree = num_tree,
                         is.simulated = TRUE,
@@ -206,7 +214,7 @@ sim_train <- rbind(data.sets$train, data.sets$holdout)
 sim_test <- data.sets$validation
 rncv_result <- regular_nestedCV(train.ds = sim_train, 
                                 validation.ds =  sim_test, 
-                                class.label = data.sets$class.label,
+                                label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
@@ -228,7 +236,7 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 ```{r, message=FALSE}
 cncv_result <- consensus_nestedCV(train.ds = sim_train, 
                                   validation.ds =  sim_test, 
-                                  class.label = data.sets$class.label,
+                                  label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
@@ -265,7 +273,7 @@ verbose <- FALSE
 data.sets <- createMixedSimulation(num.samples = n.samples,
                                    num.variables = n.variables,
                                    pct.signals = pct.signals,
-                                   class.label = label,
+                                   label = label,
                                    pct.imbalance = pct.imbalance,
                                    pct.mixed = pct.mixed,
                                    mixed.type = mixed.type,
@@ -283,7 +291,7 @@ data.sets <- createMixedSimulation(num.samples = n.samples,
 pec.result <- privateEC(train.ds = data.sets$train,
                         holdout.ds = data.sets$holdout,
                         validation.ds = data.sets$validation,
-                        label = data.sets$class.label,
+                        label = data.sets$label,
                         importance.algorithm = importance.algorithm,
                         rf.ntree = num_tree,
                         is.simulated = TRUE,
@@ -319,7 +327,7 @@ sim_train <- rbind(data.sets$train, data.sets$holdout)
 sim_test <- data.sets$validation
 rncv_result <- regular_nestedCV(train.ds = sim_train, 
                                 validation.ds =  sim_test, 
-                                class.label = data.sets$class.label,
+                                label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
@@ -341,7 +349,7 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 ```{r, message=FALSE}
 cncv_result <- consensus_nestedCV(train.ds = sim_train, 
                                   validation.ds =  sim_test, 
-                                  class.label = data.sets$class.label,
+                                  label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
@@ -376,7 +384,7 @@ verbose <- FALSE
 data.sets <- createSimulation(num.samples = n.samples,
                               num.variables = n.variables,
                               pct.signals = pct.signals,
-                              class.label = label,
+                              label = label,
                               bias = bias,
                               pct.train = 1 / 3,
                               pct.holdout = 1 / 3,
@@ -392,7 +400,7 @@ data.sets <- createSimulation(num.samples = n.samples,
 pec.result <- privateEC(train.ds = data.sets$train,
                         holdout.ds = data.sets$holdout,
                         validation.ds = data.sets$validation,
-                        label = data.sets$class.label,
+                        label = data.sets$label,
                         importance.algorithm = importance.algorithm,
                         rf.ntree = num_tree,
                         is.simulated = TRUE,
@@ -428,7 +436,7 @@ sim_train <- rbind(data.sets$train, data.sets$holdout)
 sim_test <- data.sets$validation
 rncv_result <- regular_nestedCV(train.ds = sim_train, 
                                 validation.ds =  sim_test, 
-                                class.label = data.sets$class.label,
+                                label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
@@ -450,7 +458,7 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 ```{r, message=FALSE}
 cncv_result <- consensus_nestedCV(train.ds = sim_train, 
                                   validation.ds =  sim_test, 
-                                  class.label = data.sets$class.label,
+                                  label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
