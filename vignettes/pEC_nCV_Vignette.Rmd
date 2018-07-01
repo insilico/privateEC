@@ -18,11 +18,6 @@ PrivateEC software paper ...
 
 Consensus nested cross validation paper ...
 
-```{r, echo=FALSE}
-source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/modified_simulation.R")
-source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/modified_pEC.R")
-source("~/Documents/PhD/PhD Thesis/Research/pEC_vs_nestedCV/nestedCV.R")
-```
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
