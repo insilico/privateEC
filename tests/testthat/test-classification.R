@@ -24,11 +24,11 @@ test_that("privateEC returns sane results - Relief-F + randomForest - Dichotomou
                            holdout.ds = sim.data$holdout,
                            validation.ds = sim.data$validation,
                            label = sim.data$label,
+                           is.simulated = TRUE,
                            importance.name = "relieff",
                            importance.algorithm = "ReliefFbestK",
                            learner.name = "randomforest",
                            rf.mtry = rf.mtry,
-                           is.simulated = TRUE,
                            signal.names = sim.data$signal.names,
                            verbose = FALSE)
   expect_equal(ncol(pec.results$algo.acc), 5)

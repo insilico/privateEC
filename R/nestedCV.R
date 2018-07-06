@@ -156,7 +156,7 @@ consensus_nestedCV <- function(train.ds = NULL,
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno},
-                                           mtry = if(param.tune && (tuneParam$mtry < 1 || tuneParam$mtry > ncol(train.data)))
+                                           mtry = if(param.tune && tuneParam$mtry > 1 && tuneParam$mtry < ncol(train.data))
                                            {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)
@@ -316,7 +316,7 @@ regular_nestedCV <- function(train.ds = NULL,
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno}, 
-                                           mtry = if(param.tune && (tuneParam$mtry < 1 || tuneParam$mtry > ncol(train.data)))
+                                           mtry = if(param.tune && tuneParam$mtry > 1 && tuneParam$mtry < ncol(train.data))
                                            {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
                                            else {floor(sqrt(ncol(train.data)))},
                                            ntree = num_tree)

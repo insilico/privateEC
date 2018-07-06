@@ -130,7 +130,7 @@ splitDataset <- function(all.data=NULL,
 createInteractions <- function(M=100,
                                N=100,
                                label="class",
-                               pct.imbalance = .5,
+                               pct.imbalance = 0.5,
                                meanExpression=7,
                                A=NULL,
                                randSdNoise=1,
@@ -219,6 +219,8 @@ createInteractions <- function(M=100,
 #' @param n.ns sample size in newsample
 #' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
+#' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
+#' 0 means all controls and 1 mean all cases.
 #' @param sv.db batches
 #' @param sv.ns batches
 #' @param sd.b a numeric for sd.b?
@@ -434,6 +436,8 @@ createMainEffects <- function(n.e=1000,
 #'
 #' @param num.variables An integer for the number of variables
 #' @param num.samples An integer for the number of samples
+#' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
+#' 0 means all controls and 1 mean all cases.
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param label A character vector for the name of the outcome column. class for classification
@@ -464,8 +468,8 @@ createMainEffects <- function(n.e=1000,
 #' sim.type <- "mainEffect"
 #' sim.data <- createSimulation(num.samples=num.samples,
 #'                              num.variables=num.variables,
-#'                              pct.signals=pct.signals,
 #'                              pct.imbalance=pct.imbalance,
+#'                              pct.signals=pct.signals,
 #'                              bias=bias,
 #'                              label=label,
 #'                              sim.type=sim.type,
@@ -570,12 +574,12 @@ createSimulation <- function(num.samples=100,
 #'
 #' @param num.variables An integer for the number of variables
 #' @param num.samples An integer for the number of samples
+#' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
+#' 0 means all controls and 1 mean all cases.
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param label A character vector for the name of the outcome column. class for classification
 #' and phenos for regression
-#' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
-#' 0 means all controls and 1 mean all cases.
 #' @param pct.mixed A numeric percentage to indicate the proportion of each simulation type
 #' @param mixed.type A character vector of the mix type of simulations:
 #' mainEffect, interactionErdos/interactionScalefree
@@ -596,14 +600,16 @@ createSimulation <- function(num.samples=100,
 #' @examples
 #' num.variables <- 100
 #' num.samples <- 100
+#' pct.imbalance <- 0.5
 #' pct.signals <- 0.1
 #' bias <- 0.4
+#' label <- "class"
 #' pct.mixed <- 0.5
 #' mixed.type <- c("mainEffect", "interactionScalefree")
-#' label <- "class"
 #' sim.data <- createMixedSimulation(num.samples=num.samples,
 #'                                   num.variables=num.variables,
 #'                                   pct.signals=pct.signals,
+#'                                   pct.imbalance=pct.imbalance,
 #'                                   label = label,
 #'                                   bias=bias,
 #'                                   pct.mixed=pct.mixed,
@@ -613,10 +619,10 @@ createSimulation <- function(num.samples=100,
 #' @export
 createMixedSimulation <- function(num.samples = 100,
                                   num.variables = 100,
+                                  pct.imbalance = 0.5,
                                   pct.signals=0.1,
                                   bias=0.4,
                                   label = "class",
-                                  pct.imbalance = 0.5,
                                   pct.mixed = 0.5,
                                   mixed.type = c("mainEffect","interactionScalefree"),
                                   pct.train=0.5,
@@ -701,7 +707,7 @@ createMixedSimulation <- function(num.samples = 100,
   
   if (!is.null(save.file)) {
     if (verbose) cat("saving to data/", save.file, ".Rdata\n", sep = "")
-    save(split.data, pct.signals, bias, sim.type, file = save.file)
+    save(split.data, pct.signals, bias, mixed.type, file = save.file)
   }
   
   elapsed <- (proc.time() - ptm)[3]

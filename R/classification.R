@@ -70,6 +70,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param holdout.ds A data frame with holdout data and outcome labels
 #' @param validation.ds A data frame with validation data and outcome labels
 #' @param label A character vector of the outcome variable column name
+#' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
 #' @param importance.name A character vector containg the importance algorithm name
@@ -79,6 +80,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param ncv_folds A vector of integers fo the number of nested cross validation folds
 #' @param learner.cv An integer for the number of cross validation folds
 #' @param rf.mtry An integer for the number of variables used for node splits
+#' @param rf.ntree An integer the number of trees in the random forest
 #' @param xgb.max.depth A vector of integers for the xboost maximum tree depth
 #' @param xgb.num.rounds = A vector of integers for xgboost algorithm iterations
 #' @param xgb.shrinkage = A vector of numerics for xgboost shrinkage values 0-1
@@ -105,9 +107,11 @@ getImportanceScores <- function(train.set=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' sim.data <- createSimulation(num.samples = num.samples,
 #'                              num.variables = num.variables,
 #'                              pct.signals = pct.signals,
+#'                              label = label,
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
 #'                              pct.validation = 1 /3,
@@ -117,18 +121,18 @@ getImportanceScores <- function(train.set=NULL,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$label,
+#'                          is.simulated = TRUE,
 #'                          importance.name = "relieff",
 #'                          learner.name = "randomforest",
-#'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
 #' pec.results <- privateEC(train.ds = sim.data$train,
 #'                          holdout.ds = sim.data$holdout,
 #'                          validation.ds = sim.data$validation,
 #'                          label = sim.data$label,
+#'                          is.simulated = TRUE,
 #'                          learner.name = "xgboost",
 #'                          xgb.max.depth = 5,
-#'                          is.simulated = TRUE,
 #'                          signal.names = sim.data$signal.names,
 #'                          verbose = FALSE)
 #' @note
@@ -379,17 +383,17 @@ privateEC <- function(train.ds = NULL,
                                                  rf.mtry.valid <- floor(sqrt(ncol(train.data)))
                                                })
         if(label == "phenos"){
-          current.train.acc <- cor(rf.model$predicted, train.data[, label])^2
+          current.train.acc <- stats::cor(rf.model$predicted, train.data[, label])^2
         } else {
           current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
         }
         if (!is.null(hold.data)) {
           if (verbose) cat("\tpredict holdout\n")
-          holdout.pred <- predict(rf.model, newdata = hold.data)
+          holdout.pred <- stats::predict(rf.model, newdata = hold.data)
           if (verbose) print(holdout.pred)
           if (verbose) print(hold.data[, (label)])
           if(label == "phenos"){
-            current.holdout.acc <- cor(holdout.pred, hold.data[, (label)])^2
+            current.holdout.acc <- stats::cor(holdout.pred, hold.data[, (label)])^2
           } else {
             current.holdout.acc <- mean(holdout.pred == hold.data[, (label)])
           }
@@ -398,10 +402,10 @@ privateEC <- function(train.ds = NULL,
         }
         if (!is.null(valid.data)) {
           if (verbose) cat("\tpredict validation\n")
-          validation.pred <- predict(rf.model, newdata = valid.data)
+          validation.pred <- stats::predict(rf.model, newdata = valid.data)
           if (verbose) print(validation.pred)
           if(label == "phenos"){
-            current.validation.acc <- cor(validation.pred, valid.data[, (label)])^2
+            current.validation.acc <- stats::cor(validation.pred, valid.data[, (label)])^2
           } else {
             current.validation.acc <- mean(validation.pred == valid.data[, (label)])
           }
@@ -539,9 +543,12 @@ privateEC <- function(train.ds = NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
 #' sim.data <- createSimulation(num.variables = num.variables,
 #'                              num.samples = num.samples,
+#'                              pct.signals = pct.signals,
+#'                              label = label,
 #'                              sim.type = "mainEffect",
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
@@ -718,9 +725,12 @@ originalThresholdout <- function(train.ds=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
 #' sim.data <- createSimulation(num.variables = num.variables,
 #'                              num.samples = num.samples,
+#'                              pct.signals = pct.signals,
+#'                              label = label,
 #'                              sim.type = "mainEffect",
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
@@ -926,8 +936,11 @@ privateRF <- function(train.ds=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' sim.data <- createSimulation(num.variables = num.variables,
 #'                              num.samples = num.samples,
+#'                              pct.signals = pct.signals,
+#'                              label = label,
 #'                              sim.type = "mainEffect",
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
@@ -1033,8 +1046,11 @@ standardRF <- function(train.ds=NULL,
 #' num.samples <- 100
 #' num.variables <- 100
 #' pct.signals <- 0.1
+#' label <- "class"
 #' sim.data <- createSimulation(num.variables = num.variables,
 #'                              num.samples = num.samples,
+#'                              pct.signals = pct.signals,
+#'                              label = label,
 #'                              sim.type = "mainEffect",
 #'                              pct.train = 1 / 3,
 #'                              pct.holdout = 1 / 3,
@@ -1122,21 +1138,21 @@ xgboostRF <- function(train.ds=NULL,
                                metric = ifelse(label=="class", "Accuracy", "RMSE"),
                                verbose = verbose)
 
-    pred.class <- predict(train.model, train.ds)
+    pred.class <- stats::predict(train.model, train.ds)
     if(label == "class"){
       rf.train.accu <- 1 - mean(pred.class != train_pheno)
     } else {
-      rf.train.accu <- cor(pred.class, train.pheno)^2
+      rf.train.accu <- stats::cor(pred.class, train_pheno)^2
     }
     
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
-    pred.class <- predict(train.model, holdout.ds)
+    pred.class <- stats::predict(train.model, holdout.ds)
     if (verbose) print(table(pred.class))
     if (label == "class"){
       rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
     } else {
-      rf.holdo.accu <- cor(pred.class, holdout_pheno)^2
+      rf.holdo.accu <- stats::cor(pred.class, holdout_pheno)^2
     }
     
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
@@ -1146,12 +1162,12 @@ xgboostRF <- function(train.ds=NULL,
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
-      rf.class <- predict(train.model, validation.ds)
+      rf.class <- stats::predict(train.model, validation.ds)
       if (label == "class"){
         if (verbose) print(table(rf.class))
         rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
       } else {
-        rf.validation.accu <- cor(rf.class, validation_pheno)^2
+        rf.validation.accu <- stats::cor(rf.class, validation_pheno)^2
       }
     } else {
       rf.validation.accu <- 0
@@ -1167,22 +1183,22 @@ xgboostRF <- function(train.ds=NULL,
                                     objective = objective,
                                     verbose = FALSE)
 
-    train.pred.prob <- predict(train.model, dtrain)
+    train.pred.prob <- stats::predict(train.model, dtrain)
     if (label == "class"){
       pred.class <- as.numeric(train.pred.prob > 0.5)
       rf.train.accu <- 1 - mean(pred.class != train_pheno)
     } else {
-      rf.train.accu <- cor(train.pred.prob, train_pheno)^2
+      rf.train.accu <- stats::cor(train.pred.prob, train_pheno)^2
     }
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
-    holdout.pred.prob <- predict(train.model, dholdo)
+    holdout.pred.prob <- stats::predict(train.model, dholdo)
     if (label == "class"){
       pred.class <- as.numeric(holdout.pred.prob > 0.5)
       if (verbose) print(table(pred.class))
       rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
     } else {
-      rf.holdo.accu <- cor(holdout.pred.prob, holdout_pheno)^2
+      rf.holdo.accu <- stats::cor(holdout.pred.prob, holdout_pheno)^2
     }
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
@@ -1193,13 +1209,13 @@ xgboostRF <- function(train.ds=NULL,
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
       dvalid <- xgboost::xgb.DMatrix(data = validation_data, label = validation_pheno)
-      valid.pred.prob <- predict(train.model, dvalid)
+      valid.pred.prob <- stats::predict(train.model, dvalid)
       if (label == "class"){
         rf.class <- as.numeric(valid.pred.prob > 0.5)
         if (verbose) print(table(rf.class))
         rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
       } else {
-        rf.validation.accu <- cor(valid.pred.prob, validation_pheno)^2
+        rf.validation.accu <- stats::cor(valid.pred.prob, validation_pheno)^2
       }
     } else {
       rf.validation.accu <- 0
@@ -1210,7 +1226,7 @@ xgboostRF <- function(train.ds=NULL,
   if (verbose) cat("validation-accuracy:", rf.validation.accu, "\n")
   if (verbose) cat("accuracies", rf.train.accu, rf.holdo.accu, rf.validation.accu, "\n")
   if (!is.null(save.file)) {
-    save(rf.validation.accu, rf.holdout.accu, file = save.file)
+    save(rf.validation.accu, rf.holdo.accu, file = save.file)
   }
   xgb.plots <- data.frame(vars.remain = length(var.names),
                           train.acc = rf.train.accu,

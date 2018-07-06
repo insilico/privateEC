@@ -18,7 +18,6 @@ PrivateEC software paper ...
 
 Consensus nested cross validation paper ...
 
-
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -48,9 +47,9 @@ data.sets <- createSimulation(num.samples = n.samples,
                               pct.signals = pct.signals,
                               label = label,
                               bias = bias,
-                              pct.train = 1 / 3,
-                              pct.holdout = 1 / 3,
-                              pct.validation = 1 / 3,
+                              pct.train = 0.5,
+                              pct.holdout = 0.5,
+                              pct.validation = 0,
                               sim.type = type,
                               save.file = NULL,
                               verbose = verbose)
@@ -93,11 +92,8 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$alg
 ### Run regular nested CV
 
 ```{r, message=FALSE}
-# combine train/holdout data sets
-sim_train <- rbind(data.sets$train, data.sets$holdout)
-sim_test <- data.sets$validation
-rncv_result <- regular_nestedCV(train.ds = sim_train, 
-                                validation.ds =  sim_test, 
+rncv_result <- regular_nestedCV(train.ds = data.sets$train, 
+                                validation.ds =  data.sets$holdout, 
                                 label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
@@ -118,8 +114,8 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 
 ### Run consensus nested CV
 ```{r, message=FALSE}
-cncv_result <- consensus_nestedCV(train.ds = sim_train, 
-                                  validation.ds =  sim_test, 
+cncv_result <- consensus_nestedCV(train.ds = data.sets$train, 
+                                  validation.ds =  data.sets$holdout, 
                                   label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
@@ -159,9 +155,9 @@ data.sets <- createSimulation(num.samples = n.samples,
                               label = label,
                               pct.imbalance = pct.imbalance,
                               bias = bias,
-                              pct.train = 1 / 3,
-                              pct.holdout = 1 / 3,
-                              pct.validation = 1 / 3,
+                              pct.train = 0.5,
+                              pct.holdout = 0.5,
+                              pct.validation = 0,
                               sim.type = type,
                               save.file = NULL,
                               verbose = verbose)
@@ -204,11 +200,8 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$alg
 ### Run regular nested CV
 
 ```{r, message=FALSE}
-# combine train/holdout data sets
-sim_train <- rbind(data.sets$train, data.sets$holdout)
-sim_test <- data.sets$validation
-rncv_result <- regular_nestedCV(train.ds = sim_train, 
-                                validation.ds =  sim_test, 
+rncv_result <- regular_nestedCV(train.ds = data.sets$train, 
+                                validation.ds =  data.sets$holdout, 
                                 label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
@@ -229,8 +222,8 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 
 ### Run consensus nested CV
 ```{r, message=FALSE}
-cncv_result <- consensus_nestedCV(train.ds = sim_train, 
-                                  validation.ds =  sim_test, 
+cncv_result <- consensus_nestedCV(train.ds = data.sets$train, 
+                                  validation.ds =  data.sets$holdout, 
                                   label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
@@ -252,8 +245,8 @@ cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
 
 ### Simulate Mix Data (parameter in effect: pct.imbalance, where 0/1 means all ctrls/cases, pct.mixed)
 ```{r, message=FALSE}
-n.samples <- 200
-n.variables <- 200
+n.samples <- 100
+n.variables <- 100
 label <- "class"
 pct.imbalance = 0.5
 pct.mixed = 0.5
@@ -273,9 +266,9 @@ data.sets <- createMixedSimulation(num.samples = n.samples,
                                    pct.mixed = pct.mixed,
                                    mixed.type = mixed.type,
                                    bias = bias,
-                                   pct.train = 1 / 3,
-                                   pct.holdout = 1 / 3,
-                                   pct.validation = 1 / 3,
+                                   pct.train = 0.5,
+                                   pct.holdout = 0.5,
+                                   pct.validation = 0,
                                    save.file = NULL,
                                    verbose = verbose)
 ```
@@ -317,11 +310,8 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$alg
 ### Run regular nested CV
 
 ```{r, message=FALSE}
-# combine train/holdout data sets
-sim_train <- rbind(data.sets$train, data.sets$holdout)
-sim_test <- data.sets$validation
-rncv_result <- regular_nestedCV(train.ds = sim_train, 
-                                validation.ds =  sim_test, 
+rncv_result <- regular_nestedCV(train.ds = data.sets$train, 
+                                validation.ds =  data.sets$holdout, 
                                 label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
@@ -342,8 +332,8 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 
 ### Run consensus nested CV
 ```{r, message=FALSE}
-cncv_result <- consensus_nestedCV(train.ds = sim_train, 
-                                  validation.ds =  sim_test, 
+cncv_result <- consensus_nestedCV(train.ds = data.sets$train, 
+                                  validation.ds =  data.sets$holdout, 
                                   label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
@@ -365,8 +355,8 @@ cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
 
 ### Simulate Quantitative Outcome Data (parameter in effect: label = "phenos", type = "mainEffect", importance.algorithm = "RReliefFbestK")
 ```{r, message=FALSE}
-n.samples <- 200
-n.variables <- 200
+n.samples <- 100
+n.variables <- 100
 label <- "phenos"
 type <- "mainEffect"
 importance.algorithm <- "RReliefFbestK"
@@ -381,9 +371,9 @@ data.sets <- createSimulation(num.samples = n.samples,
                               pct.signals = pct.signals,
                               label = label,
                               bias = bias,
-                              pct.train = 1 / 3,
-                              pct.holdout = 1 / 3,
-                              pct.validation = 1 / 3,
+                              pct.train = 0.5,
+                              pct.holdout = 0.5,
+                              pct.validation = 0,
                               sim.type = type,
                               save.file = NULL,
                               verbose = verbose)
@@ -426,11 +416,8 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[which.max(pec.result$alg
 ### Run regular nested CV
 
 ```{r, message=FALSE}
-# combine train/holdout data sets
-sim_train <- rbind(data.sets$train, data.sets$holdout)
-sim_test <- data.sets$validation
-rncv_result <- regular_nestedCV(train.ds = sim_train, 
-                                validation.ds =  sim_test, 
+rncv_result <- regular_nestedCV(train.ds = data.sets$train, 
+                                validation.ds =  data.sets$holdout, 
                                 label = data.sets$label,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
@@ -451,8 +438,8 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 
 ### Run consensus nested CV
 ```{r, message=FALSE}
-cncv_result <- consensus_nestedCV(train.ds = sim_train, 
-                                  validation.ds =  sim_test, 
+cncv_result <- consensus_nestedCV(train.ds =  data.sets$train, 
+                                  validation.ds =  data.sets$holdou, 
                                   label = data.sets$label,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),

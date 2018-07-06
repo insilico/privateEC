@@ -262,7 +262,7 @@ paperRealWorkflow <- function(real.data=NULL,
 
 #' Plot the results of a privateEC workflow for a quick plot/review with base graphics.
 #'
-#' @param A list representing the results returned rom a privateEC algorithm run.
+#' @param pec.result A list representing the results returned from a privateEC algorithm run.
 #' @examples
 #' data(rsfMRIcorrMDD)
 #' # ~100 variables for a test
