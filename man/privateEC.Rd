@@ -5,23 +5,26 @@
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE, bias = 0.4, update.freq = 5,
+  label = "class", is.simulated = TRUE, bias = 0.4, update.freq = 5,
   importance.name = "relieff", importance.algorithm = "ReliefFbestK",
-  learner.name = "randomforest", learner.cv = NULL, rf.mtry = NULL,
-  rf.ntree = 500, xgb.num.rounds = c(1), xgb.max.depth = c(4),
-  xgb.shrinkage = c(1), start.temp = 0.1, final.temp = 1e-05,
-  tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
+  learner.name = "randomforest", xgb.obj = "binary:logistic",
+  use.nestedCV = TRUE, ncv_folds = c(10, 10), learner.cv = NULL,
+  rf.mtry = NULL, rf.ntree = 500, xgb.num.rounds = c(1),
+  xgb.max.depth = c(4), xgb.shrinkage = c(1), start.temp = 0.1,
+  final.temp = 1e-05, tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
   tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
   save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{train.ds}{A data frame with training data and class labels}
+\item{train.ds}{A data frame with training data and outcome labels}
 
-\item{holdout.ds}{A data frame with holdout data and class labels}
+\item{holdout.ds}{A data frame with holdout data and outcome labels}
 
-\item{validation.ds}{A data frame with validation data and class labels}
+\item{validation.ds}{A data frame with validation data and outcome labels}
 
-\item{label}{A character vector of the class variable column name}
+\item{label}{A character vector of the outcome variable column name}
+
+\item{is.simulated}{Is the data simulated (or real?)}
 
 \item{bias}{A numeric for effect size in simulated signal variables}
 
@@ -33,9 +36,15 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{learner.name}{A character vector containg the learner algorithm name}
 
+\item{use.nestedCV}{A logic character indicating whether use nested cross validation or not}
+
+\item{ncv_folds}{A vector of integers fo the number of nested cross validation folds}
+
 \item{learner.cv}{An integer for the number of cross validation folds}
 
 \item{rf.mtry}{An integer for the number of variables used for node splits}
+
+\item{rf.ntree}{An integer the number of trees in the random forest}
 
 \item{xgb.num.rounds}{= A vector of integers for xgboost algorithm iterations}
 
@@ -67,6 +76,8 @@ A list with:
   \item{algo.acc}{data frame of results, a row for each update}
   \item{ggplot.data}{melted results data frame for plotting with ggplot}
   \item{correct}{number of variables detected correctly in each data set}
+  \item{atts.remain}{name of the attributes in each iteraction}
+  \item{ncv.atts}{name of the selected attributes using nested cross validation}
   \item{elapsed}{total elapsed time}
 }
 }
@@ -82,9 +93,11 @@ material (Dwork, et al., 2015).
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
+label <- "class"
 sim.data <- createSimulation(num.samples = num.samples,
                              num.variables = num.variables,
                              pct.signals = pct.signals,
+                             label = label,
                              pct.train = 1 / 3,
                              pct.holdout = 1 / 3,
                              pct.validation = 1 /3,
@@ -93,17 +106,19 @@ sim.data <- createSimulation(num.samples = num.samples,
 pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
-                         label = sim.data$class.label,
+                         label = sim.data$label,
+                         is.simulated = TRUE,
                          importance.name = "relieff",
                          learner.name = "randomforest",
-                         is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)
 pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
-                         label = sim.data$class.label,
+                         label = sim.data$label,
                          is.simulated = TRUE,
+                         learner.name = "xgboost",
+                         xgb.max.depth = 5,
                          signal.names = sim.data$signal.names,
                          verbose = FALSE)
 }

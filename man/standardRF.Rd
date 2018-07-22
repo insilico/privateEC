@@ -5,17 +5,17 @@
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
 standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", rf.ntree = 500, rf.mtry = NULL, is.simulated = TRUE,
+  label = "class", rf.ntree = 500, rf.mtry = NULL, is.simulated = TRUE,
   signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{train.ds}{A data frame with training data and class labels}
+\item{train.ds}{A data frame with training data and outcome labels}
 
-\item{holdout.ds}{A data frame with holdout data and class labels}
+\item{holdout.ds}{A data frame with holdout data and outcome labels}
 
-\item{validation.ds}{A data frame with validation data and class labels}
+\item{validation.ds}{A data frame with validation data and outcome labels}
 
-\item{label}{A character vector of the class variable column name}
+\item{label}{A character vector of the outcome variable column name}
 
 \item{rf.ntree}{An integer the number of trees in the random forest}
 
@@ -45,8 +45,11 @@ Standard random forests algorithm serves as a baseline model
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
+label <- "class"
 sim.data <- createSimulation(num.variables = num.variables,
                              num.samples = num.samples,
+                             pct.signals = pct.signals,
+                             label = label,
                              sim.type = "mainEffect",
                              pct.train = 1 / 3,
                              pct.holdout = 1 / 3,
@@ -55,7 +58,7 @@ sim.data <- createSimulation(num.variables = num.variables,
 rra.results <- standardRF(train.ds=sim.data$train,
                           holdout.ds=sim.data$holdout,
                           validation.ds=sim.data$validation,
-                          label=sim.data$class.label,
+                          label=sim.data$label,
                           is.simulated=TRUE,
                           verbose=FALSE,
                           signal.names=sim.data$signal.names)

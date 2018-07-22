@@ -31,7 +31,7 @@ Returns a data frame of run results for each.
 \examples{
   data(rsfMRIcorrMDD)
   real.result <- paperRealWorkflow(real.data = rsfMRIcorrMDD[, 2900:ncol(rsfMRIcorrMDD)],
-                                   label = "phenos",
+                                   label = "class",
                                    update.freq = 50,
                                    verbose = FALSE)
 }

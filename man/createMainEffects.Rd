@@ -4,9 +4,10 @@
 \alias{createMainEffects}
 \title{Create a simulated data set with main effects}
 \usage{
-createMainEffects(n.e = 1000, n.db = 70, n.ns = 30, sv.db = c("A", "B"),
-  sv.ns = c("A", "B"), sd.b = 1, sd.gam = 1, sd.u = 1, conf = FALSE,
-  distr.db = NA, p.b = 0.3, p.gam = 0.3, p.ov = p.b/2)
+createMainEffects(n.e = 1000, n.db = 70, n.ns = 30, label = "class",
+  pct.imbalance = 0.5, sv.db = c("A", "B"), sv.ns = c("A", "B"),
+  sd.b = 1, sd.gam = 1, sd.u = 1, conf = FALSE, distr.db = NA,
+  p.b = 0.3, p.gam = 0.3, p.ov = p.b/2)
 }
 \arguments{
 \item{n.e}{number of variables}
@@ -14,6 +15,12 @@ createMainEffects(n.e = 1000, n.db = 70, n.ns = 30, sv.db = c("A", "B"),
 \item{n.db}{sample size in database}
 
 \item{n.ns}{sample size in newsample}
+
+\item{label}{A character vector for the name of the outcome column. class for classification
+and phenos for regression}
+
+\item{pct.imbalance}{A numeric percentage to indicate proportion of the imbalaced samples. 
+0 means all controls and 1 mean all cases.}
 
 \item{sv.db}{batches}
 
@@ -60,6 +67,7 @@ studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 }
 \seealso{
 Other simulation: \code{\link{createInteractions}},
+  \code{\link{createMixedSimulation}},
   \code{\link{createSimulation}},
   \code{\link{splitDataset}}
 }

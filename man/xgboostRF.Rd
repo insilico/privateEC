@@ -5,17 +5,18 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", cv.folds = NULL, num.threads = 2, num.rounds = c(1),
-  max.depth = c(4), shrinkage = c(1), save.file = NULL, verbose = FALSE)
+  label = "class", cv.folds = NULL, num.threads = 2, num.rounds = c(1),
+  max.depth = c(4), shrinkage = c(1), objective = "binary:logistic",
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{train.ds}{A data frame with training data and class labels}
+\item{train.ds}{A data frame with training data and outcome labels}
 
-\item{holdout.ds}{A data frame with holdout data and class labels}
+\item{holdout.ds}{A data frame with holdout data and outcome labels}
 
-\item{validation.ds}{A data frame with validation data and class labels}
+\item{validation.ds}{A data frame with validation data and outcome labels}
 
-\item{label}{A character vector of the class variable column name}
+\item{label}{A character vector of the outcome variable column name}
 
 \item{cv.folds}{An integer for the number of cross validation folds}
 
@@ -51,8 +52,11 @@ boosted trees for privacyEC.
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
+label <- "class"
 sim.data <- createSimulation(num.variables = num.variables,
                              num.samples = num.samples,
+                             pct.signals = pct.signals,
+                             label = label,
                              sim.type = "mainEffect",
                              pct.train = 1 / 3,
                              pct.holdout = 1 / 3,
@@ -61,7 +65,7 @@ sim.data <- createSimulation(num.variables = num.variables,
 rra.results <- xgboostRF(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
-                         label = sim.data$class.label,
+                         label = sim.data$label,
                          num.rounds = c(1),
                          max.depth = c(10),
                          is.simulated = TRUE,

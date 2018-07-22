@@ -4,16 +4,20 @@
 \alias{createInteractions}
 \title{Create a differentially coexpressed data set with interactions}
 \usage{
-createInteractions(M = 100, N = 100, class.label = "class",
-  meanExpression = 7, A = NULL, randSdNoise = 1, sdNoise = 0.4,
-  sampleIndicesInteraction = NULL, verbose = FALSE)
+createInteractions(M = 100, N = 100, label = "class",
+  pct.imbalance = 0.5, meanExpression = 7, A = NULL, randSdNoise = 1,
+  sdNoise = 0.4, sampleIndicesInteraction = NULL, verbose = FALSE)
 }
 \arguments{
 \item{M}{An integer for the number of samples (rows)}
 
 \item{N}{An integer for the number of variables (columns)}
 
-\item{class.label}{A character vector for the name of the class column}
+\item{label}{A character vector for the name of the outcome column. class for classification
+and phenos for regression}
+
+\item{pct.imbalance}{A numeric percentage to indicate proportion of the imbalaced samples. 
+0 means all controls and 1 mean all cases.}
 
 \item{meanExpression}{A numeric for the mean expression levels}
 
@@ -35,6 +39,7 @@ Create a differentially coexpressed data set with interactions
 }
 \seealso{
 Other simulation: \code{\link{createMainEffects}},
+  \code{\link{createMixedSimulation}},
   \code{\link{createSimulation}},
   \code{\link{splitDataset}}
 }

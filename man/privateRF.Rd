@@ -5,20 +5,20 @@
 \title{Private random forests algorithm}
 \usage{
 privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "phenos", is.simulated = TRUE,
+  label = "class", is.simulated = TRUE,
   rf.importance.measure = "MeanDecreaseGini", rf.ntree = 500,
   rf.mtry = NULL, pec.file = NULL, update.freq = 50,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
   signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
-\item{train.ds}{A data frame with training data and class labels}
+\item{train.ds}{A data frame with training data and outcome labels}
 
-\item{holdout.ds}{A data frame with holdout data and class labels}
+\item{holdout.ds}{A data frame with holdout data and outcome labels}
 
-\item{validation.ds}{A data frame with validation data and class labels}
+\item{validation.ds}{A data frame with validation data and outcome labels}
 
-\item{label}{A character vector of the class variable column name}
+\item{label}{A character vector of the outcome variable column name}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 
@@ -61,9 +61,12 @@ and classifier replaced with Random Forest.
 num.samples <- 100
 num.variables <- 100
 pct.signals <- 0.1
+label <- "class"
 temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
 sim.data <- createSimulation(num.variables = num.variables,
                              num.samples = num.samples,
+                             pct.signals = pct.signals,
+                             label = label,
                              sim.type = "mainEffect",
                              pct.train = 1 / 3,
                              pct.holdout = 1 / 3,
@@ -72,7 +75,7 @@ sim.data <- createSimulation(num.variables = num.variables,
 pec.results <- privateEC(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
-                         label = sim.data$class.label,
+                         label = sim.data$label,
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          save.file = temp.pec.file,
@@ -80,7 +83,7 @@ pec.results <- privateEC(train.ds = sim.data$train,
 prf.results <- privateRF(train.ds = sim.data$train,
                          holdout.ds = sim.data$holdout,
                          validation.ds = sim.data$validation,
-                         label = sim.data$class.label,
+                         label = sim.data$label,
                          is.simulated = TRUE,
                          signal.names = sim.data$signal.names,
                          pec.file = temp.pec.file,

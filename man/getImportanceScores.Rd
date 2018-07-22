@@ -4,18 +4,20 @@
 \alias{getImportanceScores}
 \title{Compute and return importance scores (Relief-F scores)}
 \usage{
-getImportanceScores(train.set = NULL, holdout.set = NULL,
-  label = "phenos", importance.name = "relieff",
-  importance.algorithm = "ReliefFbestK", verbose = FALSE)
+getImportanceScores(train.set = NULL, holdout.set = NULL, label = "class",
+  importance.name = "relieff", importance.algorithm = "ReliefFbestK",
+  verbose = FALSE)
 }
 \arguments{
-\item{train.set}{A training data frame with last column as class}
+\item{train.set}{A training data frame with last column as outcome}
 
-\item{holdout.set}{A holdout data frame with last column as class}
+\item{holdout.set}{A holdout data frame with last column as outcome}
 
-\item{label}{A character vector of the class variable column name}
+\item{label}{A character vector of the outcome variable column name. class/phenos for classification/regression}
 
 \item{importance.name}{A list importance operation parameters}
+
+\item{importance.algorithm}{A character vector of the ReliefF estimator}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
 }

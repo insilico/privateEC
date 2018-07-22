@@ -5,7 +5,7 @@
 \title{Split a data set for machine learning classification}
 \usage{
 splitDataset(all.data = NULL, pct.train = 0.5, pct.holdout = 0.5,
-  pct.validation = 0, class.label = "phenos")
+  pct.validation = 0, label = "class")
 }
 \arguments{
 \item{all.data}{A data frame of n rows by d colums of data plus a label column}
@@ -16,7 +16,8 @@ splitDataset(all.data = NULL, pct.train = 0.5, pct.holdout = 0.5,
 
 \item{pct.validation}{A numeric percentage of samples to use for testing}
 
-\item{class.label}{A character vector of the data column name for the class label}
+\item{label}{A character vector of the data column name for the outcome label. class for classification
+and phenos for regression.}
 }
 \value{
 A list containing:
@@ -31,6 +32,7 @@ Return data.sets as a list of training set, holdout set and validation set
 according to the predefined percentage of each partition
 default is a 50-50 split into training and holdout, no testing set
 code class/label/phenotypes as 1 and -1.
+User can manage the simulation data to be dichotomious/quantitative using label (class/phenos)
 }
 \examples{
 data("rsfMRIcorrMDD")
@@ -39,5 +41,6 @@ data.sets <- splitDataset(rsfMRIcorrMDD)
 \seealso{
 Other simulation: \code{\link{createInteractions}},
   \code{\link{createMainEffects}},
+  \code{\link{createMixedSimulation}},
   \code{\link{createSimulation}}
 }

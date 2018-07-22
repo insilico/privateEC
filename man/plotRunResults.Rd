@@ -7,7 +7,7 @@
 plotRunResults(pec.result = NULL)
 }
 \arguments{
-\item{A}{list representing the results returned rom a privateEC algorithm run.}
+\item{pec.result}{A list representing the results returned from a privateEC algorithm run.}
 }
 \description{
 Plot the results of a privateEC workflow for a quick plot/review with base graphics.
@@ -20,11 +20,11 @@ real.data.sets <- splitDataset(all.data = rsfMRIcorrMDD[, (data.width - 101):dat
 pct.train = 0.5,
 pct.holdout = 0.5,
 pct.validation = 0,
-class.label = "phenos"
+label = "class"
 real.result <- privateEC(train.ds = real.data.sets$train,
                          holdout.ds = real.data.sets$holdout,
                          validation.ds = NULL,
-                         label = "phenos",
+                         label = "class",
                          is.simulated = FALSE,
                          update.freq = 5,
                          verbose = FALSE)
