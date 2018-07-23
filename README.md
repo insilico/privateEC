@@ -7,14 +7,13 @@ Written by Trang Le with Bill White
 
 Methods are described in the following publication.
 
-Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. 
-“Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” 
-Bioinformatics. Accepted. https://doi.org/10.1093/bioinformatics/btx298. 2017.
+Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. "Differential privacy-based evaporative cooling feature selection and classification with Relief-F and Random Forests," <i>Bioinformatics</i>, Volume 33, Issue 18, 15 September 2017, Pages 2906–2913. [free](https://academic.oup.com/bioinformatics/article/33/18/2906/3796394/Differential-privacybased-evaporative-cooling?guestAccessKey=b91832c8-6034-46d5-95ce-382fc71c1df0)
 
 # Installation
 
 ```
-library(devtools)
+install.packages("e1071") # if not already installed
+library(devtools) # to use intall_github
 install_github("insilico/privateEC") 
 library(privateEC)
 vignette("Example1")
