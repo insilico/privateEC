@@ -14,6 +14,9 @@
 #' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
 #' @param importance.name A list importance operation parameters
 #' @param importance.algorithm A character vector of the ReliefF estimator
+#' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
 #' (Relief-F scores) for the train and holdout data sets.
@@ -23,7 +26,8 @@ getImportanceScores <- function(train.set=NULL,
                                 holdout.set=NULL,
                                 label="class",
                                 importance.name = "relieff",
-                                importance.algorithm = "ReliefFbestK",
+                                importance.algorithm = "ReliefFequalK",
+                                relief.k.method = "k_half_sigma",
                                 verbose=FALSE) {
   if (is.null(train.set)) {
     stop("getImportanceScores: No training data set provided")
@@ -36,15 +40,46 @@ getImportanceScores <- function(train.set=NULL,
     print(dim(holdout.set))
     stop("Training and holdout data sets have different number of columns")
   }
+  if (is.numeric(relief.k.method)) {
+    if (relief.k.method > floor((dim(train.set)[1]-1)/2)){
+      warning("ReliefF k too large. Using maximum.")
+      k <- floor((dim(train.set)[1]-1)/2) 
+    } else {
+      k <- relief.k.method
+    }
+    # if someone specifies a numeric value (integer hopefully), use this value for k.
+    # However, make sure it is not larger than floor((num.samp.min-1)/2), where
+    # num.samp.min  is the min of the train, holdout.. sample sizes.
+    # Or you could test the inequality when you encounter each data split.
+    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2) 
+    # and writing warning that says 
+    # "ReliefF k too large. Using maximum." 
+  } else if (relief.k.method ==  "myopic"){
+    k <- floor((dim(train.set)[1]-1)/2)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method ==  "m6") { # default "m6" method
+    k <- floor(dim(train.set)[1]/6)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method == "m4") {
+    k <- floor(dim(train.set)[1]/4)
+  } else {
+    k <-  floor((dim(train.set)[1]-1)*0.154)
+  }
   if (verbose) cat("\tComputing importance scores\n")
   good.results <- FALSE
   if (importance.name == "relieff") {
     if (verbose) cat("\tRelief-F train\n")
     train.importance <- CORElearn::attrEval(label, data = train.set,
-                                            estimator = importance.algorithm)
+                                            estimator = importance.algorithm,
+                                            costMatrix = NULL, 
+                                            outputNumericSplits=FALSE,
+                                            kNearestEqual = k)
     if (verbose) cat("\tRelief-F holdout\n")
     holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
-                                              estimator = importance.algorithm)
+                                              estimator = importance.algorithm,
+                                              costMatrix = NULL, 
+                                              outputNumericSplits=FALSE,
+                                              kNearestEqual = k)
     good.results <- TRUE
   }
   # if (learner.name == "epistasisrank") {
@@ -75,6 +110,9 @@ getImportanceScores <- function(train.set=NULL,
 #' @param update.freq An integer the number of steps before update
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param learner.name A character vector containg the learner algorithm name
 #' @param use.nestedCV A logic character indicating whether use nested cross validation or not
 #' @param ncv_folds A vector of integers fo the number of nested cross validation folds
@@ -157,7 +195,8 @@ privateEC <- function(train.ds = NULL,
                       bias = 0.4,
                       update.freq = 5,
                       importance.name = "relieff",
-                      importance.algorithm = "ReliefFbestK",
+                      importance.algorithm = "ReliefFequalK",
+                      relief.k.method = "k_half_sigma",
                       learner.name = "randomforest",
                       xgb.obj = "binary:logistic",
                       use.nestedCV = TRUE,
@@ -214,6 +253,7 @@ privateEC <- function(train.ds = NULL,
                                           label = label,
                                           importance.name = importance.name,
                                           importance.algorithm = importance.algorithm,
+                                          relief.k.method = relief.k.method,
                                           verbose = verbose)
   } else {
     stop("Importance method [", importance.name, "] is not recognized")
@@ -308,6 +348,7 @@ privateEC <- function(train.ds = NULL,
                                           label = label,
                                           importance.name = importance.name,
                                           importance.algorithm = importance.algorithm,
+                                          relief.k.method = relief.k.method,
                                           verbose = verbose)
       } else {
         stop("Importance method [", learner.name, "] is not recognized")

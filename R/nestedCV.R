@@ -15,6 +15,9 @@
 #' @param param.tune A TRUE or FALSE character for tuning parameters
 #' @param learning_method Name of the method: glmnet/xgbTree/rf
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param num_tree Number of trees in random forest and xgboost methods
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with:
@@ -53,9 +56,35 @@ consensus_nestedCV <- function(train.ds = NULL,
                                ncv_folds = c(10, 10),
                                param.tune = FALSE,
                                learning_method = "rf",
-                               importance.algorithm = "ReliefFbestK",
+                               importance.algorithm = "ReliefFequalK",
+                               relief.k.method = "k_half_sigma",
                                num_tree = 500, 
                                verbose = FALSE){
+  if (is.numeric(relief.k.method)) {
+    if (relief.k.method > floor((dim(train.ds)[1]-1)/2)){
+      warning("ReliefF k too large. Using maximum.")
+      k <- floor((dim(train.ds)[1]-1)/2) 
+    } else {
+      k <- relief.k.method
+    }
+    # if someone specifies a numeric value (integer hopefully), use this value for k.
+    # However, make sure it is not larger than floor((num.samp.min-1)/2), where
+    # num.samp.min  is the min of the train, holdout.. sample sizes.
+    # Or you could test the inequality when you encounter each data split.
+    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2) 
+    # and writing warning that says 
+    # "ReliefF k too large. Using maximum." 
+  } else if (relief.k.method ==  "myopic"){
+    k <- floor((dim(train.ds)[1]-1)/2)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method ==  "m6") { # default "m6" method
+    k <- floor(dim(train.ds)[1]/6)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method == "m4") {
+    k <- floor(dim(train.ds)[1]/4)
+  } else {
+    k <-  floor((dim(train.ds)[1]-1)*0.154)
+  }
   tune_params <- NULL; accu_vec <- NULL
   Train_accu <- NULL; Test_accu <- NULL
   relief_atts <- list()
@@ -71,7 +100,10 @@ consensus_nestedCV <- function(train.ds = NULL,
     for (j in 1:length(inner_folds)){
       inner_idx <- which(outer_folds!=i)[-inner_folds[[j]]]
       rf_scores <- CORElearn::attrEval(label, train.ds[inner_idx, ], 
-                                       estimator = importance.algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
+                                       estimator = importance.algorithm,
+                                       costMatrix = NULL, 
+                                       outputNumericSplits=FALSE,
+                                       kNearestEqual = k)
       atts[[j]] <- names(which(rf_scores>0))
     }
     relief_atts[[i]] <- Reduce(intersect, atts)
@@ -157,8 +189,11 @@ consensus_nestedCV <- function(train.ds = NULL,
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno},
                                            mtry = if(param.tune && tuneParam$mtry > 1 && tuneParam$mtry < ncol(train.data))
-                                           {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
-                                           else {floor(sqrt(ncol(train.data)))},
+                                           {tuneParam$mtry} else if (label == "class"){
+                                             max(floor(ncol(train.data)/3), 1)
+                                           } else {
+                                             floor(sqrt(ncol(train.data)))
+                                           },
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
                          cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
@@ -187,6 +222,9 @@ consensus_nestedCV <- function(train.ds = NULL,
 #' @param learning_method Name of the method: glmnet/xgbTree/rf
 #' @param xgb.obj Name of xgboost algorithm
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
+#' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param num_tree Number of trees in random forest and xgboost methods
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with:
@@ -226,18 +264,47 @@ regular_nestedCV <- function(train.ds = NULL,
                              param.tune = FALSE,
                              learning_method = "rf",
                              xgb.obj = "binary:logistic",
-                             importance.algorithm = "ReliefFbestK",
+                             importance.algorithm = "ReliefFequalK",
+                             relief.k.method = "k_half_sigma",
                              num_tree = 500, 
                              verbose = FALSE){
-  
-  relief_atts <- list(); tune_params <- NULL; Train_accu <- NULL; Test_accu <- NULL
+  if (is.numeric(relief.k.method)) {
+    if (relief.k.method > floor((dim(train.ds)[1]-1)/2)){
+      warning("ReliefF k too large. Using maximum.")
+      k <- floor((dim(train.ds)[1]-1)/2) 
+    } else {
+      k <- relief.k.method
+    }
+    # if someone specifies a numeric value (integer hopefully), use this value for k.
+    # However, make sure it is not larger than floor((num.samp.min-1)/2), where
+    # num.samp.min  is the min of the train, holdout.. sample sizes.
+    # Or you could test the inequality when you encounter each data split.
+    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2) 
+    # and writing warning that says 
+    # "ReliefF k too large. Using maximum." 
+  } else if (relief.k.method ==  "myopic"){
+    k <- floor((dim(train.ds)[1]-1)/2)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method ==  "m6") { # default "m6" method
+    k <- floor(dim(train.ds)[1]/6)
+    # where k may change based on num.samp for train, holdout...
+  } else if (relief.k.method == "m4") {
+    k <- floor(dim(train.ds)[1]/4)
+  } else {
+    k <- floor((dim(train.ds)[1]-1)*0.154)
+  }
+  relief_atts <- list(); tune_params <- NULL; 
+  Train_accu <- NULL; Test_accu <- NULL
   ptm <- proc.time()
   if(verbose){cat("\nRunning regular nested cross-validation...\n")}
   outer_folds <- caret::createFolds(train.ds[, label], ncv_folds[1], list = FALSE)
   for (i in 1:ncv_folds[1]){
     outer_idx <- which(outer_folds!=i)
     rf_scores <- CORElearn::attrEval(label, train.ds[outer_idx, ], 
-                                     estimator = importance.algorithm)#, kNearestEqual = floor(nrow(train.ds)/6))
+                                     estimator = importance.algorithm,
+                                     costMatrix = NULL, 
+                                     outputNumericSplits=FALSE,
+                                     kNearestEqual = k)
     relief_atts[[i]] <- names(which(rf_scores>0))
     trn.data <- as.matrix(train.ds[outer_idx, relief_atts[[i]]])
     tst.data <- as.matrix(train.ds[-outer_idx, relief_atts[[i]]])
@@ -317,8 +384,11 @@ regular_nestedCV <- function(train.ds = NULL,
     rf.model <- randomForest::randomForest(train.data, 
                                            y = if(label == "class"){as.factor(train.pheno)}else{train.pheno}, 
                                            mtry = if(param.tune && tuneParam$mtry > 1 && tuneParam$mtry < ncol(train.data))
-                                           {tuneParam$mtry} else if (label == "class"){max(floor(ncol(train.data)/3), 1)} 
-                                           else {floor(sqrt(ncol(train.data)))},
+                                           {tuneParam$mtry} else if (label == "class"){
+                                             max(floor(ncol(train.data)/3), 1)
+                                           } else {
+                                             floor(sqrt(ncol(train.data)))
+                                           },
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
                          cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
