@@ -10,13 +10,12 @@ vignette: >
 ---
 ## Privacy preserving Evaporative Cooling (PrivateEC), Consensus Nested Cross Validation (cnCV), and Regular Nested Cross Validation (rnCV) for feature selection and classification with Relief-F and Random Forests
 
-PrivateEC, cnCV, and rnCV Methods are described in the following publications.
+PrivateEC methods are described in the following publication.
 
-Trang Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. “Differential privacy-based Evaporative Cooling feature selection and classification with Relief-F and Random Forests,” Bioinformatics. Accepted. [Bioinformatics Abstract](https://doi.org/10.1093/bioinformatics/btx298). 2017.
+Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. "Differential privacy-based evaporative cooling feature selection and classification with Relief-F and Random Forests," <i>Bioinformatics</i>, Volume 33, Issue 18, 15 September 2017, Pages 2906–2913. [free](https://academic.oup.com/bioinformatics/article/33/18/2906/3796394/Differential-privacybased-evaporative-cooling?guestAccessKey=b91832c8-6034-46d5-95ce-382fc71c1df0)
 
-PrivateEC software paper ...
 
-Consensus nested cross validation paper ...
+Consensus nested cross validation (cnCV) is a new method ...
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -35,7 +34,8 @@ n.samples <- 100
 n.variables <- 100
 label <- "class"
 type <- "mainEffect"
-importance.algorithm <- "ReliefFbestK"
+#importance.algorithm <- "ReliefFbestK"
+importance.algorithm <- "ReliefFequalK"
 bias <- 0.4
 pct.signals <- 0.1
 update.freq <- 5
@@ -142,7 +142,7 @@ n.variables <- 100
 label <- "class"
 pct.imbalance = 0.56
 type <- "mainEffect"
-importance.algorithm <- "ReliefFbestK"
+importance.algorithm <- "ReliefFequalK"
 bias <- 0.4
 pct.signals <- 0.1
 update.freq <- 5
@@ -251,7 +251,7 @@ label <- "class"
 pct.imbalance = 0.5
 pct.mixed = 0.5
 mixed.type <- c("mainEffect", "interactionScalefree")
-importance.algorithm <- "ReliefFbestK"
+importance.algorithm <- "ReliefFequalK"
 bias <- 0.4
 pct.signals <- 0.1
 update.freq <- 5
@@ -353,13 +353,13 @@ cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
 ```
 
-### Simulate Quantitative Outcome Data (parameter in effect: label = "phenos", type = "mainEffect", importance.algorithm = "RReliefFbestK")
+### Simulate Quantitative Outcome Data (parameter in effect: label = "phenos", type = "mainEffect", importance.algorithm = "RReliefFequalK")
 ```{r, message=FALSE}
 n.samples <- 100
 n.variables <- 100
 label <- "phenos"
 type <- "mainEffect"
-importance.algorithm <- "RReliefFbestK"
+importance.algorithm <- "RReliefFequalK"
 bias <- 0.4
 pct.signals <- 0.1
 update.freq <- 5
