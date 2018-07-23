@@ -6,8 +6,8 @@
 \usage{
 consensus_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
   is.simulated = TRUE, ncv_folds = c(10, 10), param.tune = FALSE,
-  learning_method = "rf", importance.algorithm = "ReliefFbestK",
-  num_tree = 500, verbose = FALSE)
+  learning_method = "rf", importance.algorithm = "ReliefFequalK",
+  relief.k.method = "k_half_sigma", num_tree = 500, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A training data frame with last column as outcome}
@@ -25,6 +25,10 @@ consensus_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
 \item{learning_method}{Name of the method: glmnet/xgbTree/rf}
 
 \item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
+
+\item{relief.k.method}{A character of numeric to indicate number of nearest neighbors for relief algorithm.
+Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))}
 
 \item{num_tree}{Number of trees in random forest and xgboost methods}
 

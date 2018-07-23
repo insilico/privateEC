@@ -6,14 +6,14 @@
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "class", is.simulated = TRUE, bias = 0.4, update.freq = 5,
-  importance.name = "relieff", importance.algorithm = "ReliefFbestK",
-  learner.name = "randomforest", xgb.obj = "binary:logistic",
-  use.nestedCV = TRUE, ncv_folds = c(10, 10), learner.cv = NULL,
-  rf.mtry = NULL, rf.ntree = 500, xgb.num.rounds = c(1),
-  xgb.max.depth = c(4), xgb.shrinkage = c(1), start.temp = 0.1,
-  final.temp = 1e-05, tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
-  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+  importance.name = "relieff", importance.algorithm = "ReliefFequalK",
+  relief.k.method = "k_half_sigma", learner.name = "randomforest",
+  xgb.obj = "binary:logistic", use.nestedCV = TRUE, ncv_folds = c(10, 10),
+  learner.cv = NULL, rf.mtry = NULL, rf.ntree = 500,
+  xgb.num.rounds = c(1), xgb.max.depth = c(4), xgb.shrinkage = c(1),
+  start.temp = 0.1, final.temp = 1e-05, tau.param = 100,
+  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
+  signal.names = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -33,6 +33,10 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 \item{importance.name}{A character vector containg the importance algorithm name}
 
 \item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
+
+\item{relief.k.method}{A character of numeric to indicate number of nearest neighbors for relief algorithm.
+Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))}
 
 \item{learner.name}{A character vector containg the learner algorithm name}
 
