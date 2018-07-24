@@ -1,0 +1,145 @@
+---
+title: "Private Evaporative Cooling and Nested CV Vignette with Interaction Simulation"
+author: Saeid Parvandeh and Brett McKinney
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Example1}
+  %\VignetteEncoding{UTF-8}
+---
+## Privacy preserving Evaporative Cooling (PrivateEC), Consensus Nested Cross Validation (cnCV), and Regular Nested Cross Validation (rnCV) for feature selection and classification with Relief-F and Random Forests
+
+PrivateEC methods are described in the following publication.
+
+Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B. A. McKinney. "Differential privacy-based evaporative cooling feature selection and classification with Relief-F and Random Forests," <i>Bioinformatics</i>, Volume 33, Issue 18, 15 September 2017, Pages 2906–2913. [free](https://academic.oup.com/bioinformatics/article/33/18/2906/3796394/Differential-privacybased-evaporative-cooling?guestAccessKey=b91832c8-6034-46d5-95ce-382fc71c1df0)
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(privateEC)
+```
+
+## Simulation example comparing private Evaporative Cooling (pEC) with standard nested cross-validation (nCV) and a new consensus-feature nested cross validation (cnCV)
+
+### Simulate Balanced Case-Control Data with Numeric Predictors with Main Effects
+```{r, message=FALSE}
+library(privateEC)
+n.samples <- 300     # 100 samples in train/holdout/test
+n.variables <- 100   # 100 features
+label <- "class"
+type <- "interactionErdos" # interaction effect simulatios
+bias <- 0.4          # moderate effect size, smaller value is larger effect
+pct.signals <- 0.1   # pct functional features
+verbose <- FALSE
+
+data.sets <- createSimulation(num.samples = n.samples,
+                              num.variables = n.variables,
+                              pct.signals = pct.signals,
+                              label = label,
+                              bias = bias,
+                              pct.train = 1/3,
+                              pct.holdout = 1/3,
+                              pct.validation = 1/3,
+                              sim.type = type,
+                              save.file = NULL,
+                              verbose = verbose)
+```
+
+### Run pEC on simulated data
+
+```{r, message=FALSE}
+update.freq <- 5   # attributes evaporated per iteration
+num_tree <- 500
+importance.algorithm <- "ReliefFequalK"
+
+pec.result <- privateEC(train.ds = data.sets$train,                  # training split
+                        holdout.ds = data.sets$holdout,               # holdout split
+                        validation.ds = data.sets$validation,         # validation set
+                        label = data.sets$label,                      # class label
+                        importance.algorithm = importance.algorithm,  # ReliefF
+                        relief.k.method = "k_half_sigma",             # ReliefF knn
+                        rf.ntree = num_tree,                          # random forest
+                        is.simulated = TRUE,                          # validation set
+                        bias = bias,                                  # pEC privacy
+                        update.freq = update.freq,                    # num attr evaporated
+                        save.file = NULL,                             # save results
+                        signal.names = data.sets$signal.names,        # functional attr names
+                        use.nestedCV = T,
+                        verbose = verbose)
+```
+
+### pEC results
+#### Table of iterations
+```{r, echo=FALSE}
+knitr::kable(pec.result$algo.acc, caption = "Evaporation Iterations",
+             row.names = FALSE, digits = 3)
+```
+
+#### Plot of results
+```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+Best pEC model selected based on highest holdout accuracy. Train, holdout and independent validation accuracies of selected model shown below. Features in model are listed: simvar prefix variables are functional. Others are background.  
+```{r, echo=T}
+multiple.max.indices <- which(pec.result$algo.acc$holdout.acc==max(pec.result$algo.acc$holdout.acc))
+last.max <- multiple.max.indices[length(multiple.max.indices)]
+cat("\n Max Holdout Accuracy Step [",last.max,"]\n")
+cat("\n Accuracies: ")
+print(pec.result$algo.acc[last.max,])
+cat("\n Selected Features \n [",pec.result$atts.remain[[last.max]],"]\n")
+```
+
+### Standard nested CV
+
+```{r, message=FALSE}
+rncv_result <- regular_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
+                                validation.ds =  data.sets$validation,
+                                label = data.sets$label,
+                                is.simulated = TRUE,
+                                ncv_folds = c(10, 10),
+                                param.tune = FALSE,
+                                learning_method = "rf", 
+                                importance.algorithm = importance.algorithm,
+                                relief.k.method = "k_half_sigma",             # ReliefF knn
+                                num_tree = num_tree,
+                                verbose = verbose)
+```
+
+### nested CV results
+```{r, message=FALSE, echo=T}
+cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",rncv_result$Features,"]\n")
+cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
+```
+
+### Consensus nested CV
+```{r, message=FALSE}
+cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
+                                  validation.ds =  data.sets$validation, 
+                                  label = data.sets$label,
+                                  is.simulated = TRUE,
+                                  ncv_folds = c(10, 10),
+                                  param.tune = FALSE,
+                                  learning_method = "rf", 
+                                  importance.algorithm = importance.algorithm,
+                                  relief.k.method = "k_half_sigma",             # ReliefF knn
+                                  num_tree = num_tree,
+                                  verbose = verbose)
+```
+
+### cnCV results
+
+```{r, echo=T}
+cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
+cat("\n Selected Features \n [",cncv_result$Features,"]\n")
+cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
+```
+

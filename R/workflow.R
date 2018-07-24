@@ -200,7 +200,7 @@ compileAndSaveAllResults <- function(run.results = NULL,
 #' @family workflows
 #' @export
 paperRealWorkflow <- function(real.data=NULL,
-                              label=NULL,
+                              label="class",
                               update.freq=50,
                               verbose=FALSE) {
   if (is.null(real.data)) {
