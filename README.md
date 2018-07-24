@@ -12,11 +12,13 @@ Trang T. Le, W. K. Simmons, M. Misaki, B.C. White, J. Savitz, J. Bodurka, and B.
 # Installation
 
 ```
-install.packages("e1071") # if not already installed
 library(devtools) # to use intall_github
-install_github("insilico/privateEC") 
-library(privateEC)
-vignette("Example1")
+# build_vignettes is optional and takes a bit longer to install
+install_github("insilico/privateEC", dependencies=T, build_vignettes = T) 
+library(privateEC)                 # load library
+vignette("pEC_nCV_MainEffect")     # see vignette examples
+vignette("pEC_nCV_Interactions")
+vignette("RealDataExample")
 ```
 
 # Abstract
