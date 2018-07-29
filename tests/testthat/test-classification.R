@@ -39,7 +39,7 @@ test_that("privateEC returns sane results - Relief-F + randomForest - Dichotomou
 test_that("privateEC returns sane results - Relief-F + randomForest - Quantitative outcome", {
   num.samples <- 100
   num.variables <- 100
-  label <- "phenos"
+  label <- "qtrait"
   pct.signals <- 0.1
   rf.mtry <- 5
   sim.data <- createSimulation(num.samples = num.samples,
@@ -70,10 +70,12 @@ test_that("privateEC returns sane results - Relief-F + randomForest - Quantitati
 test_that("privateEC returns sane results - Relief-F + xgboost fixed parameters", {
   num.samples <- 100
   num.variables <- 100
+  label <- "class"
   pct.signals <- 0.1
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
                                pct.signals = pct.signals,
+                               label = label,
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
                                pct.validation = 1 / 3,
@@ -104,9 +106,11 @@ test_that("privateEC returns sane results - Relief-F + xgboost with hyperparamet
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
+  label <- "class"
   sim.data <- createSimulation(num.samples = num.samples,
                                num.variables = num.variables,
                                pct.signals = pct.signals,
+                               label = label,
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
                                pct.validation = 1 / 3,
@@ -138,9 +142,11 @@ test_that("originalThresholdout returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
+  label <- "class"
   temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
   sim.data <- createSimulation(num.variables = num.variables,
                                num.samples = num.samples,
+                               label = label,
                                sim.type = "mainEffect",
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
@@ -177,9 +183,11 @@ test_that("privateRF returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
+  label <- "class"
   temp.pec.file <- tempfile(pattern = "pEc_temp", tmpdir = tempdir())
   sim.data <- createSimulation(num.variables = num.variables,
                                num.samples = num.samples,
+                               label = label,
                                sim.type = "mainEffect",
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,
@@ -216,8 +224,10 @@ test_that("standard random forest returns sane results", {
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
+  label <- "class"
   sim.data <- createSimulation(num.variables = num.variables,
                                num.samples = num.samples,
+                               label = label,
                                sim.type = "mainEffect",
                                pct.train = 1 / 3,
                                pct.holdout = 1 / 3,

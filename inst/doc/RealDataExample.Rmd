@@ -27,38 +27,34 @@ real.data.sets <- splitDataset(all.data = rsfMRIcorrMDD[, (data.width - 101):dat
                                pct.holdout = 0.5,
                                pct.validation = 0,
                                label = "class")
-real.result <- privateEC(train.ds = real.data.sets$train,
+pec.result <- privateEC(train.ds = real.data.sets$train,
                          holdout.ds = real.data.sets$holdout,
                          validation.ds = NULL,
                          label = "class",
                          is.simulated = FALSE,
+                         importance.algorithm = "ReliefFequalK",  # ReliefF
+                         relief.k.method = "k_half_sigma",        # ReliefF knn
                          update.freq = 5,
                          verbose = FALSE)
 ```
 
 ```{r, echo=FALSE}
-knitr::kable(real.result$algo.acc, 
+knitr::kable(pec.result$algo.acc, 
              caption = "Algorithm Iterations",
              row.names = FALSE, 
              digits = 3)
 ```
 
 ```{r, echo=FALSE, fig.width=7, fig.width=7, fig.align='center'}
-# library(ggplot2)
-# ggplot(pec.result$melted.data, aes(x=num.atts, y=value, colour=variable)) +
-#   geom_point(size=1) + geom_line()
-plot(real.result$algo.acc$vars.remain, 
-     real.result$algo.acc$holdout.acc, 
-     col = "red", pch = 16, type = 'b', cex = 0.75, 
-     main = "One run of privateEC",
-     xlab = "Number of Attributes in Model",
-     ylab = "Accuracy")
-points(real.result$algo.acc$vars.remain, 
-       real.result$algo.acc$train.acc, 
-       col = "green", pch = 1, type = 'b', cex = 0.75)
-points(real.result$algo.acc$vars.remain, 
-       real.result$algo.acc$validation.acc, 
-       col = "blue", pch = 4, type = 'b', cex = 0.75)
-legend("topright", c("Train", "Holdout", "Test"), 
-       pch = c(16, 1, 4), col = c("red", "green", "blue"), cex = 0.75)
+plotRunResults(pec.result)
+```
+
+#### pEC selected features
+```{r, echo=T}
+multiple.max.indices <- which(pec.result$algo.acc$holdout.acc==max(pec.result$algo.acc$holdout.acc))
+last.max <- multiple.max.indices[length(multiple.max.indices)]
+cat("\n Max Holdout Accuracy Step [",last.max,"]\n")
+cat("\n Accuracies: ")
+print(pec.result$algo.acc[last.max,])
+cat("\n Selected Features \n [",pec.result$atts.remain[[last.max]],"]\n")
 ```

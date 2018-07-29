@@ -25,7 +25,7 @@ library(privateEC)
 
 ## Simulation example comparing private Evaporative Cooling (pEC) with standard nested cross-validation (nCV) and a new consensus-feature nested cross validation (cnCV)
 
-### Simulate Balanced Case-Control Data with Numeric Predictors with Main Effects
+### Simulate Balanced Case-Control Data with Numeric Predictors with interaction Effects
 ```{r, message=FALSE}
 library(privateEC)
 n.samples <- 300     # 100 samples in train/holdout/test
@@ -113,7 +113,7 @@ rncv_result <- regular_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdo
 
 ### nested CV results
 ```{r, message=FALSE, echo=T}
-cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Train Accuracy [",rncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",rncv_result$Features,"]\n")
 cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
@@ -137,7 +137,7 @@ cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$hol
 ### cnCV results
 
 ```{r, echo=T}
-cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")

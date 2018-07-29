@@ -11,7 +11,7 @@
 #'
 #' @param train.set A training data frame with last column as outcome
 #' @param holdout.set A holdout data frame with last column as outcome
-#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
+#' @param label A character vector of the outcome variable column name. class/qtrait for classification/regression
 #' @param importance.name A list importance operation parameters
 #' @param importance.algorithm A character vector of the ReliefF estimator
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
@@ -199,7 +199,7 @@ privateEC <- function(train.ds = NULL,
                       relief.k.method = "k_half_sigma",
                       learner.name = "randomforest",
                       xgb.obj = "binary:logistic",
-                      use.nestedCV = TRUE,
+                      use.nestedCV = FALSE,
                       ncv_folds = c(10, 10),
                       learner.cv = NULL,
                       rf.mtry = NULL,
@@ -423,7 +423,7 @@ privateEC <- function(train.ds = NULL,
                                                } else {
                                                  rf.mtry.valid <- floor(sqrt(ncol(train.data)))
                                                })
-        if(label == "phenos"){
+        if(label == "qtrait"){
           current.train.acc <- stats::cor(rf.model$predicted, train.data[, label])^2
         } else {
           current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
@@ -433,7 +433,7 @@ privateEC <- function(train.ds = NULL,
           holdout.pred <- stats::predict(rf.model, newdata = hold.data)
           if (verbose) print(holdout.pred)
           if (verbose) print(hold.data[, (label)])
-          if(label == "phenos"){
+          if(label == "qtrait"){
             current.holdout.acc <- stats::cor(holdout.pred, hold.data[, (label)])^2
           } else {
             current.holdout.acc <- mean(holdout.pred == hold.data[, (label)])
@@ -445,7 +445,7 @@ privateEC <- function(train.ds = NULL,
           if (verbose) cat("\tpredict validation\n")
           validation.pred <- stats::predict(rf.model, newdata = valid.data)
           if (verbose) print(validation.pred)
-          if(label == "phenos"){
+          if(label == "qtrait"){
             current.validation.acc <- stats::cor(validation.pred, valid.data[, (label)])^2
           } else {
             current.validation.acc <- mean(validation.pred == valid.data[, (label)])

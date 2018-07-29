@@ -17,14 +17,14 @@
 #' according to the predefined percentage of each partition
 #' default is a 50-50 split into training and holdout, no testing set
 #' code class/label/phenotypes as 1 and -1.
-#' User can manage the simulation data to be dichotomious/quantitative using label (class/phenos)
+#' User can manage the simulation data to be dichotomious/quantitative using label (class/qtrait)
 #'
 #' @param all.data A data frame of n rows by d colums of data plus a label column
 #' @param pct.train A numeric percentage of samples to use for traning
 #' @param pct.holdout A numeric percentage of samples to use for holdout
 #' @param pct.validation A numeric percentage of samples to use for testing
 #' @param label A character vector of the data column name for the outcome label. class for classification
-#' and phenos for regression.
+#' and qtrait for regression.
 #' @return A list containing:
 #' \describe{
 #'   \item{train}{traing data set}
@@ -116,7 +116,7 @@ splitDataset <- function(all.data=NULL,
 #' @param M An integer for the number of samples (rows)
 #' @param N An integer for the number of variables (columns)
 #' @param label A character vector for the name of the outcome column. class for classification
-#' and phenos for regression
+#' and qtrait for regression
 #' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
 #' 0 means all controls and 1 mean all cases.
 #' @param meanExpression A numeric for the mean expression levels
@@ -190,15 +190,15 @@ createInteractions <- function(M=100,
   n1 <- round(pct.imbalance * dimN)
   n2 <- round((1 - pct.imbalance) * dimN)
   subIds <- c(paste("case", 1:n1, sep = ""), paste("ctrl", 1:n2, sep = ""))
-  phenos <- c(rep(1, n1), rep(0, n2))
-  newD <- cbind(t(D), phenos)
+  qtrait <- c(rep(1, n1), rep(0, n2))
+  newD <- cbind(t(D), qtrait)
   colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep = ""), label)
   rownames(newD) <- subIds
   
   data.frame(newD)
 }
 
-# main effect with quantitative outcome using label ("class" (dichotomious) or "phenos"(quantitative))
+# main effect with quantitative outcome using label ("class" (dichotomious) or "qtrait"(quantitative))
 # main effect with imbalanced outcome using pct.imbalance (decreasing pct. will generate less control sample)
 # parameters in effect n.e=num.variables, n.db=num.samples, sd.b=bias, p.b=pct.signals
 
@@ -218,7 +218,7 @@ createInteractions <- function(M=100,
 #' @param n.db sample size in database
 #' @param n.ns sample size in newsample
 #' @param label A character vector for the name of the outcome column. class for classification
-#' and phenos for regression
+#' and qtrait for regression
 #' @param pct.imbalance A numeric percentage to indicate proportion of the imbalaced samples. 
 #' 0 means all controls and 1 mean all cases.
 #' @param sv.db batches
@@ -256,8 +256,8 @@ createMainEffects <- function(n.e=1000,
                               p.b=0.3,
                               p.gam=0.3,
                               p.ov=p.b / 2) {
-  if(!any(label == c("class", "phenos"))){
-    stop("CreateMainEffects: name of the label should be class or phenos")
+  if(!any(label == c("class", "qtrait"))){
+    stop("CreateMainEffects: name of the label should be class or qtrait")
   }
   n <- n.db + n.ns
   # Create random error
@@ -378,7 +378,7 @@ createMainEffects <- function(n.e=1000,
     db$S <- S[ind == "db"]
     db$Gam <- Gam
     db$G <- G[ind == "db"]
-  } else if (label == "phenos"){
+  } else if (label == "qtrait"){
     ##########################
     # ------- Comment --------
     # Since, we have quantitative outcome and not dichotomize outcome, we may not be able to include conf.
@@ -441,7 +441,7 @@ createMainEffects <- function(n.e=1000,
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param label A character vector for the name of the outcome column. class for classification
-#' and phenos for regression
+#' and qtrait for regression
 #' @param sim.type A character vector of the type of simulation:
 #' mainEffect/interactionErdos/interactionScalefree
 #' @param pct.train A numeric percentage of samples to use for traning
@@ -488,8 +488,8 @@ createSimulation <- function(num.samples=100,
                              pct.validation=0,
                              save.file=NULL,
                              verbose=FALSE) {
-  if(!any(label == c("class", "phenos"))){
-    stop("CreateMainEffects: name of the label should be class or phenos")
+  if(!any(label == c("class", "qtrait"))){
+    stop("CreateMainEffects: name of the label should be class or qtrait")
   }
   ptm <- proc.time()
   nbias <- pct.signals * num.variables
@@ -579,7 +579,7 @@ createSimulation <- function(num.samples=100,
 #' @param pct.signals A numeric for proportion of simulated signal variables
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param label A character vector for the name of the outcome column. class for classification
-#' and phenos for regression
+#' and qtrait for regression
 #' @param pct.mixed A numeric percentage to indicate the proportion of each simulation type
 #' @param mixed.type A character vector of the mix type of simulations:
 #' mainEffect, interactionErdos/interactionScalefree
@@ -630,8 +630,8 @@ createMixedSimulation <- function(num.samples = 100,
                                   pct.validation=0,
                                   save.file=NULL,
                                   verbose=FALSE){
-  if(!any(label == c("class", "phenos"))){
-    stop("createMixedSimulation: name of the label should be class or phenos")
+  if(!any(label == c("class", "qtrait"))){
+    stop("createMixedSimulation: name of the label should be class or qtrait")
   }
   num.int.vars <- round(num.variables * pct.mixed)
   num.main.vars <- round(num.variables * (1 - pct.mixed))

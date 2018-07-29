@@ -87,7 +87,7 @@ test_that("createMixedSimulation with interaction network returns sane results -
 
 test_that("createSimulation mainEffect returns sane results - with quantitative outcome", {
   sim.type <- "mainEffect"
-  label <- "phenos"
+  label <- "qtrait"
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -106,7 +106,7 @@ test_that("createSimulation mainEffect returns sane results - with quantitative 
 
 test_that("createSimulation Erdos-Renyi network base returns sane results - with quantitative outcome", {
   sim.type <- "interactionErdos"
-  label <- "phenos"
+  label <- "qtrait"
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -125,7 +125,7 @@ test_that("createSimulation Erdos-Renyi network base returns sane results - with
 
 test_that("createSimulation with interaction network returns sane results - with quantitative outcome", {
   sim.type <- "interactionScalefree"
-  label <- "phenos"
+  label <- "qtrait"
   num.samples <- 100
   num.variables <- 100
   pct.signals <- 0.1
@@ -144,7 +144,7 @@ test_that("createSimulation with interaction network returns sane results - with
 
 test_that("createMixedSimulation with interaction network returns sane results - with quantitative outcome", {
   mixed.type <- c("mainEffect","interactionScalefree")
-  label <- "phenos"
+  label <- "qtrait"
   num.samples <- 100
   num.variables <- 100
   pct.mixed <- .5

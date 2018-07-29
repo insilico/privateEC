@@ -107,7 +107,7 @@ rncv_result <- regular_nestedCV(train.ds = data.sets$train,
 
 ### rnCV results
 ```{r, message=FALSE, echo=T}
-cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Train Accuracy [",rncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",rncv_result$Features,"]\n")
 cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
@@ -130,7 +130,7 @@ cncv_result <- consensus_nestedCV(train.ds = data.sets$train,
 ### cnCV results
 
 ```{r, echo=T}
-cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
@@ -215,7 +215,7 @@ rncv_result <- regular_nestedCV(train.ds = data.sets$train,
 
 ### rnCV results
 ```{r, message=FALSE, echo=FALSE}
-cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Train Accuracy [",rncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",rncv_result$Features,"]\n")
 cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
@@ -238,7 +238,7 @@ cncv_result <- consensus_nestedCV(train.ds = data.sets$train,
 ### cnCV results
 
 ```{r, echo=FALSE}
-cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
@@ -325,7 +325,7 @@ rncv_result <- regular_nestedCV(train.ds = data.sets$train,
 
 ### rnCV results
 ```{r, message=FALSE, echo=FALSE}
-cat("\n Train Accuracy [",rncv_result$Train,"]\n")
+cat("\n Train Accuracy [",rncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",rncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",rncv_result$Features,"]\n")
 cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
@@ -348,17 +348,17 @@ cncv_result <- consensus_nestedCV(train.ds = data.sets$train,
 ### cnCV results
 
 ```{r, echo=FALSE}
-cat("\n Train Accuracy [",cncv_result$Train,"]\n")
+cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
 ```
 
-### Simulate Quantitative Outcome Data (parameter in effect: label = "phenos", type = "mainEffect", importance.algorithm = "RReliefFequalK")
+### Simulate Quantitative Outcome Data (parameter in effect: label = "qtrait", type = "mainEffect", importance.algorithm = "RReliefFequalK")
 ```{r, message=FALSE}
 n.samples <- 100
 n.variables <- 100
-label <- "phenos"
+label <- "qtrait"
 type <- "mainEffect"
 importance.algorithm <- "RReliefFequalK"
 bias <- 0.4
@@ -431,7 +431,7 @@ rncv_result <- regular_nestedCV(train.ds = data.sets$train,
 
 ### rnCV results
 ```{r, echo=FALSE}
-cat("\n Train R-squared [",rncv_result$Train,"]\n")
+cat("\n Train R-squared [",rncv_result$cv.acc,"]\n")
 cat("\n Validation R-squared [",rncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",rncv_result$Features,"]\n")
 cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
@@ -454,7 +454,7 @@ cncv_result <- consensus_nestedCV(train.ds =  data.sets$train,
 ### cnCV results
 
 ```{r, echo=FALSE}
-cat("\n Train R-squared [",cncv_result$Train,"]\n")
+cat("\n Train R-squared [",cncv_result$cv.acc,"]\n")
 cat("\n Validation R-squared [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")

@@ -9,9 +9,9 @@
 #' Consensus nested cross validation for feature selection and parameter tuning
 #' @param train.ds A training data frame with last column as outcome
 #' @param validation.ds A validation data frame with last column as outcome
-#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
+#' @param label A character vector of the outcome variable column name. class/qtrait for classification/regression
 #' @param is.simulated A TRUE or FALSE character for data type
-#' @param ncv_folds A numeric vector to indicate nested cv loops
+#' @param ncv_folds A numeric vector to indicate nested cv folds: c(k_outer, k_inner)
 #' @param param.tune A TRUE or FALSE character for tuning parameters
 #' @param learning_method Name of the method: glmnet/xgbTree/rf
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
@@ -85,6 +85,9 @@ consensus_nestedCV <- function(train.ds = NULL,
   } else {
     k <-  floor((dim(train.ds)[1]-1)*0.154)
   }
+  if (sum(ncv_folds)>(dim(train.ds)[1])/3){
+    stop("There are less than three observations in each fold")
+  }
   tune_params <- NULL; accu_vec <- NULL
   Train_accu <- NULL; Test_accu <- NULL
   relief_atts <- list()
@@ -142,7 +145,7 @@ consensus_nestedCV <- function(train.ds = NULL,
   } else if (!is.simulated && label == "class"){
     train.pheno <- as.integer(train.ds[, label])
     test.pheno <- as.integer(validation.ds[, label])
-  } else if (label == "phenos"){
+  } else if (label == "qtrait"){
     train.pheno <- train.ds[, label]
     test.pheno <- validation.ds[, label]
   }
@@ -205,7 +208,7 @@ consensus_nestedCV <- function(train.ds = NULL,
   }
   elapsed.time <- (proc.time() - ptm)[3]
   if(verbose){cat("nestedCV elapsed time", elapsed.time, "\n")}
-  list(Train = Train_accu, Validation = Test_accu, Features = nCV_atts, Elapsed = elapsed.time)
+  list(cv.acc = Train_accu, Validation = Test_accu, Features = nCV_atts, Elapsed = elapsed.time)
 }
 
 ###########################################
@@ -215,9 +218,9 @@ consensus_nestedCV <- function(train.ds = NULL,
 #' Regular nested cross validation for feature selection and parameter tuning
 #' @param train.ds A training data frame with last column as outcome
 #' @param validation.ds A validation data frame with last column as outcome
-#' @param label A character vector of the outcome variable column name. class/phenos for classification/regression
+#' @param label A character vector of the outcome variable column name. class/qtrait for classification/regression
 #' @param is.simulated A TRUE or FALSE character for data type
-#' @param ncv_folds A numeric vector to indicate nested cv loops
+#' @param ncv_folds A numeric vector to indicate nested cv folds: c(k_outer, k_inner)
 #' @param param.tune A TRUE or FALSE character for tuning parameters
 #' @param learning_method Name of the method: glmnet/xgbTree/rf
 #' @param xgb.obj Name of xgboost algorithm
@@ -293,6 +296,9 @@ regular_nestedCV <- function(train.ds = NULL,
   } else {
     k <- floor((dim(train.ds)[1]-1)*0.154)
   }
+  if (sum(ncv_folds)>(dim(train.ds)[1])/3){
+    stop("There are less than three observations in each fold")
+  }
   relief_atts <- list(); tune_params <- NULL; 
   Train_accu <- NULL; Test_accu <- NULL
   ptm <- proc.time()
@@ -337,7 +343,7 @@ regular_nestedCV <- function(train.ds = NULL,
   } else if (!is.simulated && label == "class"){
     train.pheno <- as.integer(train.ds[, label])
     test.pheno <- as.integer(validation.ds[, label])
-  } else if (label == "phenos"){
+  } else if (label == "qtrait"){
     train.pheno <- train.ds[, label]
     test.pheno <- validation.ds[, label]
   }
@@ -399,7 +405,7 @@ regular_nestedCV <- function(train.ds = NULL,
   }
   elapsed.time <- (proc.time() - ptm)[3]
   if(verbose){cat("nestedCV elapsed time", elapsed.time, "\n")}
-  list(Train = Train_accu, Validation = Test_accu, Features = nCV_atts, Elapsed = elapsed.time)
+  list(cv.acc = Train_accu, Validation = Test_accu, Features = nCV_atts, Elapsed = elapsed.time)
 }
 
 
