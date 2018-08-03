@@ -14,11 +14,11 @@ consensus_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
 
 \item{validation.ds}{A validation data frame with last column as outcome}
 
-\item{label}{A character vector of the outcome variable column name. class/phenos for classification/regression}
+\item{label}{A character vector of the outcome variable column name. class/qtrait for classification/regression}
 
 \item{is.simulated}{A TRUE or FALSE character for data type}
 
-\item{ncv_folds}{A numeric vector to indicate nested cv loops}
+\item{ncv_folds}{A numeric vector to indicate nested cv folds: c(k_outer, k_inner)}
 
 \item{param.tune}{A TRUE or FALSE character for tuning parameters}
 

@@ -17,10 +17,10 @@ data(rsfMRIcorrMDD)
 # ~100 variables for a test
 data.width <- ncol(rsfMRIcorrMDD)
 real.data.sets <- splitDataset(all.data = rsfMRIcorrMDD[, (data.width - 101):data.width],
-pct.train = 0.5,
-pct.holdout = 0.5,
-pct.validation = 0,
-label = "class"
+                               pct.train = 0.5,
+                               pct.holdout = 0.5,
+                               pct.validation = 0,
+                               label = "class")
 real.result <- privateEC(train.ds = real.data.sets$train,
                          holdout.ds = real.data.sets$holdout,
                          validation.ds = NULL,

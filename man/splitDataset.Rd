@@ -17,7 +17,7 @@ splitDataset(all.data = NULL, pct.train = 0.5, pct.holdout = 0.5,
 \item{pct.validation}{A numeric percentage of samples to use for testing}
 
 \item{label}{A character vector of the data column name for the outcome label. class for classification
-and phenos for regression.}
+and qtrait for regression.}
 }
 \value{
 A list containing:
@@ -32,7 +32,7 @@ Return data.sets as a list of training set, holdout set and validation set
 according to the predefined percentage of each partition
 default is a 50-50 split into training and holdout, no testing set
 code class/label/phenotypes as 1 and -1.
-User can manage the simulation data to be dichotomious/quantitative using label (class/phenos)
+User can manage the simulation data to be dichotomious/quantitative using label (class/qtrait)
 }
 \examples{
 data("rsfMRIcorrMDD")

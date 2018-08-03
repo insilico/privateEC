@@ -14,7 +14,7 @@ createInteractions(M = 100, N = 100, label = "class",
 \item{N}{An integer for the number of variables (columns)}
 
 \item{label}{A character vector for the name of the outcome column. class for classification
-and phenos for regression}
+and qtrait for regression}
 
 \item{pct.imbalance}{A numeric percentage to indicate proportion of the imbalaced samples. 
 0 means all controls and 1 mean all cases.}

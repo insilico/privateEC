@@ -8,8 +8,8 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "class", is.simulated = TRUE, bias = 0.4, update.freq = 5,
   importance.name = "relieff", importance.algorithm = "ReliefFequalK",
   relief.k.method = "k_half_sigma", learner.name = "randomforest",
-  xgb.obj = "binary:logistic", use.nestedCV = TRUE, ncv_folds = c(10, 10),
-  learner.cv = NULL, rf.mtry = NULL, rf.ntree = 500,
+  xgb.obj = "binary:logistic", use.nestedCV = FALSE, ncv_folds = c(10,
+  10), learner.cv = NULL, rf.mtry = NULL, rf.ntree = 500,
   xgb.num.rounds = c(1), xgb.max.depth = c(4), xgb.shrinkage = c(1),
   start.temp = 0.1, final.temp = 1e-05, tau.param = 100,
   threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
@@ -39,6 +39,8 @@ Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num
 myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))}
 
 \item{learner.name}{A character vector containg the learner algorithm name}
+
+\item{xgb.obj}{A character vector containing the XGBoost ojective function name}
 
 \item{use.nestedCV}{A logic character indicating whether use nested cross validation or not}
 

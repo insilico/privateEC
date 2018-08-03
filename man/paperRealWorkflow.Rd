@@ -5,7 +5,7 @@
 \title{Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
 Returns a data frame of run results for each.}
 \usage{
-paperRealWorkflow(real.data = NULL, label = NULL, update.freq = 50,
+paperRealWorkflow(real.data = NULL, label = "class", update.freq = 50,
   verbose = FALSE)
 }
 \arguments{
