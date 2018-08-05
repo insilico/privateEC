@@ -15,7 +15,7 @@
 #' @param importance.name A list importance operation parameters
 #' @param importance.algorithm A character vector of the ReliefF estimator
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
-#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
@@ -43,7 +43,7 @@ getImportanceScores <- function(train.set=NULL,
   if (is.numeric(relief.k.method)) {
     if (relief.k.method > floor((dim(train.set)[1]-1)/2)){
       warning("ReliefF k too large. Using maximum.")
-      k <- floor((dim(train.set)[1]-1)/2) 
+      k <- floor((dim(train.set)[1]-1)/2)
     } else {
       k <- relief.k.method
     }
@@ -51,9 +51,9 @@ getImportanceScores <- function(train.set=NULL,
     # However, make sure it is not larger than floor((num.samp.min-1)/2), where
     # num.samp.min  is the min of the train, holdout.. sample sizes.
     # Or you could test the inequality when you encounter each data split.
-    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2) 
-    # and writing warning that says 
-    # "ReliefF k too large. Using maximum." 
+    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2)
+    # and writing warning that says
+    # "ReliefF k too large. Using maximum."
   } else if (relief.k.method ==  "myopic"){
     k <- floor((dim(train.set)[1]-1)/2)
     # where k may change based on num.samp for train, holdout...
@@ -71,13 +71,13 @@ getImportanceScores <- function(train.set=NULL,
     if (verbose) cat("\tRelief-F train\n")
     train.importance <- CORElearn::attrEval(label, data = train.set,
                                             estimator = importance.algorithm,
-                                            costMatrix = NULL, 
+                                            costMatrix = NULL,
                                             outputNumericSplits=FALSE,
                                             kNearestEqual = k)
     if (verbose) cat("\tRelief-F holdout\n")
     holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
                                               estimator = importance.algorithm,
-                                              costMatrix = NULL, 
+                                              costMatrix = NULL,
                                               outputNumericSplits=FALSE,
                                               kNearestEqual = k)
     good.results <- TRUE
@@ -111,7 +111,7 @@ getImportanceScores <- function(train.set=NULL,
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
-#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param learner.name A character vector containg the learner algorithm name
 #' @param use.nestedCV A logic character indicating whether use nested cross validation or not
@@ -376,7 +376,7 @@ privateEC <- function(train.ds = NULL,
           atts <- list()
           if(verbose){cat("\n Create [",ncv_folds[2],"] inner folds of outer fold[",i,"]\n")}
           inner_folds <- caret::createFolds(new.train.ds[, label][outer_folds!=i], ncv_folds[2], list = TRUE)
-          if(verbose){cat("\n Feature Selection...\n")} 
+          if(verbose){cat("\n Feature Selection...\n")}
           for (j in 1:length(inner_folds)){
             inner_idx <- which(outer_folds!=1)[-inner_folds[[j]]]
             rf_scores <- CORElearn::attrEval(label, new.train.ds[inner_idx, ], estimator = importance.algorithm)
@@ -412,10 +412,7 @@ privateEC <- function(train.ds = NULL,
       method.valid <- FALSE
       if (learner.name == "randomforest") {
         if (verbose) cat("\tRunning randomForest\n")
-        
-        model.formula <- stats::as.formula(paste(label, "~.",
-                                                 sep = ""))
-        rf.model <- randomForest::randomForest(formula = model.formula,
+        rf.model <- randomForest::randomForest(formula = stats::as.formula(paste0(label, "~.")),
                                                data = train.data,
                                                ntree = rf.ntree,
                                                mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
@@ -454,7 +451,7 @@ privateEC <- function(train.ds = NULL,
           current.validation.acc <- 0
         }
         method.valid <- TRUE
-      } 
+      }
       if (learner.name == "xgboost") {
         if (verbose) cat("\tRunning xgboost\n")
         xgb.results <- xgboostRF(train.ds = train.data,
@@ -514,7 +511,7 @@ privateEC <- function(train.ds = NULL,
         cat("\tvariables list exhausted: no more variables to remove\n")
         keep.looping <- FALSE
       } else {
-        
+
       }
     }
     current.iteration <- current.iteration + 1
@@ -523,7 +520,7 @@ privateEC <- function(train.ds = NULL,
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("private EC optimization loop performed", num.updates,
                    "updates in", elapsed.time, " seconds\n")
-  
+
   # prepare results for returning to caller
   plot.data <- data.frame(vars.remain = vars.remain.per.update,
                           train.acc = all.train.acc,
@@ -532,7 +529,7 @@ privateEC <- function(train.ds = NULL,
                           alg = 1)
   if (verbose) print(plot.data)
   plot.data.narrow <- reshape2::melt(plot.data, id = c("vars.remain", "alg"))
-  
+
   # save the results to an Rdata file if requested
   if (!is.null(save.file)) {
     if (verbose) {
@@ -541,10 +538,10 @@ privateEC <- function(train.ds = NULL,
     save(plot.data, plot.data.narrow, correct.detect.ec, num.data.cols, num.data.rows,
          signal.names, threshold, tolerance, bias, elapsed.time, file = save.file)
   }
-  
+
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("privateEC elapsed time:", elapsed.time, "\n")
-  
+
   list(algo.acc = plot.data,
        ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
@@ -1023,7 +1020,7 @@ standardRF <- function(train.ds=NULL,
     stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
-  bag.simul <- randomForest::randomForest(stats::as.formula(paste(label, "~ .", sep = "")),
+  bag.simul <- randomForest::randomForest(stats::as.formula(paste0(label, "~.")),
                                           data = rbind(train.ds, holdout.ds),
                                           ntree = rf.ntree,
                                           mtry = param.mtry,
@@ -1185,7 +1182,7 @@ xgboostRF <- function(train.ds=NULL,
     } else {
       rf.train.accu <- stats::cor(pred.class, train_pheno)^2
     }
-    
+
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
     pred.class <- stats::predict(train.model, holdout.ds)
@@ -1195,7 +1192,7 @@ xgboostRF <- function(train.ds=NULL,
     } else {
       rf.holdo.accu <- stats::cor(pred.class, holdout_pheno)^2
     }
-    
+
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
