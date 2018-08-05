@@ -7,7 +7,8 @@ Date: 2017-08-11
 Authors@R: as.person(c(
     "Brett McKinney <brett-mckinney@utulsa.edu> [aut, cre]", 
     "Trang Le <trang-le@utulsa.edu> [aut]",
-    "Bill White <bill-white@utulsa.edu> [aut]"
+    "Bill White <bill.c.white@gmail.com> [aut]",
+    "Saeid Parvandeh <parvandehsaied@gmail.com> [aut]"
   ))
 Description: The privateEC algorithm along with other comparison algorithms used in the 
     Bioinformatics paper referenced below: 

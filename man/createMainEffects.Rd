@@ -17,7 +17,7 @@ createMainEffects(n.e = 1000, n.db = 70, n.ns = 30, label = "class",
 \item{n.ns}{sample size in newsample}
 
 \item{label}{A character vector for the name of the outcome column. class for classification
-and phenos for regression}
+and qtrait for regression}
 
 \item{pct.imbalance}{A numeric percentage to indicate proportion of the imbalaced samples. 
 0 means all controls and 1 mean all cases.}

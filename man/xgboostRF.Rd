@@ -28,6 +28,8 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{shrinkage}{A numeric gradient learning rate 0-1}
 
+\item{objective}{A character vector for the name of the objective function in XGBoost}
+
 \item{save.file}{A character vector for results filename or NULL to skip}
 
 \item{verbose}{A flag indicating whether verbose output be sent to stdout}
@@ -68,9 +70,7 @@ rra.results <- xgboostRF(train.ds = sim.data$train,
                          label = sim.data$label,
                          num.rounds = c(1),
                          max.depth = c(10),
-                         is.simulated = TRUE,
-                         verbose = FALSE,
-                         signal.names = sim.data$signal.names)
+                         verbose = FALSE)
 }
 \seealso{
 Other classification: \code{\link{epistasisRank}},

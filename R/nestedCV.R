@@ -129,8 +129,8 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   metric = ifelse(is.factor(trn.pheno), "Accuracy", "RMSE"),
                                   trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
                                                            number = 10))
-      pred.class <- predict(train_model, tst.data)
-      accu <- ifelse(label == "class",1 - mean(pred.class != tst.pheno), cor(tst.pheno, pred.class)^2)
+      pred.class <- stats::predict(train_model, tst.data)
+      accu <- ifelse(label == "class",1 - mean(pred.class != tst.pheno), stats::cor(tst.pheno, pred.class)^2)
       tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
     }
   }
@@ -155,11 +155,11 @@ consensus_nestedCV <- function(train.ds = NULL,
     if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
     glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(label == "class", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
-    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
-    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(as.numeric(train.pred), train.pheno)^2)
+    train.pred <- stats::predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
+    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(as.numeric(train.pred), train.pheno)^2)
     # test
-    test.pred <- predict(glmnet.model, test.data, s = lambda, type = "class")
-    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
+    test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
@@ -180,13 +180,13 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   colsample_bytree = colsample_bytree,
                                   min_child_weight = min_child_weight,
                                   objective = ifelse(label == "class", "binary:logistic", "reg:linear"))
-    train.pred.prob <- predict(xgb.model, dtrain)
+    train.pred.prob <- stats::predict(xgb.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), stats::cor(train.pred.prob, train.pheno)^2)
     # test
-    test.pred.prob <- predict(xgb.model, dtest)
+    test.pred.prob <- stats::predict(xgb.model, dtest)
     test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), stats::cor(test.pred.prob, test.pheno)^2)
   } else if(learning_method == "rf") {
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
@@ -199,12 +199,12 @@ consensus_nestedCV <- function(train.ds = NULL,
                                            },
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
-                         cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
+                         stats::cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
     
     # test
-    test.pred <- predict(rf.model, newdata = test.data)
+    test.pred <- stats::predict(rf.model, newdata = test.data)
     Test_accu <- ifelse(label == "class", 1 - mean(test.pred != test.pheno),
-                        cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
+                        stats::cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
   }
   elapsed.time <- (proc.time() - ptm)[3]
   if(verbose){cat("nestedCV elapsed time", elapsed.time, "\n")}
@@ -328,7 +328,7 @@ regular_nestedCV <- function(train.ds = NULL,
                                 metric = ifelse(is.factor(trn.pheno), "Accuracy", "RMSE"),
                                 trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
                                                          number = ncv_folds[2]))
-    pred.class <- predict(train_model, tst.data)
+    pred.class <- stats::predict(train_model, tst.data)
     accu <- 1 - mean(pred.class != tst.pheno)
     tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
   }
@@ -353,11 +353,11 @@ regular_nestedCV <- function(train.ds = NULL,
     if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
     glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(label == "class", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
-    train.pred <- predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
-    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), cor(train.pred, train.pheno)^2)
+    train.pred <- stats::predict(glmnet.model, train.data, s = lambda, type = ifelse(label == "class","class", "response"))
+    Train_accu <- ifelse(label == "class" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(train.pred, train.pheno)^2)
     # test
-    test.pred <- predict(glmnet.model, test.data, s = lambda, type = "class")
-    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), cor(test.pred, test.pheno)^2)
+    test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    Test_accu <- ifelse(label == "class", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
     dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
@@ -378,13 +378,13 @@ regular_nestedCV <- function(train.ds = NULL,
                                   colsample_bytree = colsample_bytree,
                                   min_child_weight = min_child_weight,
                                   objective = xgb.obj)
-    train.pred.prob <- predict(xgb.model, dtrain)
+    train.pred.prob <- stats::predict(xgb.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(label == "class", 1 - mean(train.pred.bin != train.pheno), stats::cor(train.pred.prob, train.pheno)^2)
     # test
-    test.pred.prob <- predict(xgb.model, dtest)
+    test.pred.prob <- stats::predict(xgb.model, dtest)
     test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), cor(test.pred.prob, test.pheno)^2)
+    Test_accu <- ifelse(label == "class", 1 - mean(test.pred.bin != test.pheno), stats::cor(test.pred.prob, test.pheno)^2)
   } else if(learning_method == "rf") {
     # random forest - train
     rf.model <- randomForest::randomForest(train.data, 
@@ -397,11 +397,11 @@ regular_nestedCV <- function(train.ds = NULL,
                                            },
                                            ntree = num_tree)
     Train_accu <- ifelse(label == "class", 1 - mean(rf.model$confusion[, "class.error"]), 
-                         cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
+                         stats::cor(as.numeric(as.vector(rf.model$predicted)), train.pheno)^2)
     # test
-    test.pred <- predict(rf.model, newdata = test.data)
+    test.pred <- stats::predict(rf.model, newdata = test.data)
     Test_accu <- ifelse(label == "class", 1 - mean(test.pred != test.pheno),
-                        cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
+                        stats::cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
   }
   elapsed.time <- (proc.time() - ptm)[3]
   if(verbose){cat("nestedCV elapsed time", elapsed.time, "\n")}

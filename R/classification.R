@@ -114,6 +114,7 @@ getImportanceScores <- function(train.set=NULL,
 #' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param learner.name A character vector containg the learner algorithm name
+#' @param xgb.obj A character vector containing the XGBoost ojective function name
 #' @param use.nestedCV A logic character indicating whether use nested cross validation or not
 #' @param ncv_folds A vector of integers fo the number of nested cross validation folds
 #' @param learner.cv An integer for the number of cross validation folds
@@ -389,7 +390,7 @@ privateEC <- function(train.ds = NULL,
         # tuneParam <- tune_params[which.max(accu_vec), ]
         if(verbose){cat("\n Validating...\n")}
         train.data <- new.train.ds[, c(nCV_atts, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -399,7 +400,7 @@ privateEC <- function(train.ds = NULL,
         valid.data  <- new.validation.ds[, c(nCV_atts, label)]
       } else {
         train.data <- new.train.ds[, c(current.var.names, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -412,7 +413,8 @@ privateEC <- function(train.ds = NULL,
       method.valid <- FALSE
       if (learner.name == "randomforest") {
         if (verbose) cat("\tRunning randomForest\n")
-        rf.model <- randomForest::randomForest(formula = stats::as.formula(paste0(label, "~.")),
+        model.formula <- stats::as.formula(paste(label, "~ .", sep = " "))
+        rf.model <- randomForest::randomForest(formula = model.formula,
                                                data = train.data,
                                                ntree = rf.ntree,
                                                mtry = if (!is.null(rf.mtry) && !is.factor(rf.mtry)) {
@@ -1020,7 +1022,7 @@ standardRF <- function(train.ds=NULL,
     stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
-  bag.simul <- randomForest::randomForest(stats::as.formula(paste0(label, "~.")),
+  bag.simul <- randomForest::randomForest(formula = stats::as.formula(paste(label, "~ .", sep = " ")),
                                           data = rbind(train.ds, holdout.ds),
                                           ntree = rf.ntree,
                                           mtry = param.mtry,
@@ -1072,6 +1074,7 @@ standardRF <- function(train.ds=NULL,
 #' @param max.depth An integer aximum tree depth
 #' @param shrinkage A numeric gradient learning rate 0-1
 #' @param save.file A character vector for results filename or NULL to skip
+#' @param objective A character vector for the name of the objective function in XGBoost
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
 #' \describe{
@@ -1100,9 +1103,7 @@ standardRF <- function(train.ds=NULL,
 #'                          label = sim.data$label,
 #'                          num.rounds = c(1),
 #'                          max.depth = c(10),
-#'                          is.simulated = TRUE,
-#'                          verbose = FALSE,
-#'                          signal.names = sim.data$signal.names)
+#'                          verbose = FALSE)
 #' @family classification
 #' @export
 xgboostRF <- function(train.ds=NULL,
@@ -1132,11 +1133,19 @@ xgboostRF <- function(train.ds=NULL,
   var.names <- colnames(train.ds[, -pheno.col])
   train_data <- as.matrix(train.ds[, -pheno.col])
   colnames(train_data) <- var.names
-  train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  if(label == "class"){
+    train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  } else {
+    train_pheno <- train.ds[, pheno.col]
+  }
   if (verbose) print(table(train_pheno))
   holdout_data <- as.matrix(holdout.ds[, -pheno.col])
   colnames(holdout_data) <- var.names
-  holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  if(label == "class"){
+    holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  } else {
+    holdout_pheno <- holdout.ds[, pheno.col]
+  }
   if (verbose) print(table(holdout_pheno))
   if (verbose) {
     cat("-----------------------------------\n",
@@ -1196,7 +1205,11 @@ xgboostRF <- function(train.ds=NULL,
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
-      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      if(label == "class"){
+        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      } else {
+        validation_pheno <- validation.ds[, pheno.col]
+      }
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
