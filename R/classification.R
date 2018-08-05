@@ -390,7 +390,7 @@ privateEC <- function(train.ds = NULL,
         # tuneParam <- tune_params[which.max(accu_vec), ]
         if(verbose){cat("\n Validating...\n")}
         train.data <- new.train.ds[, c(nCV_atts, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -400,7 +400,7 @@ privateEC <- function(train.ds = NULL,
         valid.data  <- new.validation.ds[, c(nCV_atts, label)]
       } else {
         train.data <- new.train.ds[, c(current.var.names, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -1134,11 +1134,19 @@ xgboostRF <- function(train.ds=NULL,
   var.names <- colnames(train.ds[, -pheno.col])
   train_data <- as.matrix(train.ds[, -pheno.col])
   colnames(train_data) <- var.names
-  train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  if(label == "class"){
+    train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  } else {
+    train_pheno <- train.ds[, pheno.col]
+  }
   if (verbose) print(table(train_pheno))
   holdout_data <- as.matrix(holdout.ds[, -pheno.col])
   colnames(holdout_data) <- var.names
-  holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  if(label == "class"){
+    holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  } else {
+    holdout_pheno <- holdout.ds[, pheno.col]
+  }
   if (verbose) print(table(holdout_pheno))
   if (verbose) {
     cat("-----------------------------------\n",
@@ -1198,7 +1206,11 @@ xgboostRF <- function(train.ds=NULL,
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
-      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      if(label == "class"){
+        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1       
+      } else {
+        validation_pheno <- validation.ds[, pheno.col]
+      }
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
