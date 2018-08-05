@@ -5,15 +5,16 @@
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", is.simulated = TRUE, bias = 0.4, update.freq = 5,
-  importance.name = "relieff", importance.algorithm = "ReliefFequalK",
-  relief.k.method = "k_half_sigma", learner.name = "randomforest",
-  xgb.obj = "binary:logistic", use.nestedCV = FALSE, ncv_folds = c(10,
-  10), learner.cv = NULL, rf.mtry = NULL, rf.ntree = 500,
-  xgb.num.rounds = c(1), xgb.max.depth = c(4), xgb.shrinkage = c(1),
-  start.temp = 0.1, final.temp = 1e-05, tau.param = 100,
-  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
-  signal.names = NULL, save.file = NULL, verbose = FALSE)
+  label = "class", method.model = "classification", is.simulated = TRUE,
+  bias = 0.4, update.freq = 5, importance.name = "relieff",
+  importance.algorithm = "ReliefFequalK", relief.k.method = "k_half_sigma",
+  learner.name = "randomforest", xgb.obj = "binary:logistic",
+  use.nestedCV = FALSE, ncv_folds = c(10, 10), learner.cv = NULL,
+  rf.mtry = NULL, rf.ntree = 500, xgb.num.rounds = c(1),
+  xgb.max.depth = c(4), xgb.shrinkage = c(1), start.temp = 0.1,
+  final.temp = 1e-05, tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
+  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -22,7 +23,10 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{validation.ds}{A data frame with validation data and outcome labels}
 
-\item{label}{A character vector of the outcome variable column name}
+\item{label}{A character vector of the outcome variable column name.}
+
+\item{method.model}{Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type. 
+For regression, make outcome column numeric type.}
 
 \item{is.simulated}{Is the data simulated (or real?)}
 

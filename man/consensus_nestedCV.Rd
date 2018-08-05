@@ -5,16 +5,20 @@
 \title{Consensus nested cross validation for feature selection and parameter tuning}
 \usage{
 consensus_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
-  is.simulated = TRUE, ncv_folds = c(10, 10), param.tune = FALSE,
-  learning_method = "rf", importance.algorithm = "ReliefFequalK",
-  relief.k.method = "k_half_sigma", num_tree = 500, verbose = FALSE)
+  method.model = "classification", is.simulated = TRUE, ncv_folds = c(10,
+  10), param.tune = FALSE, learning_method = "rf",
+  importance.algorithm = "ReliefFequalK", relief.k.method = "k_half_sigma",
+  num_tree = 500, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A training data frame with last column as outcome}
 
 \item{validation.ds}{A validation data frame with last column as outcome}
 
-\item{label}{A character vector of the outcome variable column name. class/qtrait for classification/regression}
+\item{label}{A character vector of the outcome variable column name.}
+
+\item{method.model}{Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type. 
+For regression, make outcome column numeric type.}
 
 \item{is.simulated}{A TRUE or FALSE character for data type}
 
