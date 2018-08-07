@@ -131,7 +131,7 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   method = learning_method,
                                   metric = ifelse(is.factor(trn.pheno), "Accuracy", "RMSE"),
                                   trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
-                                                           number = 10))
+                                                                  number = 10))
       pred.class <- stats::predict(train_model, tst.data)
       accu <- ifelse(method.model == "classification",1 - mean(pred.class != tst.pheno), stats::cor(tst.pheno, pred.class)^2)
       tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
@@ -152,16 +152,26 @@ consensus_nestedCV <- function(train.ds = NULL,
     train.pheno <- train.ds[, label]
     test.pheno <- validation.ds[, label]
   }
+  
   if(verbose){cat("\n Perform [",learning_method,"]\n")}
   if(learning_method == "glmnet"){
     # glmnet - train
-    if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
+    if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda
     glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
     train.pred <- stats::predict(glmnet.model, train.data, s = lambda, type = ifelse(method.model == "classification","class", "response"))
+    }else{
+      glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"), 
+                                     alpha = 0.5)
+      train.pred <- stats::predict(glmnet.model, train.data, s = min(glmnet.model$lambda), type = ifelse(method.model == "classification","class", "response"))
+    }
     Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(as.numeric(train.pred), train.pheno)^2)
     # test
-    test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    if(param.tune){
+      test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    } else {
+      test.pred <- stats::predict(glmnet.model, test.data, s = min(glmnet.model$lambda), type = "class")
+    }
     Test_accu <- ifelse(method.model == "classification", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
@@ -333,7 +343,7 @@ regular_nestedCV <- function(train.ds = NULL,
                                 method = learning_method,
                                 metric = ifelse(is.factor(trn.pheno), "Accuracy", "RMSE"),
                                 trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
-                                                         number = ncv_folds[2]))
+                                                                number = ncv_folds[2]))
     pred.class <- stats::predict(train_model, tst.data)
     accu <- 1 - mean(pred.class != tst.pheno)
     tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
@@ -356,13 +366,22 @@ regular_nestedCV <- function(train.ds = NULL,
   if(verbose){cat("\n Perform [",learning_method,"]\n")}
   if(learning_method == "glmnet"){
     # glmnet - train
-    if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda}else{alpha = 0.5; lambda = min(glmnet.model$lambda)}
+    if(param.tune){alpha = tuneParam$alpha; lambda = tuneParam$lambda
     glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"), 
                                    alpha = alpha, lambda = lambda)
     train.pred <- stats::predict(glmnet.model, train.data, s = lambda, type = ifelse(method.model == "classification","class", "response"))
-    Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(train.pred, train.pheno)^2)
+    }else{
+      glmnet.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"), 
+                                     alpha = 0.5)
+      train.pred <- stats::predict(glmnet.model, train.data, s = min(glmnet.model$lambda), type = ifelse(method.model == "classification","class", "response"))
+    }
+    Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(as.numeric(train.pred), train.pheno)^2)
     # test
-    test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    if(param.tune){
+      test.pred <- stats::predict(glmnet.model, test.data, s = lambda, type = "class")
+    } else {
+      test.pred <- stats::predict(glmnet.model, test.data, s = min(glmnet.model$lambda), type = "class")
+    }
     Test_accu <- ifelse(method.model == "classification", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
   } else if(learning_method == "xgbTree"){
     # xgboost - train
