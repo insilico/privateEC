@@ -5,9 +5,10 @@
 \title{xgboost random forests algorithm}
 \usage{
 xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", cv.folds = NULL, num.threads = 2, num.rounds = c(1),
-  max.depth = c(4), shrinkage = c(1), objective = "binary:logistic",
-  save.file = NULL, verbose = FALSE)
+  label = "class", method.model = "classification", cv.folds = NULL,
+  num.threads = 2, num.rounds = c(1), max.depth = c(4),
+  shrinkage = c(1), objective = "binary:logistic", save.file = NULL,
+  verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}

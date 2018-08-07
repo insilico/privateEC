@@ -40,6 +40,7 @@ test_that("privateEC returns sane results - Relief-F + randomForest - Quantitati
   num.samples <- 100
   num.variables <- 100
   label <- "qtrait"
+  method.model <- "regression"
   pct.signals <- 0.1
   rf.mtry <- 5
   sim.data <- createSimulation(num.samples = num.samples,
@@ -55,6 +56,7 @@ test_that("privateEC returns sane results - Relief-F + randomForest - Quantitati
                            holdout.ds = sim.data$holdout,
                            validation.ds = sim.data$validation,
                            label = sim.data$label,
+                           method.model = method.model,
                            importance.name = "relieff",
                            importance.algorithm = "RReliefFequalK",
                            learner.name = "randomforest",
