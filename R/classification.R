@@ -105,8 +105,8 @@ getImportanceScores <- function(train.set=NULL,
 #' @param holdout.ds A data frame with holdout data and outcome labels
 #' @param validation.ds A data frame with validation data and outcome labels
 #' @param label A character vector of the outcome variable column name.
-#' @param method.model Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type. 
-#' For regression, make outcome column numeric type. 
+#' @param method.model Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type.
+#' For regression, make outcome column numeric type.
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
@@ -1209,13 +1209,8 @@ xgboostRF <- function(train.ds=NULL,
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
-<<<<<<< HEAD
-      if(label == "class"){
-        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
-=======
       if(method.model == "classification"){
-        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1       
->>>>>>> 91048a93abc132142630aa7afd57442eaebd1b57
+        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
       } else {
         validation_pheno <- validation.ds[, pheno.col]
       }
