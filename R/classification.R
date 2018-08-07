@@ -1071,6 +1071,7 @@ standardRF <- function(train.ds=NULL,
 #' @param holdout.ds A data frame with holdout data and outcome labels
 #' @param validation.ds A data frame with validation data and outcome labels
 #' @param label A character vector of the outcome variable column name
+#' @param method.model A character vector of the response variable type for the model
 #' @param cv.folds An integer for the number of cross validation folds
 #' @param num.threads An integer for OpenMP number of cores
 #' @param num.rounds An integer number of xgboost boosting iterations
