@@ -8,8 +8,9 @@ privateRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
   label = "class", is.simulated = TRUE,
   rf.importance.measure = "MeanDecreaseGini", rf.ntree = 500,
   rf.mtry = NULL, pec.file = NULL, update.freq = 50,
-  threshold = 4/sqrt(nrow(train.ds)), tolerance = 1/sqrt(nrow(train.ds)),
-  signal.names = NULL, save.file = NULL, verbose = FALSE)
+  threshold = 4/sqrt(nrow(train.ds)),
+  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
+  save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -96,3 +97,4 @@ Other classification: \code{\link{epistasisRank}},
   \code{\link{privateEC}}, \code{\link{standardRF}},
   \code{\link{xgboostRF}}
 }
+\concept{classification}

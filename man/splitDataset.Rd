@@ -44,3 +44,4 @@ Other simulation: \code{\link{createInteractions}},
   \code{\link{createMixedSimulation}},
   \code{\link{createSimulation}}
 }
+\concept{simulation}

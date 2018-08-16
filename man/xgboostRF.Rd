@@ -19,6 +19,8 @@ xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{label}{A character vector of the outcome variable column name}
 
+\item{method.model}{A character vector of the response variable type for the model}
+
 \item{cv.folds}{An integer for the number of cross validation folds}
 
 \item{num.threads}{An integer for OpenMP number of cores}
@@ -80,3 +82,4 @@ Other classification: \code{\link{epistasisRank}},
   \code{\link{privateEC}}, \code{\link{privateRF}},
   \code{\link{standardRF}}
 }
+\concept{classification}

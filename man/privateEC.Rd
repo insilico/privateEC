@@ -5,14 +5,15 @@
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
 privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", method.model = "classification", is.simulated = TRUE,
-  bias = 0.4, update.freq = 5, importance.name = "relieff",
-  importance.algorithm = "ReliefFequalK", relief.k.method = "k_half_sigma",
-  learner.name = "randomforest", xgb.obj = "binary:logistic",
-  use.nestedCV = FALSE, ncv_folds = c(10, 10), learner.cv = NULL,
-  rf.mtry = NULL, rf.ntree = 500, xgb.num.rounds = c(1),
-  xgb.max.depth = c(4), xgb.shrinkage = c(1), start.temp = 0.1,
-  final.temp = 1e-05, tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
+  label = "class", method.model = "classification",
+  is.simulated = TRUE, bias = 0.4, update.freq = 5,
+  importance.name = "relieff", importance.algorithm = "ReliefFequalK",
+  relief.k.method = "k_half_sigma", learner.name = "randomforest",
+  xgb.obj = "binary:logistic", use.nestedCV = FALSE,
+  ncv_folds = c(10, 10), learner.cv = NULL, rf.mtry = NULL,
+  rf.ntree = 500, xgb.num.rounds = c(1), xgb.max.depth = c(4),
+  xgb.shrinkage = c(1), start.temp = 0.1, final.temp = 1e-05,
+  tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
   tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
   save.file = NULL, verbose = FALSE)
 }
@@ -25,7 +26,7 @@ privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
 
 \item{label}{A character vector of the outcome variable column name.}
 
-\item{method.model}{Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type. 
+\item{method.model}{Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type.
 For regression, make outcome column numeric type.}
 
 \item{is.simulated}{Is the data simulated (or real?)}
@@ -39,7 +40,7 @@ For regression, make outcome column numeric type.}
 \item{importance.algorithm}{A character vestor containing a specific importance algorithm subtype}
 
 \item{relief.k.method}{A character of numeric to indicate number of nearest neighbors for relief algorithm.
-Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))}
 
 \item{learner.name}{A character vector containg the learner algorithm name}
@@ -148,3 +149,4 @@ Other classification: \code{\link{epistasisRank}},
   \code{\link{privateRF}}, \code{\link{standardRF}},
   \code{\link{xgboostRF}}
 }
+\concept{classification}

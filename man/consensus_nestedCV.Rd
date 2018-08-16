@@ -4,11 +4,11 @@
 \alias{consensus_nestedCV}
 \title{Consensus nested cross validation for feature selection and parameter tuning}
 \usage{
-consensus_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
-  method.model = "classification", is.simulated = TRUE, ncv_folds = c(10,
-  10), param.tune = FALSE, learning_method = "rf",
-  importance.algorithm = "ReliefFequalK", relief.k.method = "k_half_sigma",
-  num_tree = 500, verbose = FALSE)
+consensus_nestedCV(train.ds = NULL, validation.ds = NULL,
+  label = "class", method.model = "classification",
+  is.simulated = TRUE, ncv_folds = c(10, 10), param.tune = FALSE,
+  learning_method = "rf", importance.algorithm = "ReliefFequalK",
+  relief.k.method = "k_half_sigma", num_tree = 500, verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A training data frame with last column as outcome}
@@ -73,3 +73,4 @@ Consensus nested cross validation for feature selection and parameter tuning
 \seealso{
 Other nestedCV: \code{\link{regular_nestedCV}}
 }
+\concept{nestedCV}

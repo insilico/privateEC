@@ -35,3 +35,4 @@ Other workflows: \code{\link{compileAndSaveAllResults}},
   \code{\link{paperRealWorkflow}},
   \code{\link{paperSimWorkflow}}
 }
+\concept{workflows}

@@ -6,7 +6,8 @@
 \usage{
 originalThresholdout(train.ds = NULL, holdout.ds = NULL,
   validation.ds = NULL, label = "class", is.simulated = TRUE,
-  update.freq = 50, pec.file = NULL, threshold = 4/sqrt(nrow(holdout.ds)),
+  update.freq = 50, pec.file = NULL,
+  threshold = 4/sqrt(nrow(holdout.ds)),
   tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
   save.file = NULL, verbose = FALSE)
 }
@@ -89,3 +90,4 @@ Other classification: \code{\link{epistasisRank}},
   \code{\link{privateEC}}, \code{\link{privateRF}},
   \code{\link{standardRF}}, \code{\link{xgboostRF}}
 }
+\concept{classification}

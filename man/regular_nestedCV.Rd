@@ -4,10 +4,11 @@
 \alias{regular_nestedCV}
 \title{Regular nested cross validation for feature selection and parameter tuning}
 \usage{
-regular_nestedCV(train.ds = NULL, validation.ds = NULL, label = "class",
-  method.model = "classification", is.simulated = TRUE, ncv_folds = c(10,
-  10), param.tune = FALSE, learning_method = "rf",
-  xgb.obj = "binary:logistic", importance.algorithm = "ReliefFequalK",
+regular_nestedCV(train.ds = NULL, validation.ds = NULL,
+  label = "class", method.model = "classification",
+  is.simulated = TRUE, ncv_folds = c(10, 10), param.tune = FALSE,
+  learning_method = "rf", xgb.obj = "binary:logistic",
+  importance.algorithm = "ReliefFequalK",
   relief.k.method = "k_half_sigma", num_tree = 500, verbose = FALSE)
 }
 \arguments{
@@ -75,3 +76,4 @@ Regular nested cross validation for feature selection and parameter tuning
 \seealso{
 Other nestedCV: \code{\link{consensus_nestedCV}}
 }
+\concept{nestedCV}

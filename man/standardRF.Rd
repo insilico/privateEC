@@ -5,8 +5,9 @@
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
 standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", rf.ntree = 500, rf.mtry = NULL, is.simulated = TRUE,
-  signal.names = NULL, save.file = NULL, verbose = FALSE)
+  label = "class", rf.ntree = 500, rf.mtry = NULL,
+  is.simulated = TRUE, signal.names = NULL, save.file = NULL,
+  verbose = FALSE)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -70,3 +71,4 @@ Other classification: \code{\link{epistasisRank}},
   \code{\link{privateEC}}, \code{\link{privateRF}},
   \code{\link{xgboostRF}}
 }
+\concept{classification}

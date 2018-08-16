@@ -30,3 +30,4 @@ Other workflows: \code{\link{paperRealWorkflow}},
   \code{\link{paperSimWorkflow}},
   \code{\link{plotRunResults}}
 }
+\concept{workflows}

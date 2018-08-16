@@ -20,3 +20,4 @@ Other classification: \code{\link{getImportanceScores}},
   \code{\link{privateEC}}, \code{\link{privateRF}},
   \code{\link{standardRF}}, \code{\link{xgboostRF}}
 }
+\concept{classification}
