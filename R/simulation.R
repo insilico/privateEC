@@ -722,3 +722,53 @@ createMixedSimulation <- function(num.samples = 100,
   
 }
 
+#=========================================================================#
+#' convert.pec.sim.to.inbix
+#'
+#' Reads a pEC simulated csv file, converts to inbix format and writes to working directory
+#'
+#' @param pEC.inputFile pEC-simulated data csv file name with path if needed 
+#' @param inbix.file.prefix prefix of inbix filename for .num and .pheno files
+#' @return none
+#'
+#' @examples
+#' # setwd(...) # for output
+#' # create a simulated data set with createSimulation and write to file
+#' infile <- "ARF_compare_1_multisurf_0.8_bias_No_k_0.1_pct.signals_1000_num.attr_100_num.samp.csv"
+#' convert.pec.sim.to.inbix(infile,"simulated1")
+#' # writes simulated1.num and simualted1.pheno
+#'
+#' @export
+convert.pec.sim.to.inbix <- function(pEC.inputFile,inbix.file.prefix){
+  
+  ### write pEC simulated csv format to .num and .pheno format for inbix
+  
+  simdat <- read.csv(file=pEC.inputFile)
+  # first column is X: subject id's case1, case2,...
+  # class columns is class/status: 1, 1, -1, -1, ...
+  nc <- ncol(simdat)
+  num.attr <- nc - 2
+  subjIDs <- as.character(simdat[,1])
+  pheno <- as.numeric(simdat[, nc])  # class is -1/1, change to 1/2
+  pheno[pheno==1]<-2
+  pheno[pheno==-1]<-1
+  predictors.mat <- simdat[,-nc]        # drop class (last) col
+  predictors.mat <- predictors.mat[,-1]  # drop subj id (first) col
+  attr.names <- colnames(predictors.mat)
+  
+  # for inbix .pheno. note: .pheno does not have header
+  # write inbix .pheno
+  phenosTable <- cbind(subjIDs, subjIDs, pheno)
+  datasimInbixPhenoFile <- paste(inbix.file.prefix, ".pheno", sep="")
+  write.table(phenosTable, datasimInbixPhenoFile, quote=F, sep="\t", 
+              col.names=F, row.names=F)
+  
+  # .num has a header
+  # write inbix numeric (.num) file/data set
+  dataTable <- cbind(subjIDs, subjIDs, predictors.mat)
+  colnames(dataTable) <- c("FID", "IID", attr.names)
+  datasimInbixNumFile <- paste(inbix.file.prefix, ".num", sep="")
+  write.table(dataTable, datasimInbixNumFile, quote=F, sep="\t", 
+              col.names=T, row.names=F)
+}
+
