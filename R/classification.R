@@ -15,7 +15,7 @@
 #' @param importance.name A list importance operation parameters
 #' @param importance.algorithm A character vector of the ReliefF estimator
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
-#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list with two data frames representing the importance scores
@@ -43,7 +43,7 @@ getImportanceScores <- function(train.set=NULL,
   if (is.numeric(relief.k.method)) {
     if (relief.k.method > floor((dim(train.set)[1]-1)/2)){
       warning("ReliefF k too large. Using maximum.")
-      k <- floor((dim(train.set)[1]-1)/2) 
+      k <- floor((dim(train.set)[1]-1)/2)
     } else {
       k <- relief.k.method
     }
@@ -51,9 +51,9 @@ getImportanceScores <- function(train.set=NULL,
     # However, make sure it is not larger than floor((num.samp.min-1)/2), where
     # num.samp.min  is the min of the train, holdout.. sample sizes.
     # Or you could test the inequality when you encounter each data split.
-    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2) 
-    # and writing warning that says 
-    # "ReliefF k too large. Using maximum." 
+    # If someone does exceed the threshold, set k to floor((num.samp.min-1)/2)
+    # and writing warning that says
+    # "ReliefF k too large. Using maximum."
   } else if (relief.k.method ==  "myopic"){
     k <- floor((dim(train.set)[1]-1)/2)
     # where k may change based on num.samp for train, holdout...
@@ -71,13 +71,13 @@ getImportanceScores <- function(train.set=NULL,
     if (verbose) cat("\tRelief-F train\n")
     train.importance <- CORElearn::attrEval(label, data = train.set,
                                             estimator = importance.algorithm,
-                                            costMatrix = NULL, 
+                                            costMatrix = NULL,
                                             outputNumericSplits=FALSE,
                                             kNearestEqual = k)
     if (verbose) cat("\tRelief-F holdout\n")
     holdout.importance <- CORElearn::attrEval(label, data = holdout.set,
                                               estimator = importance.algorithm,
-                                              costMatrix = NULL, 
+                                              costMatrix = NULL,
                                               outputNumericSplits=FALSE,
                                               kNearestEqual = k)
     good.results <- TRUE
@@ -104,16 +104,19 @@ getImportanceScores <- function(train.set=NULL,
 #' @param train.ds A data frame with training data and outcome labels
 #' @param holdout.ds A data frame with holdout data and outcome labels
 #' @param validation.ds A data frame with validation data and outcome labels
-#' @param label A character vector of the outcome variable column name
+#' @param label A character vector of the outcome variable column name.
+#' @param method.model Column name of outcome variable (string), classification or regression. If the analysis goal is classification make the column a factor type.
+#' For regression, make outcome column numeric type.
 #' @param is.simulated Is the data simulated (or real?)
 #' @param bias A numeric for effect size in simulated signal variables
 #' @param update.freq An integer the number of steps before update
 #' @param importance.name A character vector containg the importance algorithm name
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
-#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)),
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param learner.name A character vector containg the learner algorithm name
+#' @param xgb.obj A character vector containing the XGBoost ojective function name
 #' @param use.nestedCV A logic character indicating whether use nested cross validation or not
 #' @param ncv_folds A vector of integers fo the number of nested cross validation folds
 #' @param learner.cv An integer for the number of cross validation folds
@@ -191,6 +194,7 @@ privateEC <- function(train.ds = NULL,
                       holdout.ds = NULL,
                       validation.ds = NULL,
                       label = "class",
+                      method.model = "classification",
                       is.simulated = TRUE,
                       bias = 0.4,
                       update.freq = 5,
@@ -376,7 +380,7 @@ privateEC <- function(train.ds = NULL,
           atts <- list()
           if(verbose){cat("\n Create [",ncv_folds[2],"] inner folds of outer fold[",i,"]\n")}
           inner_folds <- caret::createFolds(new.train.ds[, label][outer_folds!=i], ncv_folds[2], list = TRUE)
-          if(verbose){cat("\n Feature Selection...\n")} 
+          if(verbose){cat("\n Feature Selection...\n")}
           for (j in 1:length(inner_folds)){
             inner_idx <- which(outer_folds!=1)[-inner_folds[[j]]]
             rf_scores <- CORElearn::attrEval(label, new.train.ds[inner_idx, ], estimator = importance.algorithm)
@@ -389,7 +393,7 @@ privateEC <- function(train.ds = NULL,
         # tuneParam <- tune_params[which.max(accu_vec), ]
         if(verbose){cat("\n Validating...\n")}
         train.data <- new.train.ds[, c(nCV_atts, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -399,7 +403,7 @@ privateEC <- function(train.ds = NULL,
         valid.data  <- new.validation.ds[, c(nCV_atts, label)]
       } else {
         train.data <- new.train.ds[, c(current.var.names, label)]
-        train.pheno <- factor(new.train.ds[, label])
+        train.pheno <- new.train.ds[, label]
         if (any(is.na(train.pheno))) {
           cat("Phenos:\n")
           print(train.pheno)
@@ -412,9 +416,7 @@ privateEC <- function(train.ds = NULL,
       method.valid <- FALSE
       if (learner.name == "randomforest") {
         if (verbose) cat("\tRunning randomForest\n")
-        
-        model.formula <- stats::as.formula(paste(label, "~.",
-                                                 sep = ""))
+        model.formula <- stats::as.formula(paste(label, "~ .", sep = " "))
         rf.model <- randomForest::randomForest(formula = model.formula,
                                                data = train.data,
                                                ntree = rf.ntree,
@@ -423,7 +425,7 @@ privateEC <- function(train.ds = NULL,
                                                } else {
                                                  rf.mtry.valid <- floor(sqrt(ncol(train.data)))
                                                })
-        if(label == "qtrait"){
+        if(method.model == "regression"){
           current.train.acc <- stats::cor(rf.model$predicted, train.data[, label])^2
         } else {
           current.train.acc <- 1 - mean(rf.model$confusion[, "class.error"])
@@ -433,7 +435,7 @@ privateEC <- function(train.ds = NULL,
           holdout.pred <- stats::predict(rf.model, newdata = hold.data)
           if (verbose) print(holdout.pred)
           if (verbose) print(hold.data[, (label)])
-          if(label == "qtrait"){
+          if(method.model == "regression"){
             current.holdout.acc <- stats::cor(holdout.pred, hold.data[, (label)])^2
           } else {
             current.holdout.acc <- mean(holdout.pred == hold.data[, (label)])
@@ -445,7 +447,7 @@ privateEC <- function(train.ds = NULL,
           if (verbose) cat("\tpredict validation\n")
           validation.pred <- stats::predict(rf.model, newdata = valid.data)
           if (verbose) print(validation.pred)
-          if(label == "qtrait"){
+          if(method.model == "regression"){
             current.validation.acc <- stats::cor(validation.pred, valid.data[, (label)])^2
           } else {
             current.validation.acc <- mean(validation.pred == valid.data[, (label)])
@@ -454,7 +456,7 @@ privateEC <- function(train.ds = NULL,
           current.validation.acc <- 0
         }
         method.valid <- TRUE
-      } 
+      }
       if (learner.name == "xgboost") {
         if (verbose) cat("\tRunning xgboost\n")
         xgb.results <- xgboostRF(train.ds = train.data,
@@ -514,7 +516,7 @@ privateEC <- function(train.ds = NULL,
         cat("\tvariables list exhausted: no more variables to remove\n")
         keep.looping <- FALSE
       } else {
-        
+
       }
     }
     current.iteration <- current.iteration + 1
@@ -523,7 +525,7 @@ privateEC <- function(train.ds = NULL,
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("private EC optimization loop performed", num.updates,
                    "updates in", elapsed.time, " seconds\n")
-  
+
   # prepare results for returning to caller
   plot.data <- data.frame(vars.remain = vars.remain.per.update,
                           train.acc = all.train.acc,
@@ -532,7 +534,7 @@ privateEC <- function(train.ds = NULL,
                           alg = 1)
   if (verbose) print(plot.data)
   plot.data.narrow <- reshape2::melt(plot.data, id = c("vars.remain", "alg"))
-  
+
   # save the results to an Rdata file if requested
   if (!is.null(save.file)) {
     if (verbose) {
@@ -541,10 +543,10 @@ privateEC <- function(train.ds = NULL,
     save(plot.data, plot.data.narrow, correct.detect.ec, num.data.cols, num.data.rows,
          signal.names, threshold, tolerance, bias, elapsed.time, file = save.file)
   }
-  
+
   elapsed.time <- (proc.time() - ptm)[3]
   if (verbose) cat("privateEC elapsed time:", elapsed.time, "\n")
-  
+
   list(algo.acc = plot.data,
        ggplot.data = plot.data.narrow,
        correct = correct.detect.ec,
@@ -1023,7 +1025,7 @@ standardRF <- function(train.ds=NULL,
     stop("regularRF: No signal names provided")
   }
   ptm <- proc.time()
-  bag.simul <- randomForest::randomForest(stats::as.formula(paste(label, "~ .", sep = "")),
+  bag.simul <- randomForest::randomForest(formula = stats::as.formula(paste(label, "~ .", sep = " ")),
                                           data = rbind(train.ds, holdout.ds),
                                           ntree = rf.ntree,
                                           mtry = param.mtry,
@@ -1069,12 +1071,14 @@ standardRF <- function(train.ds=NULL,
 #' @param holdout.ds A data frame with holdout data and outcome labels
 #' @param validation.ds A data frame with validation data and outcome labels
 #' @param label A character vector of the outcome variable column name
+#' @param method.model A character vector of the response variable type for the model
 #' @param cv.folds An integer for the number of cross validation folds
 #' @param num.threads An integer for OpenMP number of cores
 #' @param num.rounds An integer number of xgboost boosting iterations
 #' @param max.depth An integer aximum tree depth
 #' @param shrinkage A numeric gradient learning rate 0-1
 #' @param save.file A character vector for results filename or NULL to skip
+#' @param objective A character vector for the name of the objective function in XGBoost
 #' @param verbose A flag indicating whether verbose output be sent to stdout
 #' @return A list containing:
 #' \describe{
@@ -1103,15 +1107,14 @@ standardRF <- function(train.ds=NULL,
 #'                          label = sim.data$label,
 #'                          num.rounds = c(1),
 #'                          max.depth = c(10),
-#'                          is.simulated = TRUE,
-#'                          verbose = FALSE,
-#'                          signal.names = sim.data$signal.names)
+#'                          verbose = FALSE)
 #' @family classification
 #' @export
 xgboostRF <- function(train.ds=NULL,
                       holdout.ds=NULL,
                       validation.ds=NULL,
                       label="class",
+                      method.model = "classification",
                       cv.folds = NULL,
                       num.threads = 2,
                       num.rounds = c(1),
@@ -1135,11 +1138,19 @@ xgboostRF <- function(train.ds=NULL,
   var.names <- colnames(train.ds[, -pheno.col])
   train_data <- as.matrix(train.ds[, -pheno.col])
   colnames(train_data) <- var.names
-  train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  if(method.model == "classification"){
+    train_pheno <- as.integer(train.ds[, pheno.col]) - 1
+  } else {
+    train_pheno <- train.ds[, pheno.col]
+  }
   if (verbose) print(table(train_pheno))
   holdout_data <- as.matrix(holdout.ds[, -pheno.col])
   colnames(holdout_data) <- var.names
-  holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  if(method.model == "classification"){
+    holdout_pheno <- as.integer(holdout.ds[, pheno.col]) - 1
+  } else {
+    holdout_pheno <- holdout.ds[, pheno.col]
+  }
   if (verbose) print(table(holdout_pheno))
   if (verbose) {
     cat("-----------------------------------\n",
@@ -1180,31 +1191,35 @@ xgboostRF <- function(train.ds=NULL,
                                verbose = verbose)
 
     pred.class <- stats::predict(train.model, train.ds)
-    if(label == "class"){
+    if(method.model == "classification"){
       rf.train.accu <- 1 - mean(pred.class != train_pheno)
     } else {
       rf.train.accu <- stats::cor(pred.class, train_pheno)^2
     }
-    
+
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
     pred.class <- stats::predict(train.model, holdout.ds)
     if (verbose) print(table(pred.class))
-    if (label == "class"){
+    if (method.model == "classification"){
       rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
     } else {
       rf.holdo.accu <- stats::cor(pred.class, holdout_pheno)^2
     }
-    
+
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing data for prediction\n")
-      validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      if(method.model == "classification"){
+        validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1
+      } else {
+        validation_pheno <- validation.ds[, pheno.col]
+      }
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
       rf.class <- stats::predict(train.model, validation.ds)
-      if (label == "class"){
+      if (method.model == "classification"){
         if (verbose) print(table(rf.class))
         rf.validation.accu <- 1 - mean(rf.class != validation_pheno)
       } else {
@@ -1225,7 +1240,7 @@ xgboostRF <- function(train.ds=NULL,
                                     verbose = FALSE)
 
     train.pred.prob <- stats::predict(train.model, dtrain)
-    if (label == "class"){
+    if (method.model == "classification"){
       pred.class <- as.numeric(train.pred.prob > 0.5)
       rf.train.accu <- 1 - mean(pred.class != train_pheno)
     } else {
@@ -1234,7 +1249,7 @@ xgboostRF <- function(train.ds=NULL,
     if (verbose) cat("training-accuracy:", rf.train.accu, "\n")
     if (verbose) cat("Predict using the best tree\n")
     holdout.pred.prob <- stats::predict(train.model, dholdo)
-    if (label == "class"){
+    if (method.model == "classification"){
       pred.class <- as.numeric(holdout.pred.prob > 0.5)
       if (verbose) print(table(pred.class))
       rf.holdo.accu <- 1 - mean(pred.class != holdout_pheno)
@@ -1244,14 +1259,14 @@ xgboostRF <- function(train.ds=NULL,
     if (verbose) cat("holdout-accuracy:", rf.holdo.accu, "\n")
     if (!is.null(validation.ds)) {
       if (verbose) cat("Preparing dating for prediction\n")
-      if (label == "class"){validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1}
+      if (method.model == "classification"){validation_pheno <- as.integer(validation.ds[, pheno.col]) - 1}
       else {validation_pheno <- validation.ds[, pheno.col]}
       validation_data <- as.matrix(validation.ds[, -pheno.col])
       if (verbose) print(dim(validation_data))
       colnames(validation_data) <- var.names
       dvalid <- xgboost::xgb.DMatrix(data = validation_data, label = validation_pheno)
       valid.pred.prob <- stats::predict(train.model, dvalid)
-      if (label == "class"){
+      if (method.model == "classification"){
         rf.class <- as.numeric(valid.pred.prob > 0.5)
         if (verbose) print(table(rf.class))
         rf.validation.accu <- 1 - mean(rf.class != validation_pheno)

@@ -286,27 +286,27 @@ plotRunResults <- function(pec.result=NULL) {
   if (is.null(pec.result)) {
     return(FALSE)
   }
-  plot(pec.result$algo.acc$vars.remain,
-       pec.result$algo.acc$train.acc,
-       col = "blue", pch = 16, type = 'b', cex = 0.75,
-       main = "One run of privateEC",
-       ylim = c(0.05, 1.0),
-       xlab = "Number of Attributes in Model",
-       ylab = "Accuracy")
-  points(pec.result$algo.acc$vars.remain,
-         pec.result$algo.acc$holdout.acc,
-         col = "green", pch = 1, type = 'b', cex = 0.75)
+  graphics::plot(pec.result$algo.acc$vars.remain,
+                 pec.result$algo.acc$train.acc,
+                 col = "blue", pch = 16, type = 'b', cex = 0.75,
+                 main = "One run of privateEC",
+                 ylim = c(0.05, 1.0),
+                 xlab = "Number of Attributes in Model",
+                 ylab = "Accuracy")
+  graphics::points(pec.result$algo.acc$vars.remain,
+                   pec.result$algo.acc$holdout.acc,
+                   col = "green", pch = 1, type = 'b', cex = 0.75)
   if (is.null(pec.result$algo.acc$validation.acc)) {
     legend.labels <- c("Train", "Holdout")
     legend.pch <- c(16, 1)
     legend.col <- c("blue", "green")
   } else {
-    points(pec.result$algo.acc$vars.remain,
-           pec.result$algo.acc$validation.acc,
-           col = "red", pch = 4, type = 'b', cex = 0.75)
+    graphics::points(pec.result$algo.acc$vars.remain,
+                     pec.result$algo.acc$validation.acc,
+                     col = "red", pch = 4, type = 'b', cex = 0.75)
     legend.labels <- c("Train", "Holdout", "Test")
     legend.pch <- c(16, 1, 4)
     legend.col <- c("blue", "green", "red")
   }
-  legend("topright", legend.labels, pch = legend.pch, col = legend.col, cex = 0.75)
+  graphics::legend("topright", legend.labels, pch = legend.pch, col = legend.col, cex = 0.75)
 }

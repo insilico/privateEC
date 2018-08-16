@@ -137,7 +137,7 @@ cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$hol
 ### cnCV results
 
 ```{r, echo=T}
-cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
+cat("\n Nested Cross-Validation Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")

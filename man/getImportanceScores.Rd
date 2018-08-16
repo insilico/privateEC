@@ -13,7 +13,7 @@ getImportanceScores(train.set = NULL, holdout.set = NULL, label = "class",
 
 \item{holdout.set}{A holdout data frame with last column as outcome}
 
-\item{label}{A character vector of the outcome variable column name. class/phenos for classification/regression}
+\item{label}{A character vector of the outcome variable column name. class/qtrait for classification/regression}
 
 \item{importance.name}{A list importance operation parameters}
 

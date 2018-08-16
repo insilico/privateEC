@@ -137,7 +137,7 @@ cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$hol
 ### cnCV results
 
 ```{r, echo=T}
-cat("\n Train Accuracy [",cncv_result$cv.acc,"]\n")
+cat("\n Nested Cross-Validation Accuracy [",cncv_result$cv.acc,"]\n")
 cat("\n Validation Accuracy [",cncv_result$Validation,"]\n")
 cat("\n Selected Features \n [",cncv_result$Features,"]\n")
 cat("\n Elapsed Time [",cncv_result$Elapsed,"]\n")
@@ -149,6 +149,7 @@ library(privateEC)
 n.samples <- 300     # 100 samples in train/holdout/test
 n.variables <- 100   # 100 features
 label <- "qtrait"
+method.model <- "regression"
 type <- "mainEffect" # main effect simulatios
 bias <- 0.6          # moderate effect size
 pct.signals <- 0.1   # pct functional features
@@ -178,6 +179,7 @@ pec.result <- privateEC(train.ds = data.sets$train,                  # training 
                         holdout.ds = data.sets$holdout,               # holdout split
                         validation.ds = data.sets$validation,         # validation set
                         label = data.sets$label,                      # class label
+                        method.model = method.model,                  # analysis goal
                         importance.algorithm = importance.algorithm,  # ReliefF
                         relief.k.method = "k_half_sigma",             # ReliefF knn
                         rf.ntree = num_tree,                          # random forest
@@ -203,12 +205,12 @@ plotRunResults(pec.result)
 ```
 
 #### pEC selected features
-Best pEC model selected based on highest holdout accuracy. Train, holdout and independent validation accuracies of selected model shown below. Features in model are listed: simvar prefix variables are functional. Others are background.  
+Best pEC model selected based on highest holdout R-Squared. Train, holdout and independent validation R-Squareds of selected model shown below. Features in model are listed: simvar prefix variables are functional. Others are background.  
 ```{r, echo=T}
 multiple.max.indices <- which(pec.result$algo.acc$holdout.acc==max(pec.result$algo.acc$holdout.acc))
 last.max <- multiple.max.indices[length(multiple.max.indices)]
-cat("\n Max Holdout Accuracy Step [",last.max,"]\n")
-cat("\n Accuracies: ")
+cat("\n Max Holdout R-Squared Step [",last.max,"]\n")
+cat("\n R-Squared: ")
 print(pec.result$algo.acc[last.max,])
 cat("\n Selected Features \n [",pec.result$atts.remain[[last.max]],"]\n")
 ```
@@ -219,6 +221,7 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[last.max]],"]\n")
 rncv_result <- regular_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
                                 validation.ds =  data.sets$validation,
                                 label = data.sets$label,
+                                method.model = method.model,
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
@@ -242,6 +245,7 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
                                   validation.ds =  data.sets$validation, 
                                   label = data.sets$label,
+                                  method.model = method.model,
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,

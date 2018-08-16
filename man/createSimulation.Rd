@@ -22,7 +22,7 @@ createSimulation(num.samples = 100, num.variables = 100,
 \item{bias}{A numeric for effect size in simulated signal variables}
 
 \item{label}{A character vector for the name of the outcome column. class for classification
-and phenos for regression}
+and qtrait for regression}
 
 \item{sim.type}{A character vector of the type of simulation:
 mainEffect/interactionErdos/interactionScalefree}
