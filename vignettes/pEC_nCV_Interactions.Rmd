@@ -68,7 +68,7 @@ pec.result <- privateEC(train.ds = data.sets$train,                  # training 
                         update.freq = update.freq,                    # num attr evaporated
                         save.file = NULL,                             # save results
                         signal.names = data.sets$signal.names,        # functional attr names
-                        use.nestedCV = T,
+                        use.nestedCV = F,
                         verbose = verbose)
 ```
 
