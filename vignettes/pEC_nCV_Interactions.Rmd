@@ -101,12 +101,16 @@ cat("\n Selected Features \n [",pec.result$atts.remain[[last.max]],"]\n")
 rncv_result <- regular_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
                                 validation.ds =  data.sets$validation,
                                 label = data.sets$label,
+                                method.model = "classification",
                                 is.simulated = TRUE,
                                 ncv_folds = c(10, 10),
                                 param.tune = FALSE,
                                 learning_method = "rf", 
                                 importance.algorithm = importance.algorithm,
                                 relief.k.method = "k_half_sigma",             # ReliefF knn
+                                wrapper = "relief",
+                                inner_selection_percent = 0.2,
+                                inner_selection_positivescores = TRUE,
                                 num_tree = num_tree,
                                 verbose = verbose)
 ```
@@ -124,12 +128,16 @@ cat("\n Elapsed Time [",rncv_result$Elapsed,"]\n")
 cncv_result <- consensus_nestedCV(train.ds = rbind(data.sets$train,data.sets$holdout), 
                                   validation.ds =  data.sets$validation, 
                                   label = data.sets$label,
+                                  method.model = "classification",
                                   is.simulated = TRUE,
                                   ncv_folds = c(10, 10),
                                   param.tune = FALSE,
                                   learning_method = "rf", 
                                   importance.algorithm = importance.algorithm,
                                   relief.k.method = "k_half_sigma",             # ReliefF knn
+                                  wrapper = "relief",
+                                  inner_selection_percent = 0.2,
+                                  inner_selection_positivescores = TRUE,
                                   num_tree = num_tree,
                                   verbose = verbose)
 ```
