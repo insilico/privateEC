@@ -559,13 +559,13 @@ regular_nestedCV <- function(train.ds = NULL,
     outer_idx <- which(outer_folds!=i)
     
     outer_train.data <- as.matrix(train.ds[outer_idx, relief_atts[[i]]])
-    outer_test.data  <- as.matrix(validation.ds[-outer_idx, relief_atts[[i]]])
+    outer_test.data  <- as.matrix(train.ds[-outer_idx, relief_atts[[i]]])
     if(method.model == "classification"){
       outer_train.pheno <- as.integer(train.ds[outer_idx, label])
-      outer_test.pheno <- as.integer(validation.ds[-outer_idx, label])
+      outer_test.pheno <- as.integer(train.ds[-outer_idx, label])
     } else if (method.model == "regression"){
       outer_train.pheno <- train.ds[outer_idx, label]
-      outer_test.pheno <- validation.ds[-outer_idx, label]
+      outer_test.pheno <- train.ds[-outer_idx, label]
     }
     if(verbose){cat("\n Perform [",learning_method,"]\n")}
     if(learning_method == "glmnet"){
