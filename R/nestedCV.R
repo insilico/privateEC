@@ -64,6 +64,7 @@ consensus_nestedCV <- function(train.ds = NULL,
                                ncv_folds = c(10, 10),
                                param.tune = FALSE,
                                learning_method = "rf",
+                               xgb.obj = "binary:logistic",
                                importance.algorithm = "ReliefFequalK",
                                wrapper = "relief",
                                inner_selection_percent = 0.2,
@@ -219,10 +220,14 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
                                                                   number = 10), index = inner_folds)
       train_pred <- stats::predict(train_model, trn.data)
-      train_acc <- ifelse(method.model == "classification",1 - mean(train_pred != trn.pheno), stats::cor(trn.pheno, train_pred)^2)
+      train_acc <- ifelse(method.model == "classification", 
+                          confusionMatrix(train_pred, trn.pheno)$byClass["Balanced Accuracy"], 
+                          stats::cor(trn.pheno, train_pred)^2)
       
       test_pred <- stats::predict(train_model, tst.data)
-      test_acc <- ifelse(method.model == "classification",1 - mean(test_pred != tst.pheno), stats::cor(tst.pheno, test_pred)^2)
+      test_acc <- ifelse(method.model == "classification", 
+                         confusionMatrix(test_pred, tst.pheno)$byClass["Balanced Accuracy"], 
+                         stats::cor(tst.pheno, test_pred)^2)
       
       accu <- abs(train_acc-test_acc)
       tune_params <- rbind(tune_params, data.frame(train_model$bestTune, accu))
@@ -261,7 +266,9 @@ consensus_nestedCV <- function(train.ds = NULL,
       train.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"))
       train.pred <- stats::predict(train.model, train.data, s = min(train.model$lambda), type = ifelse(method.model == "classification","class", "response"))
     }
-    Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(as.numeric(train.pred), train.pheno)^2)
+    Train_accu <- ifelse(method.model == "classification" , confusionMatrix(as.factor(train.pred), 
+                                                                            as.factor(train.pheno))$byClass["Balanced Accuracy"], 
+                         stats::cor(as.numeric(train.pred), train.pheno)^2)
     # glmnet - test
     if(is.null(validation.ds)){
       Test_accu <- NA
@@ -271,12 +278,14 @@ consensus_nestedCV <- function(train.ds = NULL,
       } else {
         test.pred <- stats::predict(train.model, test.data, s = min(train.model$lambda), type = "class")
       }
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(test.pred), 
+                                                                            as.factor(test.pheno))$byClass["Balanced Accuracy"], 
+                          stats::cor(test.pred, test.pheno)^2)
     }
   } else if(learning_method == "xgbTree"){
     # xgboost - train
-    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-    dtest <- xgboost::xgb.DMatrix(data = test.data, label = test.pheno)
+    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = ifelse(train.pheno == 1, 0, 1))
+    dtest <- xgboost::xgb.DMatrix(data = test.data, label = ifelse(test.pheno == 1, 0, 1))
     if(param.tune){
       shrinkage = tuneParam$eta; max_depth = tuneParam$max_depth; gamma = tuneParam$gamma 
       subsample = tuneParam$subsample; colsample_bytree = tuneParam$colsample_bytree
@@ -295,14 +304,18 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   objective = ifelse(method.model == "classification", "binary:logistic", "reg:linear"))
     train.pred.prob <- stats::predict(train.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(method.model == "classification", 1 - mean(train.pred.bin != train.pheno), stats::cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(train.pred.bin == 0, 1, 2)), 
+                                                                           as.factor(train.pheno))$byClass["Balanced Accuracy"], 
+                         stats::cor(train.pred.prob, train.pheno)^2)
     # xgboost - test
     if(is.null(validation.ds)){
       Test_accu <- NA
     } else {
       test.pred.prob <- stats::predict(train.model, dtest)
       test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(test.pred.bin != test.pheno), stats::cor(test.pred.prob, test.pheno)^2)
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(test.pred.bin == 0, 1, 2)), 
+                                                                            as.factor(test.pheno))$byClass["Balanced Accuracy"], 
+                          stats::cor(test.pred.prob, test.pheno)^2)
     }
   } else if(learning_method == "rf") {
     # random forest - train
@@ -323,7 +336,7 @@ consensus_nestedCV <- function(train.ds = NULL,
       Test_accu <- NA
     } else {
       test.pred <- stats::predict(train.model, newdata = test.data)
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(test.pred != test.pheno),
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(test.pred), as.factor(test.pheno))$byClass["Balanced Accuracy"],
                           stats::cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
     }
   }
@@ -539,13 +552,13 @@ regular_nestedCV <- function(train.ds = NULL,
                                   method = learning_method,
                                   metric = ifelse(is.factor(inner_trn.pheno), "Accuracy", "RMSE"),
                                   trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
-                                                                  number = 10), index = inner_folds)
+                                                                  number = 10))
       inner_train_pred <- stats::predict(inner_train_model, inner_trn.data)
-      inner_train_acc <- ifelse(method.model == "classification",1 - mean(inner_train_pred != inner_trn.pheno), 
+      inner_train_acc <- ifelse(method.model == "classification",confusionMatrix(inner_train_pred, inner_trn.pheno)$byClass["Balanced Accuracy"], 
                                 stats::cor(inner_trn.pheno, inner_train_pred)^2)
       
       inner_test_pred <- stats::predict(inner_train_model, inner_tst.data)
-      inner_test_acc <- ifelse(method.model == "classification",1 - mean(inner_test_pred != inner_tst.pheno), 
+      inner_test_acc <- ifelse(method.model == "classification",confusionMatrix(inner_test_pred, inner_tst.pheno)$byClass["Balanced Accuracy"], 
                                stats::cor(inner_tst.pheno, inner_test_pred)^2)
       
       # store tuned parameters
@@ -575,17 +588,19 @@ regular_nestedCV <- function(train.ds = NULL,
                                      alpha = alpha, lambda = lambda)
       outer_train.pred <- stats::predict(outer_glmnet.model, outer_train.data, s = lambda, type = ifelse(method.model == "classification","class", "response"))
       
-      outer_Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(outer_train.pred) != outer_train.pheno), 
+      outer_Train_accu <- ifelse(method.model == "classification" , confusionMatrix(as.factor(outer_train.pred), 
+                                                                                    as.factor(outer_train.pheno))$byClass["Balanced Accuracy"], 
                                  stats::cor(as.numeric(outer_train.pred), outer_train.pheno)^2)
       # test
       outer_test.pred <- stats::predict(outer_glmnet.model, outer_test.data, s = lambda, type = "class")
       
-      outer_Test_accu <- ifelse(method.model == "classification", 1 - mean(as.integer(outer_test.pred) != outer_test.pheno), 
+      outer_Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(outer_test.pred), 
+                                                                                  as.factor(outer_test.pheno))$byClass["Balanced Accuracy"], 
                                 stats::cor(outer_test.pred, outer_test.pheno)^2)
     } else if(learning_method == "xgbTree"){
       # xgboost - train
-      outer_dtrain <- xgboost::xgb.DMatrix(data = outer_train.data, label = outer_train.pheno)
-      outer_dtest <- xgboost::xgb.DMatrix(data = outer_test.data, label = outer_test.pheno)
+      outer_dtrain <- xgboost::xgb.DMatrix(data = outer_train.data, label = ifelse(outer_train.pheno == 1, 0, 1))
+      outer_dtest <- xgboost::xgb.DMatrix(data = outer_test.data, label = ifelse(outer_test.pheno == 1, 0, 1))
       
       # tuned parameters
       shrinkage = outer_tuneParam$eta; max_depth = outer_tuneParam$max_depth; gamma = outer_tuneParam$gamma 
@@ -593,22 +608,25 @@ regular_nestedCV <- function(train.ds = NULL,
       min_child_weight = outer_tuneParam$min_child_weight
       
       outer_xgb.model <- xgboost::xgboost(data = outer_dtrain,
-                                    eta = shrinkage,
-                                    nrounds = 2,
-                                    max_depth = max_depth,
-                                    gamma = gamma,
-                                    subsample = subsample,
-                                    colsample_bytree = colsample_bytree,
-                                    min_child_weight = min_child_weight,
-                                    objective = xgb.obj)
+                                          eta = shrinkage,
+                                          nrounds = 2,
+                                          max_depth = max_depth,
+                                          gamma = gamma,
+                                          subsample = subsample,
+                                          colsample_bytree = colsample_bytree,
+                                          min_child_weight = min_child_weight,
+                                          objective = xgb.obj)
+      
       outer_train.pred.prob <- stats::predict(outer_xgb.model, outer_dtrain)
       outer_train.pred.bin <- as.numeric(outer_train.pred.prob > 0.5)
-      outer_Train_accu <- ifelse(method.model == "classification", 1 - mean(outer_train.pred.bin != outer_train.pheno), 
+      outer_Train_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(outer_train.pred.bin == 0, 1, 2)), 
+                                                                                   as.factor(outer_train.pheno))$byClass["Balanced Accuracy"], 
                                  stats::cor(outer_train.pred.prob, outer_train.pheno)^2)
       # test
       outer_test.pred.prob <- stats::predict(outer_xgb.model, outer_dtest)
       outer_test.pred.bin <- as.numeric(outer_test.pred.prob > 0.5)
-      outer_Test_accu <- ifelse(method.model == "classification", 1 - mean(outer_test.pred.bin != outer_test.pheno), 
+      outer_Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(outer_test.pred.bin == 0, 1, 2)), 
+                                                                                  as.factor(outer_test.pheno))$byClass["Balanced Accuracy"], 
                                 stats::cor(outer_test.pred.prob, outer_test.pheno)^2)
     } else if(learning_method == "rf") {
       # random forest - train
@@ -625,7 +643,7 @@ regular_nestedCV <- function(train.ds = NULL,
                            stats::cor(as.numeric(as.vector(outer_rf.model$predicted)), outer_train.pheno)^2)
       # test
       outer_test.pred <- stats::predict(outer_rf.model, newdata = outer_test.data)
-      outer_Test_accu <- ifelse(method.model == "classification", 1 - mean(outer_test.pred != outer_test.pheno),
+      outer_Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(outer_test.pred), as.factor(outer_test.pheno))$byClass["Balanced Accuracy"],
                           stats::cor(as.numeric(as.vector(outer_test.pred)), outer_test.pheno)^2)
 
     }
@@ -665,7 +683,9 @@ regular_nestedCV <- function(train.ds = NULL,
       train.model <- glmnet::glmnet(train.data, train.pheno, family = ifelse(method.model == "classification", "binomial", "gaussian"))
       train.pred <- stats::predict(train.model, train.data, s = min(train.model$lambda), type = ifelse(method.model == "classification","class", "response"))
     }
-    Train_accu <- ifelse(method.model == "classification" , 1 - mean(as.integer(train.pred) != train.pheno), stats::cor(as.numeric(train.pred), train.pheno)^2)
+    Train_accu <- ifelse(method.model == "classification" , confusionMatrix(as.factor(train.pred), 
+                                                                            as.factor(train.pheno))$byClass["Balanced Accuracy"], 
+                         stats::cor(as.numeric(train.pred), train.pheno)^2)
     # glmnet - test
     if(is.null(validation.ds)){
       Test_accu <- NA
@@ -675,12 +695,14 @@ regular_nestedCV <- function(train.ds = NULL,
       } else {
         test.pred <- stats::predict(train.model, test.data, s = min(train.model$lambda), type = "class")
       }
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(as.integer(test.pred) != test.pheno), stats::cor(test.pred, test.pheno)^2)
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(test.pred), 
+                                                                            as.factor(test.pheno))$byClass["Balanced Accuracy"], 
+                          stats::cor(test.pred, test.pheno)^2)
     }
   } else if(learning_method == "xgbTree"){
     # xgboost - train
-    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = train.pheno)
-    dtest <- xgboost::xgb.DMatrix(data = test.data, label = test.pheno)
+    dtrain <- xgboost::xgb.DMatrix(data = train.data, label = ifelse(train.pheno == 1, 0, 1))
+    dtest <- xgboost::xgb.DMatrix(data = test.data, label = ifelse(test.pheno == 1, 0, 1))
     if(param.tune){
       shrinkage = tuneParam$eta; max_depth = tuneParam$max_depth; gamma = tuneParam$gamma 
       subsample = tuneParam$subsample; colsample_bytree = tuneParam$colsample_bytree
@@ -699,14 +721,18 @@ regular_nestedCV <- function(train.ds = NULL,
                                     objective = xgb.obj)
     train.pred.prob <- stats::predict(train.model, dtrain)
     train.pred.bin <- as.numeric(train.pred.prob > 0.5)
-    Train_accu <- ifelse(method.model == "classification", 1 - mean(train.pred.bin != train.pheno), stats::cor(train.pred.prob, train.pheno)^2)
+    Train_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(train.pred.bin == 0, 1, 2)), 
+                                                                           as.factor(train.pheno))$byClass["Balanced Accuracy"], 
+                         stats::cor(train.pred.prob, train.pheno)^2)
     # xgboost - test
     if(is.null(validation.ds)){
       Test_accu <- NA
     } else {
       test.pred.prob <- stats::predict(train.model, dtest)
       test.pred.bin <- as.numeric(test.pred.prob > 0.5)
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(test.pred.bin != test.pheno), stats::cor(test.pred.prob, test.pheno)^2)
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(ifelse(test.pred.bin == 0, 1, 2)), 
+                                                                            as.factor(test.pheno))$byClass["Balanced Accuracy"], 
+                          stats::cor(test.pred.prob, test.pheno)^2)
     }
   } else if(learning_method == "rf") {
     # random forest - train
@@ -726,7 +752,7 @@ regular_nestedCV <- function(train.ds = NULL,
       Test_accu <- NA
     } else {
       test.pred <- stats::predict(train.model, newdata = test.data)
-      Test_accu <- ifelse(method.model == "classification", 1 - mean(test.pred != test.pheno),
+      Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(test.pred), as.factor(test.pheno))$byClass["Balanced Accuracy"],
                           stats::cor(as.numeric(as.vector(test.pred)), test.pheno)^2)
     }
   }

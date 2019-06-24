@@ -36,6 +36,8 @@
 #' data.sets <- splitDataset(rsfMRIcorrMDD)
 #' @family simulation
 #' @export
+# splitDataset function
+######################################################################################################
 splitDataset <- function(all.data=NULL,
                          pct.train=0.5,
                          pct.holdout=0.5,
@@ -110,6 +112,8 @@ splitDataset <- function(all.data=NULL,
   #
   data.sets
 }
+######################################################################################################
+
 
 #' Create a differentially coexpressed data set with interactions
 #'
@@ -127,6 +131,8 @@ splitDataset <- function(all.data=NULL,
 #' @param verbose A flag for sending verbose output to stdout
 #' @family simulation
 #' @return A matrix representing the new new data set.
+# createInteractions function
+######################################################################################################
 createInteractions <- function(M=100,
                                N=100,
                                label="class",
@@ -149,27 +155,27 @@ createInteractions <- function(M=100,
                                                       sd = randSdNoise))
   
   # add co-expression
-  already_modified <- rep(0, M)
+  already_modified <- rep(0, N)                                                ##### BD edit
   already_modified[1] <- 1
-  for (i in 1:(M - 1)) {
-    for (j in (i + 1):M) {
+  for (i in 1:(N - 1)) {                                                       ##### BD edit
+    for (j in (i + 1):N) {                                                     ##### BD edit
       if (verbose) cat("Condidering A: row", i, "column", j, "\n")
       if ((A[i, j] == 1) && (!already_modified[j])) {
-        if (verbose) cat("Making row", j, "from row", i, "\n")
-        D[j, ] <- D[i, ] + stats::rnorm(N, mean = 0, sd = as.numeric(sdNoise))
+        if (verbose) cat("Making col", j, "from col", i, "\n")                 ##### BD edit
+        D[, j] <- D[, i] + stats::rnorm(M, mean = 0, sd = as.numeric(sdNoise)) ##### BD edit
         already_modified[j] <- 1
       } else {
         if (already_modified[j] == 1 && !already_modified[i]) {
           # if j is already modified, we want to modify i,
           # unless i is already modified then do nothing
-          D[i, ] <- D[j, ] + stats::rnorm(N, mean = 0, sd = sdNoise)
+          D[, i] <- D[, j] + stats::rnorm(M, mean = 0, sd = sdNoise)           ##### BD edit
         }
       }
     }
   }
   
   # perturb to get differential coexpression
-  n1 <- N / 2
+  n1 <- M / 2                                                 ##### BD edit
   mGenesToPerturb <- length(sampleIndicesInteraction)
   for (i in 1:mGenesToPerturb) {
     geneIdxInteraction <- sampleIndicesInteraction[i]
@@ -179,24 +185,26 @@ createInteractions <- function(M=100,
     # g1 <- D[sampleIndicesInteraction, 1:n1]
     
     # get the group 2 gene expression and randomly order for differential coexpression
-    x <- D[geneIdxInteraction, 1:n1]
+    x <- D[1:n1, geneIdxInteraction]                          ##### BD edit
     x <- x[order(stats::runif(length(x)))]
-    D[geneIdxInteraction, 1:n1] <- x
+    D[1:n1, geneIdxInteraction] <- x                          ##### BD edit
   }
   
   # return a regression ready data frame
   # Modifying outcome generator to generate imbalanced data.
-  dimN <- ncol(D)
+  dimN <- nrow(D)                                             ##### BD edit
   n1 <- round(pct.imbalance * dimN)
   n2 <- round((1 - pct.imbalance) * dimN)
   subIds <- c(paste("case", 1:n1, sep = ""), paste("ctrl", 1:n2, sep = ""))
   qtrait <- c(rep(1, n1), rep(0, n2))
-  newD <- cbind(t(D), qtrait)
-  colnames(newD) <- c(paste("var", sprintf("%04d", 1:M), sep = ""), label)
+  newD <- cbind(D, qtrait)                                                      ##### BD edit
+  colnames(newD) <- c(paste("var", sprintf("%04d", 1:N), sep = ""), label)      ##### BD edit
   rownames(newD) <- subIds
   
   data.frame(newD)
 }
+######################################################################################################
+
 
 # main effect with quantitative outcome using label ("class" (dichotomious) or "qtrait"(quantitative))
 # main effect with imbalanced outcome using pct.imbalance (decreasing pct. will generate less control sample)
@@ -241,6 +249,8 @@ createInteractions <- function(M=100,
 #' studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 #' @family simulation
 #' @export
+# createMainEffects function
+######################################################################################################
 createMainEffects <- function(n.e=1000,
                               n.db=70,
                               n.ns=30,
@@ -431,6 +441,8 @@ createMainEffects <- function(n.e=1000,
   
   list(db = db, vars = vars)
 }
+######################################################################################################
+
 
 #' Create a data simulation and return train/holdout/validation data sets.
 #'
@@ -476,6 +488,8 @@ createMainEffects <- function(n.e=1000,
 #'                              verbose=FALSE)
 #' @family simulation
 #' @export
+# createSimulation function
+######################################################################################################
 createSimulation <- function(num.samples=100,
                              num.variables=100,
                              pct.imbalance = 0.5,
@@ -497,8 +511,8 @@ createSimulation <- function(num.samples=100,
     # new simulation:
     # sd.b sort of determines how large the signals are
     # p.b=0.1 makes 10% of the variables signal, bias <- 0.5
-    my.sim.data <- createMainEffects(n.e=num.variables,
-                                     n.db=num.samples,
+    my.sim.data <- createMainEffects(n.e=num.variables,                   
+                                     n.db=num.samples,              
                                      pct.imbalance=pct.imbalance,
                                      label = label,
                                      sd.b=bias,
@@ -509,8 +523,8 @@ createSimulation <- function(num.samples=100,
     g <- igraph::barabasi.game(num.variables, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M=num.variables,
-                                  N=num.samples,
+    dataset <- createInteractions(M=num.samples,                             ##### BD edit
+                                  N=num.variables,                           ##### BD edit
                                   pct.imbalance = pct.imbalance,
                                   meanExpression=7,
                                   A=myA,
@@ -524,8 +538,8 @@ createSimulation <- function(num.samples=100,
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    dataset <- createInteractions(M=num.variables,
-                                  N=num.samples,
+    dataset <- createInteractions(M=num.samples,                             ##### BD edit
+                                  N=num.variables,                           ##### BD edit
                                   pct.imbalance = pct.imbalance,
                                   meanExpression=7,
                                   A=myA,
@@ -564,6 +578,8 @@ createSimulation <- function(num.samples=100,
        signal.names = signal.names,
        elapsed = elapsed)
 }
+######################################################################################################
+
 
 
 # To do mixed simulations, I think you can do the interaction simulation first 
@@ -617,6 +633,8 @@ createSimulation <- function(num.samples=100,
 #'                                   verbose=FALSE)
 #' @family simulation
 #' @export
+# createMixedSimulation function
+######################################################################################################
 createMixedSimulation <- function(num.samples = 100,
                                   num.variables = 100,
                                   pct.imbalance = 0.5,
@@ -656,8 +674,8 @@ createMixedSimulation <- function(num.samples = 100,
     g <- igraph::barabasi.game(num.int.vars, directed = F)
     A <- igraph::get.adjacency(g)
     myA <- as.matrix(A)
-    interaction_dataset <- createInteractions(M=num.int.vars,
-                                              N=num.samples,
+    interaction_dataset <- createInteractions(M=num.samples,                       ##### BD edit
+                                              N=num.int.vars,                      ##### BD edit
                                               label=label,
                                               pct.imbalance = pct.imbalance,
                                               meanExpression=7,
@@ -673,8 +691,8 @@ createMixedSimulation <- function(num.samples = 100,
     A <- igraph::get.adjacency(g)
     # degrees <- rowSums(A)
     myA <- as.matrix(A)
-    interaction_dataset <- createInteractions(M=num.int.vars,
-                                              N=num.samples,
+    interaction_dataset <- createInteractions(M=num.samples,                       ##### BD edit
+                                              N=num.int.vars,                      ##### BD edit
                                               label=label,
                                               pct.imbalance = pct.imbalance,
                                               meanExpression=7,
@@ -721,6 +739,8 @@ createMixedSimulation <- function(num.samples = 100,
        elapsed = elapsed)
   
 }
+######################################################################################################
+
 
 #=========================================================================#
 #' convert.pec.sim.to.inbix
@@ -739,6 +759,8 @@ createMixedSimulation <- function(num.samples = 100,
 #' # writes simulated1.num and simualted1.pheno
 #'
 #' @export
+# convert.pec.sim.to.inbix function
+######################################################################################################
 convert.pec.sim.to.inbix <- function(pEC.inputFile,inbix.file.prefix){
   
   ### write pEC simulated csv format to .num and .pheno format for inbix
@@ -771,4 +793,4 @@ convert.pec.sim.to.inbix <- function(pEC.inputFile,inbix.file.prefix){
   write.table(dataTable, datasimInbixNumFile, quote=F, sep="\t", 
               col.names=T, row.names=F)
 }
-
+######################################################################################################
