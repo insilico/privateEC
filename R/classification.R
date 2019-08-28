@@ -732,6 +732,7 @@ originalThresholdout <- function(train.ds=NULL,
   list(algo.acc = pplots,
        ggplot.data = melted.ps,
        correct = correct.detect.ori,
+       atts.remain = var.names,
        elasped = (proc.time() - ptm)[3])
 }
 
@@ -953,6 +954,7 @@ privateRF <- function(train.ds=NULL,
   list(algo.acc = rfplots,
        ggplot.data = melted.rfs,
        correct = correct.detect.rf,
+       atts.remain = var.names,
        elasped = (proc.time() - ptm)[3])
 }
 
