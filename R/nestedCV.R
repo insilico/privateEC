@@ -19,8 +19,14 @@
 #' @param importance.algorithm A character vestor containing a specific importance algorithm subtype
 #' @param wrapper feature selection algorithm including: rf, glmnet, t.test, centrality methods (PageRank, Katz,
 #' EpistasisRank, and EpistasisKatz from Rinbix packages), ReliefF family, and etc.
-#' @param inner_selection_percent = .2 Percentage of features to be selected in each inner fold.
+#' @param inner_selection_percent = Percentage of features to be selected in each inner fold.
 #' @param inner_selection_positivescores A TRUE or FALSE character to select positive scores (if the value is False, use the percentage method).
+#' @param tune.inner_selection_percent A sequence vector of possible percentages for tuning
+#' @param tune.k A sequence vector to tune k nearest neighbors in relief method, if TRUE the default grid is seq(1,kmax), where kmax=floor((m-1)/2) 
+#' and m is the number of samples. However, this kmax is for balanced data. If data are imbalance, where m_minority + m_majority = m, then kmax = floor(m_minority-1).
+#' Default is FALSE.
+#' @param tuneGrid A data frame with possible tuning values. The columns are named the same as the tuning parameters. 
+#' This caret library parameter, for more information refer to  http://topepo.github.io/caret/available-models.html.
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
 #' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
@@ -67,8 +73,11 @@ consensus_nestedCV <- function(train.ds = NULL,
                                xgb.obj = "binary:logistic",
                                importance.algorithm = "ReliefFequalK",
                                wrapper = "relief",
-                               inner_selection_percent = 0.2,
+                               inner_selection_percent = NULL,
                                inner_selection_positivescores = TRUE,
+                               tune.inner_selection_percent = NULL,
+                               tune.k = FALSE,
+                               tuneGrid = NULL,
                                relief.k.method = "k_half_sigma",
                                num_tree = 500, 
                                verbose = FALSE){
@@ -117,12 +126,107 @@ consensus_nestedCV <- function(train.ds = NULL,
     if(verbose){cat("\n Feature Selection...\n")} 
     for (j in 1:length(inner_folds)){
       inner_idx <- which(outer_folds!=i)[-inner_folds[[j]]]
-      if (wrapper == "relief"){
+      if (tune.k){
+        m <- table(train.ds[inner_idx, "class"])
+        if (m[1]==m[2]){
+          kmax <- floor((sum(m)-1)/2) 
+        } else {
+          m_minority <- m[which.min(m)]
+          kmax <- floor(m_minority-1)
+        }
+        tuneK <- seq(1,kmax)
+      } else if (!tune.k){
+        tuneK <- NULL
+      } else {
+        tuneK <- tune.k
+      }
+
+      k_inner_accs <- NULL
+      if (wrapper == "relief" && !is.null(tuneK)){
+        for (tk in tuneK) {
+          ranked_vars <- CORElearn::attrEval(label, train.ds[inner_idx, ], 
+                                             estimator = importance.algorithm,
+                                             costMatrix = NULL, 
+                                             outputNumericSplits=FALSE,
+                                             kNearestEqual = tk)
+          top_vars <- names(which(sort(ranked_vars, decreasing = TRUE)>0))
+          
+          # random forest
+          inner_trn.data <- as.matrix(train.ds[inner_idx, top_vars])
+          inner_tst.data <- as.matrix(train.ds[-inner_idx, top_vars])
+          if(method.model == "classification"){
+            inner_trn.pheno <- as.factor(train.ds[, label][inner_idx])
+            inner_tst.pheno <- as.factor(train.ds[, label][-inner_idx])
+          } else {
+            inner_trn.pheno <- train.ds[, label][inner_idx]
+            inner_tst.pheno <- train.ds[, label][-inner_idx]
+          }
+          tune_rf.model <- randomForest::randomForest(inner_trn.data, 
+                                                      y = if(method.model == "classification"){as.factor(inner_trn.pheno)}else{inner_trn.pheno}, 
+                                                      mtry = if (method.model == "classification"){
+                                                        max(floor(ncol(inner_trn.pheno)/3), 1)
+                                                      } else {
+                                                        floor(sqrt(ncol(inner_trn.pheno)))
+                                                      },
+                                                      ntree = num_tree)
+          inner_Train_accu <- ifelse(method.model == "classification", 1 - mean(tune_rf.model$confusion[, "class.error"]), 
+                                     stats::cor(as.numeric(as.vector(tune_rf.model$predicted)), inner_trn.pheno)^2)
+          # test
+          inner_test.pred <- stats::predict(tune_rf.model, newdata = inner_tst.data)
+          inner_Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(inner_test.pred), as.factor(inner_tst.pheno))$byClass["Balanced Accuracy"],
+                                    stats::cor(as.numeric(as.vector(inner_test.pred)), inner_tst.pheno)^2)
+          k_inner_accs <- rbind(k_inner_accs, data.frame(train=inner_Train_accu, test=inner_Test_accu))
+          
+        }
+        # optimal k 
+        k_inner_accs$trade_off <- abs(k_inner_accs$train-k_inner_accs$test)
+        k_inner_accs <- k_inner_accs[order(k_inner_accs$trade_off), ]
+        ktuned <- as.integer(rownames(k_inner_accs)[1])
+      }
+      inner_accs <- NULL
+      if (wrapper == "relief" && !is.null(tune.inner_selection_percent)){
+        for (step in tune.inner_selection_percent){
+          ranked_vars <- CORElearn::attrEval(label, train.ds[inner_idx, ], 
+                                             estimator = importance.algorithm,
+                                             costMatrix = NULL, 
+                                             outputNumericSplits=FALSE,
+                                             kNearestEqual = ifelse(!is.null(tuneK), ktuned, k))
+          
+          # evaluations
+          wrapper.topN <- step*length(ranked_vars)
+          top_vars <- names(sort(ranked_vars, decreasing = TRUE)[1:wrapper.topN])
+          # random forest
+          inner_trn.data <- as.matrix(train.ds[inner_idx, top_vars])
+          inner_tst.data <- as.matrix(train.ds[-inner_idx, top_vars])
+          if(method.model == "classification"){
+            inner_trn.pheno <- as.factor(train.ds[, label][inner_idx])
+            inner_tst.pheno <- as.factor(train.ds[, label][-inner_idx])
+          } else {
+            inner_trn.pheno <- train.ds[, label][inner_idx]
+            inner_tst.pheno <- train.ds[, label][-inner_idx]
+          }
+          tune_rf.model <- randomForest::randomForest(inner_trn.data, 
+                                                      y = if(method.model == "classification"){as.factor(inner_trn.pheno)}else{inner_trn.pheno}, 
+                                                      mtry = if (method.model == "classification"){
+                                                        max(floor(ncol(inner_trn.pheno)/3), 1)
+                                                      } else {
+                                                        floor(sqrt(ncol(inner_trn.pheno)))
+                                                      },
+                                                      ntree = num_tree)
+          inner_Train_accu <- ifelse(method.model == "classification", 1 - mean(tune_rf.model$confusion[, "class.error"]), 
+                                     stats::cor(as.numeric(as.vector(tune_rf.model$predicted)), inner_trn.pheno)^2)
+          # test
+          inner_test.pred <- stats::predict(tune_rf.model, newdata = inner_tst.data)
+          inner_Test_accu <- ifelse(method.model == "classification", confusionMatrix(as.factor(inner_test.pred), as.factor(inner_tst.pheno))$byClass["Balanced Accuracy"],
+                                    stats::cor(as.numeric(as.vector(inner_test.pred)), inner_tst.pheno)^2)
+          inner_accs <- rbind(inner_accs, data.frame(train=inner_Train_accu, test=inner_Test_accu))
+        }
+      } else if (wrapper == "relief" && is.null(tune.inner_selection_percent)) {
         ranked_vars <- CORElearn::attrEval(label, train.ds[inner_idx, ], 
-                                         estimator = importance.algorithm,
-                                         costMatrix = NULL, 
-                                         outputNumericSplits=FALSE,
-                                         kNearestEqual = k)
+                                           estimator = importance.algorithm,
+                                           costMatrix = NULL, 
+                                           outputNumericSplits=FALSE,
+                                           kNearestEqual = ifelse(!is.null(tuneK), ktuned, k))
       } else if (wrapper == "rf") {
         rf_model <- CORElearn::CoreModel(label, train.ds[inner_idx, ], model = "rf")
         ranked_vars <- CORElearn::rfAttrEval(rf_model)
@@ -176,10 +280,18 @@ consensus_nestedCV <- function(train.ds = NULL,
         names(ranked_vars) <- er_rank$gene
       }  
       
-      wrapper.topN <- inner_selection_percent*length(ranked_vars)
       if (wrapper == "relief" && inner_selection_positivescores){
         top_vars <- names(which(sort(ranked_vars, decreasing = TRUE)>0))
-      } else if (wrapper == "relief" && !inner_selection_positivescores){
+      } else if (wrapper == "relief" && !is.null(inner_selection_percent)){
+        wrapper.topN <- inner_selection_percent*length(ranked_vars)
+        top_vars <- names(sort(ranked_vars, decreasing = TRUE)[1:wrapper.topN])
+      } else if (wrapper == "relief" && !is.null(tune.inner_selection_percent)){
+        # find optimal percentage
+        inner_accs$trade_off <- abs(inner_accs$train-inner_accs$test)
+        inner_accs <- inner_accs[order(inner_accs$trade_off), ]
+        inner_opt_idx <- as.integer(rownames(inner_accs)[1])
+        # selected top optimal percentage genes
+        wrapper.topN <- tune.inner_selection_percent[inner_opt_idx]*length(ranked_vars)
         top_vars <- names(sort(ranked_vars, decreasing = TRUE)[1:wrapper.topN])
       } else {
         num_ranked_vars <- length(ranked_vars)
@@ -201,6 +313,7 @@ consensus_nestedCV <- function(train.ds = NULL,
       atts[[j]] <- top_vars
     }
     relief_atts[[i]] <- Reduce(intersect, atts)
+    
     if(param.tune){
       outer_idx <- which(outer_folds!=i)
       trn.data <- as.matrix(train.ds[outer_idx, relief_atts[[i]]])
@@ -217,8 +330,10 @@ consensus_nestedCV <- function(train.ds = NULL,
                                   y = trn.pheno,
                                   method = learning_method,
                                   metric = ifelse(is.factor(trn.pheno), "Accuracy", "RMSE"),
-                                  trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
-                                                                  number = 10), index = inner_folds)
+                                  trControl = ifelse(is.null(tuneGrid), 
+                                                     caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
+                                                                         number = 10), caret::trainControl()),
+                                  tuneGrid = tuneGrid)
       train_pred <- stats::predict(train_model, trn.data)
       train_acc <- ifelse(method.model == "classification", 
                           confusionMatrix(train_pred, trn.pheno)$byClass["Balanced Accuracy"], 
@@ -367,6 +482,8 @@ consensus_nestedCV <- function(train.ds = NULL,
 #' @param inner_selection_positivescores A TRUE or FALSE character to select positive scores (if the value is False, use the percentage method).
 #' @param relief.k.method A character of numeric to indicate number of nearest neighbors for relief algorithm.
 #' Possible characters are: k_half_sigma (floor((num.samp-1)*0.154)), m6 (floor(num.samp/6)), 
+#' @param tuneGrid A data frame with possible tuning values. The columns are named the same as the tuning parameters. 
+#' This caret library parameter, for more information refer to  http://topepo.github.io/caret/available-models.html.
 #' myopic (floor((num.samp-1)/2)), and m4 (floor(num.samp/4))
 #' @param num_tree Number of trees in random forest and xgboost methods
 #' @param verbose A flag indicating whether verbose output be sent to stdout
@@ -414,6 +531,7 @@ regular_nestedCV <- function(train.ds = NULL,
                              inner_selection_percent = 0.2,
                              inner_selection_positivescores = TRUE,
                              relief.k.method = "k_half_sigma",
+                             tuneGrid = NULL,
                              num_tree = 500, 
                              verbose = FALSE){
   if (is.numeric(relief.k.method)) {
@@ -551,8 +669,10 @@ regular_nestedCV <- function(train.ds = NULL,
                                   y = inner_trn.pheno,
                                   method = learning_method,
                                   metric = ifelse(is.factor(inner_trn.pheno), "Accuracy", "RMSE"),
-                                  trControl = caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
-                                                                  number = 10))
+                                  trControl = ifelse(is.null(tuneGrid), 
+                                                     caret::trainControl(method = ifelse(learning_method == "glmnet", "cv", "adaptive_cv"),
+                                                                         number = 10), caret::trainControl()),
+                                  tuneGrid = tuneGrid)
       inner_train_pred <- stats::predict(inner_train_model, inner_trn.data)
       inner_train_acc <- ifelse(method.model == "classification",confusionMatrix(inner_train_pred, inner_trn.pheno)$byClass["Balanced Accuracy"], 
                                 stats::cor(inner_trn.pheno, inner_train_pred)^2)
