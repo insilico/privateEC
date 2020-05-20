@@ -4,10 +4,18 @@
 \alias{standardRF}
 \title{Standard random forests algorithm serves as a baseline model}
 \usage{
-standardRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", rf.ntree = 500, rf.mtry = NULL,
-  is.simulated = TRUE, signal.names = NULL, save.file = NULL,
-  verbose = FALSE)
+standardRF(
+  train.ds = NULL,
+  holdout.ds = NULL,
+  validation.ds = NULL,
+  label = "class",
+  rf.ntree = 500,
+  rf.mtry = NULL,
+  is.simulated = TRUE,
+  signal.names = NULL,
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -65,10 +73,12 @@ rra.results <- standardRF(train.ds=sim.data$train,
                           signal.names=sim.data$signal.names)
 }
 \seealso{
-Other classification: \code{\link{epistasisRank}},
-  \code{\link{getImportanceScores}},
-  \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{privateRF}},
-  \code{\link{xgboostRF}}
+Other classification: 
+\code{\link{epistasisRank}()},
+\code{\link{getImportanceScores}()},
+\code{\link{originalThresholdout}()},
+\code{\link{privateEC}()},
+\code{\link{privateRF}()},
+\code{\link{xgboostRF}()}
 }
 \concept{classification}

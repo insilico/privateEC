@@ -4,8 +4,13 @@
 \alias{splitDataset}
 \title{Split a data set for machine learning classification}
 \usage{
-splitDataset(all.data = NULL, pct.train = 0.5, pct.holdout = 0.5,
-  pct.validation = 0, label = "class")
+splitDataset(
+  all.data = NULL,
+  pct.train = 0.5,
+  pct.holdout = 0.5,
+  pct.validation = 0,
+  label = "class"
+)
 }
 \arguments{
 \item{all.data}{A data frame of n rows by d colums of data plus a label column}
@@ -39,9 +44,10 @@ data("rsfMRIcorrMDD")
 data.sets <- splitDataset(rsfMRIcorrMDD)
 }
 \seealso{
-Other simulation: \code{\link{createInteractions}},
-  \code{\link{createMainEffects}},
-  \code{\link{createMixedSimulation}},
-  \code{\link{createSimulation}}
+Other simulation: 
+\code{\link{createInteractions}()},
+\code{\link{createMainEffects}()},
+\code{\link{createMixedSimulation}()},
+\code{\link{createSimulation}()}
 }
 \concept{simulation}

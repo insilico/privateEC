@@ -4,8 +4,7 @@
 \alias{compileAndSaveAllResults}
 \title{Compile the results of a simulation + classifier methods run}
 \usage{
-compileAndSaveAllResults(run.results = NULL, save.file = NULL,
-  verbose = FALSE)
+compileAndSaveAllResults(run.results = NULL, save.file = NULL, verbose = FALSE)
 }
 \arguments{
 \item{run.results}{A list of run results}
@@ -26,8 +25,9 @@ A list with:
 Compile the results of a simulation + classifier methods run
 }
 \seealso{
-Other workflows: \code{\link{paperRealWorkflow}},
-  \code{\link{paperSimWorkflow}},
-  \code{\link{plotRunResults}}
+Other workflows: 
+\code{\link{paperRealWorkflow}()},
+\code{\link{paperSimWorkflow}()},
+\code{\link{plotRunResults}()}
 }
 \concept{workflows}

@@ -4,11 +4,23 @@
 \alias{createMainEffects}
 \title{Create a simulated data set with main effects}
 \usage{
-createMainEffects(n.e = 1000, n.db = 70, n.ns = 30,
-  label = "class", pct.imbalance = 0.5, sv.db = c("A", "B"),
-  sv.ns = c("A", "B"), sd.b = 1, sd.gam = 1, sd.u = 1,
-  conf = FALSE, distr.db = NA, p.b = 0.3, p.gam = 0.3,
-  p.ov = p.b/2)
+createMainEffects(
+  n.e = 1000,
+  n.db = 70,
+  n.ns = 30,
+  label = "class",
+  pct.imbalance = 0.5,
+  sv.db = c("A", "B"),
+  sv.ns = c("A", "B"),
+  sd.b = 1,
+  sd.gam = 1,
+  sd.u = 1,
+  conf = FALSE,
+  distr.db = NA,
+  p.b = 0.3,
+  p.gam = 0.3,
+  p.ov = p.b/2
+)
 }
 \arguments{
 \item{n.e}{number of variables}
@@ -67,9 +79,10 @@ Leek,J.T. and Storey,J.D. (2007) Capturing heterogeneity in gene expression
 studies by surrogate variable analysis. PLoS Genet., 3, 1724–1735
 }
 \seealso{
-Other simulation: \code{\link{createInteractions}},
-  \code{\link{createMixedSimulation}},
-  \code{\link{createSimulation}},
-  \code{\link{splitDataset}}
+Other simulation: 
+\code{\link{createInteractions}()},
+\code{\link{createMixedSimulation}()},
+\code{\link{createSimulation}()},
+\code{\link{splitDataset}()}
 }
 \concept{simulation}

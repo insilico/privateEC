@@ -4,11 +4,21 @@
 \alias{xgboostRF}
 \title{xgboost random forests algorithm}
 \usage{
-xgboostRF(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", method.model = "classification", cv.folds = NULL,
-  num.threads = 2, num.rounds = c(1), max.depth = c(4),
-  shrinkage = c(1), objective = "binary:logistic", save.file = NULL,
-  verbose = FALSE)
+xgboostRF(
+  train.ds = NULL,
+  holdout.ds = NULL,
+  validation.ds = NULL,
+  label = "class",
+  method.model = "classification",
+  cv.folds = NULL,
+  num.threads = 2,
+  num.rounds = c(1),
+  max.depth = c(4),
+  shrinkage = c(1),
+  objective = "binary:logistic",
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -76,10 +86,12 @@ rra.results <- xgboostRF(train.ds = sim.data$train,
                          verbose = FALSE)
 }
 \seealso{
-Other classification: \code{\link{epistasisRank}},
-  \code{\link{getImportanceScores}},
-  \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{privateRF}},
-  \code{\link{standardRF}}
+Other classification: 
+\code{\link{epistasisRank}()},
+\code{\link{getImportanceScores}()},
+\code{\link{originalThresholdout}()},
+\code{\link{privateEC}()},
+\code{\link{privateRF}()},
+\code{\link{standardRF}()}
 }
 \concept{classification}

@@ -4,11 +4,20 @@
 \alias{createSimulation}
 \title{Create a data simulation and return train/holdout/validation data sets.}
 \usage{
-createSimulation(num.samples = 100, num.variables = 100,
-  pct.imbalance = 0.5, pct.signals = 0.1, bias = 0.4,
-  label = "class", sim.type = "mainEffect", pct.train = 0.5,
-  pct.holdout = 0.5, pct.validation = 0, save.file = NULL,
-  verbose = FALSE)
+createSimulation(
+  num.samples = 100,
+  num.variables = 100,
+  pct.imbalance = 0.5,
+  pct.signals = 0.1,
+  bias = 0.4,
+  label = "class",
+  sim.type = "mainEffect",
+  pct.train = 0.5,
+  pct.holdout = 0.5,
+  pct.validation = 0,
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{num.samples}{An integer for the number of samples}
@@ -70,9 +79,10 @@ sim.data <- createSimulation(num.samples=num.samples,
                              verbose=FALSE)
 }
 \seealso{
-Other simulation: \code{\link{createInteractions}},
-  \code{\link{createMainEffects}},
-  \code{\link{createMixedSimulation}},
-  \code{\link{splitDataset}}
+Other simulation: 
+\code{\link{createInteractions}()},
+\code{\link{createMainEffects}()},
+\code{\link{createMixedSimulation}()},
+\code{\link{splitDataset}()}
 }
 \concept{simulation}

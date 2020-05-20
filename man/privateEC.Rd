@@ -4,18 +4,37 @@
 \alias{privateEC}
 \title{Private Evaporative Cooling feature selection and classification}
 \usage{
-privateEC(train.ds = NULL, holdout.ds = NULL, validation.ds = NULL,
-  label = "class", method.model = "classification",
-  is.simulated = TRUE, bias = 0.4, update.freq = 5,
-  importance.name = "relieff", importance.algorithm = "ReliefFequalK",
-  relief.k.method = "k_half_sigma", learner.name = "randomforest",
-  xgb.obj = "binary:logistic", use.nestedCV = FALSE,
-  ncv_folds = c(10, 10), learner.cv = NULL, rf.mtry = NULL,
-  rf.ntree = 500, xgb.num.rounds = c(1), xgb.max.depth = c(4),
-  xgb.shrinkage = c(1), start.temp = 0.1, final.temp = 1e-05,
-  tau.param = 100, threshold = 4/sqrt(nrow(train.ds)),
-  tolerance = 1/sqrt(nrow(train.ds)), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+privateEC(
+  train.ds = NULL,
+  holdout.ds = NULL,
+  validation.ds = NULL,
+  label = "class",
+  method.model = "classification",
+  is.simulated = TRUE,
+  bias = 0.4,
+  update.freq = 5,
+  importance.name = "relieff",
+  importance.algorithm = "ReliefFequalK",
+  relief.k.method = "k_half_sigma",
+  learner.name = "randomforest",
+  xgb.obj = "binary:logistic",
+  use.nestedCV = FALSE,
+  ncv_folds = c(10, 10),
+  learner.cv = NULL,
+  rf.mtry = NULL,
+  rf.ntree = 500,
+  xgb.num.rounds = c(1),
+  xgb.max.depth = c(4),
+  xgb.shrinkage = c(1),
+  start.temp = 0.1,
+  final.temp = 1e-05,
+  tau.param = 100,
+  threshold = 4/sqrt(nrow(train.ds)),
+  tolerance = 1/sqrt(nrow(train.ds)),
+  signal.names = NULL,
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -143,10 +162,12 @@ For more information see:
 \href{http://insilico.utulsa.edu/index.php/privateec/}{Insilico Lab privateEC Page}
 }
 \seealso{
-Other classification: \code{\link{epistasisRank}},
-  \code{\link{getImportanceScores}},
-  \code{\link{originalThresholdout}},
-  \code{\link{privateRF}}, \code{\link{standardRF}},
-  \code{\link{xgboostRF}}
+Other classification: 
+\code{\link{epistasisRank}()},
+\code{\link{getImportanceScores}()},
+\code{\link{originalThresholdout}()},
+\code{\link{privateRF}()},
+\code{\link{standardRF}()},
+\code{\link{xgboostRF}()}
 }
 \concept{classification}

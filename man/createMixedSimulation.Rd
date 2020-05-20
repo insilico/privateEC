@@ -4,11 +4,21 @@
 \alias{createMixedSimulation}
 \title{Create a data simulation with a mix of main and interaction effects.}
 \usage{
-createMixedSimulation(num.samples = 100, num.variables = 100,
-  pct.imbalance = 0.5, pct.signals = 0.1, bias = 0.4,
-  label = "class", pct.mixed = 0.5, mixed.type = c("mainEffect",
-  "interactionScalefree"), pct.train = 0.5, pct.holdout = 0.5,
-  pct.validation = 0, save.file = NULL, verbose = FALSE)
+createMixedSimulation(
+  num.samples = 100,
+  num.variables = 100,
+  pct.imbalance = 0.5,
+  pct.signals = 0.1,
+  bias = 0.4,
+  label = "class",
+  pct.mixed = 0.5,
+  mixed.type = c("mainEffect", "interactionScalefree"),
+  pct.train = 0.5,
+  pct.holdout = 0.5,
+  pct.validation = 0,
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{num.samples}{An integer for the number of samples}
@@ -74,9 +84,10 @@ sim.data <- createMixedSimulation(num.samples=num.samples,
                                   verbose=FALSE)
 }
 \seealso{
-Other simulation: \code{\link{createInteractions}},
-  \code{\link{createMainEffects}},
-  \code{\link{createSimulation}},
-  \code{\link{splitDataset}}
+Other simulation: 
+\code{\link{createInteractions}()},
+\code{\link{createMainEffects}()},
+\code{\link{createSimulation}()},
+\code{\link{splitDataset}()}
 }
 \concept{simulation}

@@ -4,12 +4,20 @@
 \alias{originalThresholdout}
 \title{Original Thresholdout algorithm}
 \usage{
-originalThresholdout(train.ds = NULL, holdout.ds = NULL,
-  validation.ds = NULL, label = "class", is.simulated = TRUE,
-  update.freq = 50, pec.file = NULL,
+originalThresholdout(
+  train.ds = NULL,
+  holdout.ds = NULL,
+  validation.ds = NULL,
+  label = "class",
+  is.simulated = TRUE,
+  update.freq = 50,
+  pec.file = NULL,
   threshold = 4/sqrt(nrow(holdout.ds)),
-  tolerance = 1/sqrt(nrow(holdout.ds)), signal.names = NULL,
-  save.file = NULL, verbose = FALSE)
+  tolerance = 1/sqrt(nrow(holdout.ds)),
+  signal.names = NULL,
+  save.file = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{train.ds}{A data frame with training data and outcome labels}
@@ -85,9 +93,12 @@ por.results <- originalThresholdout(train.ds = sim.data$train,
 file.remove(temp.pec.file)
 }
 \seealso{
-Other classification: \code{\link{epistasisRank}},
-  \code{\link{getImportanceScores}},
-  \code{\link{privateEC}}, \code{\link{privateRF}},
-  \code{\link{standardRF}}, \code{\link{xgboostRF}}
+Other classification: 
+\code{\link{epistasisRank}()},
+\code{\link{getImportanceScores}()},
+\code{\link{privateEC}()},
+\code{\link{privateRF}()},
+\code{\link{standardRF}()},
+\code{\link{xgboostRF}()}
 }
 \concept{classification}

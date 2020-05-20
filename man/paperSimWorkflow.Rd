@@ -4,8 +4,13 @@
 \alias{paperSimWorkflow}
 \title{Workflow for running one simulation of the Bioinformatics paper workflow}
 \usage{
-paperSimWorkflow(n.samples = 100, n.variables = 100,
-  pct.signals = 0.1, update.freq = 10, verbose = FALSE)
+paperSimWorkflow(
+  n.samples = 100,
+  n.variables = 100,
+  pct.signals = 0.1,
+  update.freq = 10,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{n.samples}{An integer for the number of samples}
@@ -53,8 +58,9 @@ The workflow consists of the sequence:
 \code{\link{compileAndSaveAllResults}}. A comparison analysis with real data (fMRI)
 is in \code{\link{paperRealWorkflow}}.
 
-Other workflows: \code{\link{compileAndSaveAllResults}},
-  \code{\link{paperRealWorkflow}},
-  \code{\link{plotRunResults}}
+Other workflows: 
+\code{\link{compileAndSaveAllResults}()},
+\code{\link{paperRealWorkflow}()},
+\code{\link{plotRunResults}()}
 }
 \concept{workflows}

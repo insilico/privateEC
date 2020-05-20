@@ -4,7 +4,9 @@
 \name{rsfMRIcorrMDD}
 \alias{rsfMRIcorrMDD}
 \title{An MRI data set used used in the paper referenced below.}
-\format{Data frame with 157 rows, 3003 all-pairs correlation variables and a pheno variable +/- 1.}
+\format{
+Data frame with 157 rows, 3003 all-pairs correlation variables and a pheno variable +/- 1.
+}
 \usage{
 data(rsfMRIcorrMDD)
 }

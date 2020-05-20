@@ -5,8 +5,12 @@
 \title{Runs the four comparison algorithms on the passed correlation matrix and phenotypes.
 Returns a data frame of run results for each.}
 \usage{
-paperRealWorkflow(real.data = NULL, label = "class",
-  update.freq = 50, verbose = FALSE)
+paperRealWorkflow(
+  real.data = NULL,
+  label = "class",
+  update.freq = 50,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{real.data}{A matrix subject by region-pair correlations augmented with class label}
@@ -44,8 +48,9 @@ The workflow consists of the sequence:
 \code{\link{compileAndSaveAllResults}}. A comparison analysis with simulated data
 is in \code{\link{paperSimWorkflow}}.
 
-Other workflows: \code{\link{compileAndSaveAllResults}},
-  \code{\link{paperSimWorkflow}},
-  \code{\link{plotRunResults}}
+Other workflows: 
+\code{\link{compileAndSaveAllResults}()},
+\code{\link{paperSimWorkflow}()},
+\code{\link{plotRunResults}()}
 }
 \concept{workflows}

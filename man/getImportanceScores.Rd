@@ -4,10 +4,15 @@
 \alias{getImportanceScores}
 \title{Compute and return importance scores (Relief-F scores)}
 \usage{
-getImportanceScores(train.set = NULL, holdout.set = NULL,
-  label = "class", importance.name = "relieff",
+getImportanceScores(
+  train.set = NULL,
+  holdout.set = NULL,
+  label = "class",
+  importance.name = "relieff",
   importance.algorithm = "ReliefFequalK",
-  relief.k.method = "k_half_sigma", verbose = FALSE)
+  relief.k.method = "k_half_sigma",
+  verbose = FALSE
+)
 }
 \arguments{
 \item{train.set}{A training data frame with last column as outcome}
@@ -34,9 +39,12 @@ A list with two data frames representing the importance scores
 Compute and return importance scores (Relief-F scores)
 }
 \seealso{
-Other classification: \code{\link{epistasisRank}},
-  \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{privateRF}},
-  \code{\link{standardRF}}, \code{\link{xgboostRF}}
+Other classification: 
+\code{\link{epistasisRank}()},
+\code{\link{originalThresholdout}()},
+\code{\link{privateEC}()},
+\code{\link{privateRF}()},
+\code{\link{standardRF}()},
+\code{\link{xgboostRF}()}
 }
 \concept{classification}

@@ -4,10 +4,18 @@
 \alias{createInteractions}
 \title{Create a differentially coexpressed data set with interactions}
 \usage{
-createInteractions(M = 100, N = 100, label = "class",
-  pct.imbalance = 0.5, meanExpression = 7, A = NULL,
-  randSdNoise = 1, sdNoise = 0.4, sampleIndicesInteraction = NULL,
-  verbose = FALSE)
+createInteractions(
+  M = 100,
+  N = 100,
+  label = "class",
+  pct.imbalance = 0.5,
+  meanExpression = 7,
+  A = NULL,
+  randSdNoise = 1,
+  sdNoise = 0.4,
+  sampleIndicesInteraction = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{M}{An integer for the number of samples (rows)}
@@ -39,9 +47,10 @@ A matrix representing the new new data set.
 Create a differentially coexpressed data set with interactions
 }
 \seealso{
-Other simulation: \code{\link{createMainEffects}},
-  \code{\link{createMixedSimulation}},
-  \code{\link{createSimulation}},
-  \code{\link{splitDataset}}
+Other simulation: 
+\code{\link{createMainEffects}()},
+\code{\link{createMixedSimulation}()},
+\code{\link{createSimulation}()},
+\code{\link{splitDataset}()}
 }
 \concept{simulation}

@@ -15,9 +15,12 @@ epistasisRank(G, Gamma_vec)
 Modified SNPrank function
 }
 \seealso{
-Other classification: \code{\link{getImportanceScores}},
-  \code{\link{originalThresholdout}},
-  \code{\link{privateEC}}, \code{\link{privateRF}},
-  \code{\link{standardRF}}, \code{\link{xgboostRF}}
+Other classification: 
+\code{\link{getImportanceScores}()},
+\code{\link{originalThresholdout}()},
+\code{\link{privateEC}()},
+\code{\link{privateRF}()},
+\code{\link{standardRF}()},
+\code{\link{xgboostRF}()}
 }
 \concept{classification}

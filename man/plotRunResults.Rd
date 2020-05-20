@@ -31,8 +31,9 @@ real.result <- privateEC(train.ds = real.data.sets$train,
 plotRunResults(real.result)
 }
 \seealso{
-Other workflows: \code{\link{compileAndSaveAllResults}},
-  \code{\link{paperRealWorkflow}},
-  \code{\link{paperSimWorkflow}}
+Other workflows: 
+\code{\link{compileAndSaveAllResults}()},
+\code{\link{paperRealWorkflow}()},
+\code{\link{paperSimWorkflow}()}
 }
 \concept{workflows}
